@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Authentication Sessions & Cache
+data/session_*.json
+data/*.db
+data/*.sqlite3
+data/*.sqlite
+data/*.log
+data/.app_profile/
+data/.booking_rca_profile/
+data/uid_evse_cache.json
+data/roaming_manage_cache.json
+
+# Keep template config
+!data/partner_portals.example.json
+!data/partner_portals.json
+
+# Temporary & Office Lock Files
+~$*.xlsx
+~$*.docx
+*.tmp
+*.log
+
+# Generated Output Documents in Root (keep clean)
+ElectreeFi_*.xlsx
+ElectreeFi_*.docx
+Portal_and_App_*.docx
+
+# Uploads directory (track sample files only)
+uploads/*.xlsx
+!uploads/test_sample_5.xlsx
+!uploads/test_sample_target_parties.xlsx
+!uploads/sample_roaming_dual_sheet.xlsx
+
+# Testing & Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Executables & Binaries
+*.exe
+*.spec
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo

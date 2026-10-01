@@ -1,0 +1,4139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ElectreeFi - Automation &amp; RCA Studio</title>
+  <style>
+    :root {
+      --brand-green: #00B074;
+      --brand-green-hover: #009663;
+      --brand-green-light: #e6f7f1;
+      --brand-blue: #008be5;
+      --brand-blue-hover: #0277bd;
+      --brand-blue-light: #e0f2fe;
+      --sidebar-bg: #0f172a;
+      --sidebar-surface: #1e293b;
+      --sidebar-border: #334155;
+      --canvas-bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-focus: #008be5;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--canvas-bg);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* --- SIDEBAR --- */
+    .sidebar {
+      width: 260px;
+      background-color: var(--sidebar-bg);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      border-right: 1px solid var(--sidebar-border);
+      user-select: none;
+      transition: width 0.25s ease;
+    }
+
+    .sidebar-header {
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--sidebar-surface);
+      background: #0b1120;
+    }
+
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-logo-svg {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+    }
+
+    .brand-text-block {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      color: #ffffff;
+    }
+
+    .brand-title .elec {
+      color: var(--brand-green);
+    }
+
+    .brand-subtitle {
+      font-size: 9.5px;
+      color: #94a3b8;
+      letter-spacing: 0.2px;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-section-label {
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      padding: 12px 10px 4px 10px;
+      font-weight: 700;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background-color: var(--sidebar-surface);
+      color: #ffffff;
+    }
+
+    .nav-item.active {
+      background-color: rgba(0, 176, 116, 0.16);
+      color: #ffffff;
+      font-weight: 600;
+      border-left: 3.5px solid var(--brand-green);
+    }
+
+    .nav-item.featured {
+      background: rgba(0, 139, 229, 0.14);
+      color: #38bdf8;
+      border-left: 3.5px solid var(--brand-blue);
+      font-weight: 600;
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+
+    .nav-item.active svg {
+      color: var(--brand-green);
+      opacity: 1;
+    }
+
+    .nav-item.featured svg {
+      color: #38bdf8;
+      opacity: 1;
+    }
+
+    .sidebar-footer {
+      padding: 14px 16px;
+      background: #0b1120;
+      border-top: 1px solid var(--sidebar-surface);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .platform-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--brand-green);
+      background: rgba(0, 176, 116, 0.12);
+      padding: 4px 10px;
+      border-radius: 20px;
+      align-self: flex-start;
+    }
+
+    .platform-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--brand-green);
+    }
+
+    .sidebar-footer-info {
+      font-size: 10.5px;
+      color: #64748b;
+    }
+
+    /* --- MAIN VIEWPORT --- */
+    .main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    .top-header {
+      height: 62px;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .breadcrumb-path {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .breadcrumb-path a {
+      color: var(--brand-blue);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .breadcrumb-path span.current {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .portal-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 13px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      color: var(--brand-blue);
+      font-size: 12.5px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .portal-link-btn:hover {
+      background: var(--brand-blue-light);
+      border-color: var(--brand-blue);
+    }
+
+    .portal-link-btn svg { width: 14px; height: 14px; }
+
+    .user-profile-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 10px;
+      border-radius: 30px;
+      background: #f1f5f9;
+      border: 1px solid var(--border-color);
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--brand-green);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+
+    .user-role {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Content Area */
+    .content-scrollable {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Overview KPI Cards */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.15s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .kpi-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .kpi-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-light);
+    }
+
+    .kpi-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .kpi-icon-wrap.green { background: var(--brand-green-light); color: var(--brand-green); }
+    .kpi-icon-wrap.blue { background: var(--brand-blue-light); color: var(--brand-blue); }
+    .kpi-icon-wrap.amber { background: var(--warning-light); color: var(--warning); }
+    .kpi-icon-wrap.purple { background: #ede9fe; color: #7c3aed; }
+
+    /* Tab bar (ElectreeFi CMS style) */
+    .tab-bar-container {
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      padding: 4px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cms-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+    }
+
+    .cms-tab-btn {
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2.5px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .cms-tab-btn:hover { color: var(--brand-blue); }
+
+    .cms-tab-btn.active {
+      color: var(--brand-blue);
+      border-bottom-color: var(--brand-blue);
+    }
+
+    .cms-tab-btn.featured-tab {
+      color: #0284c7;
+      background: rgba(2, 132, 199, 0.06);
+      border-radius: 6px 6px 0 0;
+    }
+
+    .cms-tab-btn.featured-tab.active {
+      background: rgba(2, 132, 199, 0.12);
+      border-bottom-color: #0284c7;
+    }
+
+    .tab-counter {
+      background: #f1f5f9;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+    }
+
+    .cms-tab-btn.active .tab-counter {
+      background: var(--brand-blue-light);
+      color: var(--brand-blue);
+    }
+
+    .tab-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .refresh-status-btn {
+      padding: 7px 12px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .refresh-status-btn:hover {
+      background: #f8fafc;
+      color: var(--text-main);
+      border-color: #cbd5e1;
+    }
+
+    /* Tab Panes */
+    .tab-pane {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .tab-pane.active { display: flex; }
+
+    /* Section Banner */
+    .section-banner {
+      background: linear-gradient(135deg, #0b1120 0%, #1e293b 100%);
+      color: #ffffff;
+      border-radius: var(--radius-md);
+      padding: 22px 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #334155;
+      box-shadow: var(--shadow-md);
+    }
+
+    .banner-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .banner-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      max-width: 750px;
+      line-height: 1.4;
+    }
+
+    .banner-btn-group {
+      display: flex;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    /* Task Action Cards Grid */
+    .task-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .task-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .task-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: var(--shadow-md);
+    }
+
+    .task-card.running {
+      border-color: var(--brand-blue);
+      box-shadow: 0 0 0 2px rgba(0, 139, 229, 0.25);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .card-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-category {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-category.blue { background: var(--brand-blue-light); color: var(--brand-blue); }
+    .badge-category.green { background: var(--brand-green-light); color: var(--brand-green); }
+    .badge-category.indigo { background: #e0e7ff; color: #4338ca; }
+    .badge-category.amber { background: var(--warning-light); color: #b45309; }
+    .badge-category.slate { background: #f1f5f9; color: #475569; }
+
+    .bat-tag {
+      font-family: Consolas, monospace;
+      font-size: 11px;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .card-subtitle {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 16px;
+      min-height: 35px;
+    }
+
+    .card-files-status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .file-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+    }
+
+    .file-chip.ready {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
+      font-weight: 500;
+    }
+
+    .file-chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .file-chip.ready .file-chip-dot { background: var(--brand-green); }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #ffffff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-primary.blue { background-color: var(--brand-blue); }
+    .btn-primary.blue:hover { background-color: var(--brand-blue-hover); }
+    .btn-primary.green { background-color: var(--brand-green); }
+    .btn-primary.green:hover { background-color: var(--brand-green-hover); }
+    .btn-primary.amber { background-color: var(--warning); }
+    .btn-primary.amber:hover { background-color: #d97706; }
+    .btn-primary.indigo { background-color: #4f46e5; }
+    .btn-primary.indigo:hover { background-color: #4338ca; }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-secondary {
+      padding: 9px 13px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ======================================================== */
+    /* SINGLE BOOKING INVESTIGATOR STYLING                     */
+    /* ======================================================== */
+    .search-control-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .search-inputs-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .booking-id-group {
+      flex: 1;
+      min-width: 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .booking-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .booking-input-wrapper svg {
+      position: absolute;
+      left: 12px;
+      width: 17px;
+      height: 17px;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+
+    .booking-text-input {
+      width: 100%;
+      height: 42px;
+      padding: 0 14px 0 38px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .booking-text-input:focus {
+      border-color: var(--brand-blue);
+      box-shadow: 0 0 0 3px rgba(0, 139, 229, 0.15);
+    }
+
+    /* CMS Style Date Range Button & Dropdown */
+    .daterange-picker-group {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 320px;
+    }
+
+    .daterange-btn {
+      height: 42px;
+      padding: 0 14px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .daterange-btn:hover {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .daterange-btn svg { width: 16px; height: 16px; color: var(--brand-blue); }
+
+    .daterange-dropdown-menu {
+      position: absolute;
+      top: 68px;
+      left: 0;
+      width: 340px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      z-index: 1000;
+      padding: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .daterange-dropdown-menu.show { display: flex; }
+
+    .preset-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .preset-item {
+      padding: 7px 10px;
+      border-radius: 4px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+
+    .preset-item:hover {
+      background: var(--brand-blue-light);
+      color: var(--brand-blue);
+      font-weight: 600;
+    }
+
+    .preset-item.active {
+      background: var(--brand-blue);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .custom-range-inputs {
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .date-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date-input-field {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 12px;
+      color: #1e293b;
+      outline: none;
+    }
+
+    .date-input-field:focus {
+      border-color: var(--brand-blue);
+    }
+
+    .search-btn-action {
+      height: 42px;
+      padding: 0 24px;
+      align-self: flex-end;
+      border-radius: var(--radius-sm);
+      background-color: var(--brand-blue);
+      color: #ffffff;
+      border: none;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 4px rgba(0, 139, 229, 0.2);
+      transition: all 0.15s ease;
+    }
+
+    .search-btn-action:hover {
+      background-color: var(--brand-blue-hover);
+      box-shadow: 0 4px 8px rgba(0, 139, 229, 0.25);
+    }
+
+    .search-btn-action:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .sample-ids-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .sample-pill {
+      background: #f1f5f9;
+      border: 1px solid var(--border-color);
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--brand-blue);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sample-pill:hover {
+      background: var(--brand-blue-light);
+      border-color: var(--brand-blue);
+    }
+
+    /* Investigation Results Dossier */
+    .investigation-container {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Fault Attribution Hero Banner */
+    .attribution-hero {
+      border-radius: var(--radius-md);
+      padding: 22px 24px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .attribution-hero::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+    }
+
+    .attribution-hero.vehicle::before { background: var(--brand-green); }
+    .attribution-hero.charger::before { background: var(--danger); }
+    .attribution-hero.user::before { background: var(--brand-blue); }
+    .attribution-hero.network::before { background: #8b5cf6; }
+
+    .attribution-badge-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .attribution-pill-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .attribution-pill-tag.vehicle {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+
+    .attribution-pill-tag.charger {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+
+    .attribution-pill-tag.user {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #7dd3fc;
+    }
+
+    .attribution-pill-tag.network {
+      background: #ede9fe;
+      color: #6d28d9;
+      border: 1px solid #c4b5fd;
+    }
+
+    .rca-title-main {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .rca-narrative-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid var(--brand-blue);
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #334155;
+    }
+
+    .rca-narrative-box strong {
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .rca-action-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid var(--brand-green);
+      border-radius: 6px;
+      padding: 12px 18px;
+      font-size: 13px;
+      color: #166534;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .rca-action-box strong { font-weight: 700; }
+
+    /* 2-Column Info Grid */
+    .dossier-two-col {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .info-panel {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel-heading {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .panel-heading svg { width: 17px; height: 17px; color: var(--brand-blue); }
+
+    .kv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+    }
+
+    .kv-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .kv-item.full-width {
+      grid-column: span 2;
+    }
+
+    .kv-k {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .kv-v {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .kv-v.highlight-green { color: var(--brand-green); }
+    .kv-v.highlight-blue { color: var(--brand-blue); }
+    .kv-v.highlight-danger { color: var(--danger); }
+
+    /* Timeline Table */
+    .timeline-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .timeline-header-bar {
+      padding: 14px 20px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .timeline-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timeline-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+    }
+
+    /* Highly visible custom sliding scrollbar right at bottom of table */
+    .timeline-table-wrapper::-webkit-scrollbar {
+      height: 12px;
+    }
+
+    .timeline-table-wrapper::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .timeline-table-wrapper::-webkit-scrollbar-thumb {
+      background: #0284c7;
+      border-radius: 6px;
+      border: 2px solid #f1f5f9;
+    }
+
+    .timeline-table-wrapper::-webkit-scrollbar-thumb:hover {
+      background: #0369a1;
+    }
+
+    .timeline-table-wrapper {
+      scrollbar-width: thin;
+      scrollbar-color: #0284c7 #f1f5f9;
+    }
+
+    .timeline-table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .timeline-table th {
+      background: #f8fafc;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .timeline-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+      vertical-align: middle;
+      font-family: var(--font-family);
+    }
+
+    .timeline-table tr:hover { background: #f8fafc; }
+
+    .ocpp-tag {
+      font-family: Consolas, monospace;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .ocpp-tag.start { background: #dcfce7; color: #15803d; }
+    .ocpp-tag.stop { background: #fee2e2; color: #b91c1c; }
+    .ocpp-tag.status { background: #e0f2fe; color: #0369a1; }
+    .ocpp-tag.other { background: #f1f5f9; color: #475569; }
+
+    .dir-badge {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    /* OCPP Status & Error Badges */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2.5px 8px;
+      border-radius: 4px;
+      font-family: Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .status-pill.suspended-ev {
+      background: #f3e8ff;
+      color: #7e22ce;
+      border: 1px solid #d8b4fe;
+    }
+
+    .status-pill.suspended-evse {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    .status-pill.faulted {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+
+    .status-pill.preparing {
+      background: #e0f2fe;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+    }
+
+    .status-pill.charging {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-pill.finishing {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+
+    .status-pill.other {
+      background: #f8fafc;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+
+    .error-pill {
+      background: #fee2e2;
+      color: #b91c1c;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: Consolas, monospace;
+      display: inline-block;
+    }
+
+    .info-pill-highlight {
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: inline-block;
+    }
+
+    .raw-payload-cell {
+      font-family: Consolas, "JetBrains Mono", Menlo, monospace;
+      font-size: 11.5px;
+      color: #334155;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      background: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      min-width: 420px;
+      max-width: 620px;
+      max-height: 220px;
+      overflow-y: auto;
+      display: block;
+      user-select: text;
+      cursor: text;
+    }
+
+    .raw-payload-cell::-webkit-scrollbar {
+      width: 5px;
+    }
+    .raw-payload-cell::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 3px;
+    }
+    .raw-payload-cell::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    .raw-payload-cell::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Dedicated Bottom Sliding Bar & Controls */
+    .timeline-slider-bar {
+      background: #ffffff;
+      border-top: 1px solid var(--border-color);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.03);
+    }
+
+    .slider-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 13px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--brand-blue);
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .slider-nav-btn:hover {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+    }
+
+    .slider-track-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slider-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .timeline-range-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .timeline-range-slider:hover {
+      background: #cbd5e1;
+    }
+
+    .timeline-range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0284c7;
+      cursor: grab;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      transition: transform 0.1s ease, background-color 0.15s ease;
+    }
+
+    .timeline-range-slider::-webkit-slider-thumb:hover {
+      background: #0369a1;
+      transform: scale(1.15);
+    }
+
+    .timeline-range-slider::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.25);
+    }
+
+    .timeline-range-slider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0284c7;
+      cursor: grab;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+
+    /* Detected Field Callout */
+    .detected-field-banner {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin-bottom: 12px;
+      font-size: 12.5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .detected-field-title {
+      font-weight: 700;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .detected-field-pill {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: Consolas, monospace;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      letter-spacing: 0.3px;
+    }
+
+    .detected-field-loc {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .detected-field-loc code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #1e293b;
+      font-weight: 600;
+      font-family: Consolas, monospace;
+    }
+
+    .empty-search-state {
+      padding: 48px 24px;
+      text-align: center;
+      background: #ffffff;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .empty-search-state svg { width: 44px; height: 44px; color: #cbd5e1; }
+
+    .loading-pulse-box {
+      padding: 40px;
+      text-align: center;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .spinner-circle {
+      width: 38px;
+      height: 38px;
+      border: 3.5px solid #e2e8f0;
+      border-top-color: var(--brand-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Reports Hub Table */
+    .table-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-header-bar {
+      padding: 14px 20px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .custom-table th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .custom-table td {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    .custom-table tr:hover { background-color: #f8fafc; }
+
+    .file-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    .file-type-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .file-type-icon.excel { background: #dcfce7; color: #15803d; }
+    .file-type-icon.word { background: #dbeafe; color: #1d4ed8; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .status-badge.available { background: #dcfce7; color: #15803d; }
+    .status-badge.missing { background: #f1f5f9; color: #64748b; }
+
+    /* --- LIVE TERMINAL PANEL --- */
+    .terminal-drawer {
+      height: 230px;
+      background: #090d16;
+      border-top: 2px solid var(--brand-blue);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: height 0.2s ease;
+      color: #f8fafc;
+      font-family: "JetBrains Mono", Consolas, Menlo, monospace;
+    }
+
+    .terminal-drawer.minimized { height: 42px; }
+    .terminal-drawer.expanded { height: 480px; }
+
+    .terminal-header {
+      height: 42px;
+      background: #0f172a;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1e293b;
+      user-select: none;
+    }
+
+    .terminal-title-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .terminal-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #64748b;
+    }
+
+    .terminal-status-dot.running {
+      background: var(--brand-blue);
+      box-shadow: 0 0 8px var(--brand-blue);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .terminal-status-dot.success { background: var(--brand-green); }
+    .terminal-status-dot.error { background: var(--danger); }
+
+    .terminal-heading {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #e2e8f0;
+      letter-spacing: 0.4px;
+      font-family: var(--font-family);
+    }
+
+    .terminal-active-task {
+      font-size: 11.5px;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .terminal-timer { font-size: 11.5px; color: #94a3b8; }
+
+    .terminal-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .term-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-family);
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+
+    .term-btn:hover { background: #334155; color: #fff; }
+
+    .term-btn.abort {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+
+    .term-btn.abort:hover:not(:disabled) { background: #ef4444; color: #fff; }
+    .term-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .terminal-body {
+      flex: 1;
+      padding: 12px 18px;
+      overflow-y: auto;
+      font-size: 12.5px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .log-line { margin-bottom: 2px; }
+    .log-line.step { color: #38bdf8; font-weight: 700; }
+    .log-line.success { color: #4ade80; font-weight: 600; }
+    .log-line.error { color: #f87171; font-weight: 600; }
+    .log-line.command { color: #fbbf24; }
+    .log-empty-state { color: #475569; font-style: italic; padding-top: 10px; }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #1e293b;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      border-left: 4px solid var(--brand-green);
+      box-shadow: var(--shadow-lg);
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 280px;
+      animation: slideIn 0.25s ease;
+      pointer-events: auto;
+    }
+
+    /* Upload & Partner Portals RCA Feature Styling */
+    .upload-dropzone {
+      border: 2px dashed #94a3b8;
+      border-radius: var(--radius-md);
+      background: #f8fafc;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .upload-dropzone:hover, .upload-dropzone.dragover {
+      border-color: var(--brand-green);
+      background: rgba(0, 176, 116, 0.05);
+    }
+    .upload-dropzone-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: #e2e8f0;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .upload-dropzone:hover .upload-dropzone-icon, .upload-dropzone.dragover .upload-dropzone-icon {
+      background: var(--brand-green);
+      color: #ffffff;
+      transform: scale(1.05);
+    }
+    .upload-file-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 20px;
+      color: #166534;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .summary-metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .summary-metric-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .summary-metric-title {
+      font-size: 10.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .summary-metric-value {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .portal-table-input {
+      width: 100%;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      font-size: 12.5px;
+      color: var(--text-main);
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .portal-table-input:focus {
+      border-color: var(--brand-blue);
+    }
+    .pipeline-step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .pipeline-step-badge.highlight {
+      background: rgba(0, 139, 229, 0.08);
+      border-color: #93c5fd;
+      color: #0284c7;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-container">
+        <!-- ElectreeFi Official SVG Brand Icon -->
+        <svg class="brand-logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100" height="100" rx="22" fill="#00B074"/>
+          <!-- EV Car Silhouette -->
+          <path d="M22 62C22 58 24 54 28 54L34 54L42 38C44 34 48 32 53 32L66 32C71 32 75 35 77 39L83 54L86 54C89 54 91 56 91 59L91 66C91 68 89 70 87 70L86 70C86 76 81 80 75 80C69 80 64 76 64 70L44 70C44 76 39 80 33 80C27 80 22 76 22 70L21 70C18 70 16 68 16 66L16 63C16 62.4 16.4 62 17 62L22 62Z" fill="#ffffff" fill-opacity="0.95"/>
+          <!-- Lightning Bolt Inside Car -->
+          <path d="M53 37L43 53L51 53L47 67L59 49L51 49L55 37H53Z" fill="#00B074"/>
+          <!-- Wheel Cutouts -->
+          <circle cx="33" cy="70" r="5" fill="#0f172a"/>
+          <circle cx="75" cy="70" r="5" fill="#0f172a"/>
+        </svg>
+        <div class="brand-text-block">
+          <div class="brand-title"><span class="elec">Elec</span>treeFi</div>
+          <div class="brand-subtitle">IoT Automation &amp; RCA Studio</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Investigation &amp; Lookup</div>
+      <div class="nav-item featured" onclick="switchTab('search')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+        Booking RCA Deep Dive
+      </div>
+
+      <div class="nav-section-label">Automations &amp; Pipelines</div>
+      <div class="nav-item active" onclick="switchTab('pipelines')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+        Full Pipelines (.bat)
+      </div>
+      <div class="nav-item" onclick="switchTab('regular')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
+        Regular Bookings RCA
+      </div>
+      <div class="nav-item" onclick="switchTab('roaming')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-.2c0-1.402-.555-2.605-1.5-3.3v-.5a2 2 0 00-2-2 2 2 0 01-2.168-1.973z" clip-rule="evenodd"></path></svg>
+        OCPI Roaming RCA
+      </div>
+      <div class="nav-item featured" style="background: rgba(16, 185, 129, 0.14); color: #10b981; border-left: 3.5px solid var(--brand-green);" onclick="switchTab('upload_rca')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+        Upload Excel Word RCA
+      </div>
+      <div class="nav-item" onclick="switchTab('deepdive')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path></svg>
+        30-Day OCPI Deep Dive
+      </div>
+
+      <div class="nav-section-label">Portal &amp; Deliverables</div>
+      <div class="nav-item" onclick="switchTab('deliverables')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path></svg>
+        Output Files Hub
+      </div>
+      <div class="nav-item" onclick="switchTab('session')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2a1 1 0 102 0V7a5 5 0 00-5-5z" clip-rule="evenodd"></path></svg>
+        CMS Login &amp; Session
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="platform-pill">
+        <div class="platform-pill-dot"></div>
+        ElectreeFi Platform Active
+      </div>
+      <div class="sidebar-footer-info" id="footerEnvText">Python 3.12 • Virtualenv</div>
+    </div>
+  </aside>
+
+  <!-- MAIN VIEWPORT -->
+  <main class="main-wrapper">
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="header-left">
+        <div class="breadcrumb-path">
+          <span>&lt; Back</span>
+          <span>/</span>
+          <a href="#" onclick="openExternalUrl('https://cms.ev-charge-network.com')">ElectreeFi CMS Portal</a>
+          <span>/</span>
+          <span class="current">Automation &amp; RCA Studio</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="portal-link-btn" onclick="openExternalUrl('https://cms.ev-charge-network.com')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          Open ElectreeFi CMS
+        </button>
+        <div class="user-profile-badge">
+          <div class="user-avatar">PM</div>
+          <div class="user-details">
+            <span class="user-name">Alex Morgan</span>
+            <span class="user-role">EVSP Operations</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN SCROLLABLE CONTENT -->
+    <div class="content-scrollable">
+      
+      <!-- KPI STATS CARDS -->
+      <section class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">CMS Session Status</span>
+            <span class="kpi-value" id="kpiSessionStatus">Checking...</span>
+            <span class="kpi-sub" id="kpiSessionSub">Storage state verified</span>
+          </div>
+          <div class="kpi-icon-wrap green">
+            <svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Regular RCA Report</span>
+            <span class="kpi-value" id="kpiRegularStatus">-</span>
+            <span class="kpi-sub" id="kpiRegularSub">24h Cancelled Bookings</span>
+          </div>
+          <div class="kpi-icon-wrap blue">
+            <svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd"></path></svg>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Roaming RCA Report</span>
+            <span class="kpi-value" id="kpiRoamingStatus">-</span>
+            <span class="kpi-sub" id="kpiRoamingSub">OCPI Reservations</span>
+          </div>
+          <div class="kpi-icon-wrap amber">
+            <svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-info">
+            <span class="kpi-label">Output Artifacts</span>
+            <span class="kpi-value" id="kpiFilesReady">0 / 9</span>
+            <span class="kpi-sub">Workbooks &amp; Docs Ready</span>
+          </div>
+          <div class="kpi-icon-wrap purple">
+            <svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"></path></svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- CMS TAB NAVIGATION BAR -->
+      <div class="tab-bar-container">
+        <div class="cms-tabs">
+          <button class="cms-tab-btn featured-tab" data-tab="search" onclick="switchTab('search')">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+            Booking RCA Deep Dive
+          </button>
+          <button class="cms-tab-btn active" data-tab="pipelines" onclick="switchTab('pipelines')">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+            Complete Pipelines
+            <span class="tab-counter">2</span>
+          </button>
+          <button class="cms-tab-btn" data-tab="regular" onclick="switchTab('regular')">
+            Regular RCA Workflows
+            <span class="tab-counter">3</span>
+          </button>
+          <button class="cms-tab-btn" data-tab="roaming" onclick="switchTab('roaming')">
+            OCPI Roaming Workflows
+            <span class="tab-counter">2</span>
+          </button>
+          <button class="cms-tab-btn featured-tab" data-tab="upload_rca" onclick="switchTab('upload_rca')" style="color: #059669; background: rgba(5, 150, 105, 0.08);">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+            Upload Excel &rarr; Word RCA
+            <span class="tab-counter" style="background: #d1fae5; color: #047857;">NEW</span>
+          </button>
+          <button class="cms-tab-btn" data-tab="deepdive" onclick="switchTab('deepdive')">
+            30-Day Deep Dive
+            <span class="tab-counter">2</span>
+          </button>
+          <button class="cms-tab-btn" data-tab="deliverables" onclick="switchTab('deliverables')">
+            Output Files Hub
+            <span class="tab-counter" id="tabDeliverablesCount">0</span>
+          </button>
+          <button class="cms-tab-btn" data-tab="session" onclick="switchTab('session')">
+            CMS Login
+          </button>
+        </div>
+        <div class="tab-actions">
+          <button class="refresh-status-btn" onclick="fetchStatus()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            Refresh Status
+          </button>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- TAB 0: SINGLE BOOKING RCA DEEP DIVE                      -->
+      <!-- ======================================================== -->
+      <div class="tab-pane" id="pane-search">
+        <div class="section-banner">
+          <div>
+            <div class="banner-title">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+              Single Booking RCA &amp; Telemetry Investigator
+            </div>
+            <div class="banner-desc">
+              Inspect any Cancelled booking or Completed booking with low consumption (&lt;1 kWh). Correlates central OCPP transactions, raw charger message logs, and generates a descriptive, attribution-focused RCA (Vehicle vs Charger vs User vs Network).
+            </div>
+          </div>
+        </div>
+
+        <!-- SEARCH CONTROLS CARD -->
+        <div class="search-control-card">
+          <div class="search-inputs-row">
+            <!-- Booking ID Input -->
+            <div class="booking-id-group">
+              <label class="input-label" for="bookingIdInput">Booking ID (Cancelled or &lt; 1 kWh)</label>
+              <div class="booking-input-wrapper">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+                <input 
+                  type="text" 
+                  id="bookingIdInput" 
+                  class="booking-text-input" 
+                  placeholder="Enter Booking ID (e.g. 7571375, 7571391)..."
+                  onkeydown="if(event.key==='Enter') executeBookingSearch()"
+                />
+              </div>
+            </div>
+
+            <!-- CMS Date Range Picker Button & Dropdown -->
+            <div class="daterange-picker-group">
+              <label class="input-label">Date Range (Charging Details Filter)</label>
+              <button type="button" class="daterange-btn" id="daterange-btn" onclick="toggleDateRangeDropdown()">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  <span id="dateRangeDisplay">Last 7 Days</span>
+                </div>
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+              </button>
+
+              <!-- Dropdown Menu replicating CMS -->
+              <div class="daterange-dropdown-menu" id="daterangeDropdown">
+                <div class="preset-list">
+                  <div class="preset-item" onclick="selectDatePreset('today')">Today</div>
+                  <div class="preset-item" onclick="selectDatePreset('yesterday')">Yesterday</div>
+                  <div class="preset-item active" onclick="selectDatePreset('last7')">Last 7 Days</div>
+                  <div class="preset-item" onclick="selectDatePreset('last15')">Last 15 Days</div>
+                  <div class="preset-item" onclick="selectDatePreset('last30')">Last 30 Days</div>
+                  <div class="preset-item" onclick="selectDatePreset('thisMonth')">This Month</div>
+                  <div class="preset-item" onclick="selectDatePreset('lastMonth')">Last Month</div>
+                  <div class="preset-item" onclick="selectDatePreset('custom')">Custom Range</div>
+                </div>
+
+                <div class="custom-range-inputs" id="customDateInputs" style="display: none;">
+                  <div class="date-input-row">
+                    <input type="date" id="customStartDate" class="date-input-field" />
+                    <span style="font-size: 11px; color: #94a3b8;">to</span>
+                    <input type="date" id="customEndDate" class="date-input-field" />
+                  </div>
+                  <button type="button" class="btn-primary blue" style="padding: 6px; font-size: 12px;" onclick="applyCustomRange()">
+                    Apply Custom Range
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Primary Search Button -->
+            <button class="search-btn-action" id="searchSubmitBtn" onclick="executeBookingSearch()">
+              <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              Investigate Booking RCA
+            </button>
+          </div>
+
+          <!-- Quick Test Pills -->
+          <div class="sample-ids-row">
+            <span>Quick Test Bookings:</span>
+            <span class="sample-pill" onclick="setQuickBooking('6377384')">6377384 (Rejected - RemoteStart Rejected)</span>
+            <span class="sample-pill" onclick="setQuickBooking('6378103')">6378103 (Cancelled - SuspendedEV)</span>
+            <span class="sample-pill" onclick="setQuickBooking('7571375')">7571375 (Cancelled - RemoteStart Rejection)</span>
+            <span class="sample-pill" onclick="setQuickBooking('7571391')">7571391 (Completed &lt;1kW)</span>
+          </div>
+        </div>
+
+        <!-- SEARCH RESULTS CONTAINER -->
+        <div id="investigationOutputArea">
+          <div class="empty-search-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text-main);">No Booking Investigated Yet</div>
+            <div style="font-size: 13px; max-width: 500px;">Enter any Cancelled booking ID or Completed booking ID with consumption under 1 kW to extract full telemetry, transaction records, and descriptive fault attribution.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 1: COMPLETE PIPELINES -->
+      <div class="tab-pane active" id="pane-pipelines">
+        <div class="section-banner">
+          <div>
+            <div class="banner-title">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+              End-to-End Automated Pipelines
+            </div>
+            <div class="banner-desc">
+              Execute full multi-stage RCA operations matching your batch scripts. These run the scraping and analysis engines, generate formatted multi-tab Excel workbooks, and compile executive Microsoft Word reports automatically.
+            </div>
+          </div>
+          <div class="banner-btn-group">
+            <button class="btn-primary blue" onclick="runTask('regular_full_pipeline')">
+              Run Regular Pipeline
+            </button>
+            <button class="btn-primary green" onclick="runTask('roaming_full_pipeline')">
+              Run Roaming Pipeline
+            </button>
+          </div>
+        </div>
+
+        <div class="task-cards-grid">
+          <!-- CARD: Regular Full Pipeline -->
+          <div class="task-card" id="card-regular_full_pipeline">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category blue">Automated Pipeline</span>
+                <span class="bat-tag">run_regular_full_pipeline.bat</span>
+              </div>
+            </div>
+            <div class="card-title">Regular Bookings RCA Complete Pipeline</div>
+            <div class="card-subtitle">
+              Stage 1 scrapes 24h cancelled bookings and OCPP logs to generate the multi-tab Excel workbook. Stage 2 immediately compiles the formal 24-Hour Executive Word Report (.docx).
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-regular_excel">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Cancelled_Bookings_RCA.xlsx
+              </div>
+              <div class="file-chip" id="chip-regular_word">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_24Hour_RCA_Report.docx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary blue" onclick="runTask('regular_full_pipeline')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Run Regular Pipeline
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_Cancelled_Bookings_RCA.xlsx')">Open Excel</button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_24Hour_RCA_Report.docx')">Open Word</button>
+            </div>
+          </div>
+
+          <!-- CARD: Roaming Full Pipeline -->
+          <div class="task-card" id="card-roaming_full_pipeline">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category green">Automated Pipeline</span>
+                <span class="bat-tag">run_roaming_full_pipeline.bat</span>
+              </div>
+            </div>
+            <div class="card-title">OCPI Roaming RCA Complete Pipeline</div>
+            <div class="card-subtitle">
+              Stage 1 scrapes Roaming reservations and extracts partner error logs to produce the Roaming Excel sheet. Stage 2 generates the Roaming Executive Word Analysis (.docx).
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-roaming_excel">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Roaming_Reservation_RCA.xlsx
+              </div>
+              <div class="file-chip" id="chip-roaming_word">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Roaming_Reservation_RCA_Report.docx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary green" onclick="runTask('roaming_full_pipeline')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Run Roaming Pipeline
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_Roaming_Reservation_RCA.xlsx')">Open Excel</button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_Roaming_Reservation_RCA_Report.docx')">Open Word</button>
+            </div>
+          </div>
+
+          <!-- CARD: Roaming Charger Word Report -->
+          <div class="task-card" id="card-roaming_charger_word">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category emerald">Executive Word Report</span>
+                <span class="bat-tag">generate_roaming_charger_word_report.bat</span>
+              </div>
+            </div>
+            <div class="card-title">Generate Roaming Charger & Station Word Report (IOC, MPC & ELC Focus)</div>
+            <div class="card-subtitle">
+              Generates an executive-level Word document (.docx) strictly evaluating IOCL Roaming PROD (IOC), CHARGE_iN (MPC), and Electreefi (ELC) charger-wise & station-wise success rates, failure rate vs success rate analysis, 4-quadrant fault attribution, and critical problem charger hotlist.
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-sub-roaming_charger_word">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Roaming_Charger_Wise_RCA_Report.docx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary green" onclick="runTask('roaming_charger_word')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Generate Charger Word Report
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_Roaming_Charger_Wise_RCA_Report.docx')">Open Word</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: REGULAR RCA TASKS -->
+      <div class="tab-pane" id="pane-regular">
+        <div class="task-cards-grid">
+          <!-- CARD: Excel RCA Full -->
+          <div class="task-card" id="card-regular_excel">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category blue">Spreadsheet Engine</span>
+                <span class="bat-tag">run_excel_rca.bat</span>
+              </div>
+            </div>
+            <div class="card-title">Generate Cancelled Bookings Excel RCA (24h)</div>
+            <div class="card-subtitle">
+              Fetches 24-hour cancelled bookings from ElectreeFi CMS, queries OCPP transaction logs, classifies root cause categories (Vehicle, User, Charger, Network), and generates formatted Excel workbooks.
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-sub-regular_excel">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Cancelled_Bookings_RCA.xlsx
+              </div>
+              <div class="file-chip" id="chip-sub-regular_excel_all">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Cancelled_Bookings_RCA_All_Records.xlsx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary blue" onclick="runTask('regular_excel')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Generate Excel Report
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_Cancelled_Bookings_RCA.xlsx')">Open Excel</button>
+            </div>
+          </div>
+
+          <!-- CARD: Word Report -->
+          <div class="task-card" id="card-regular_word">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category blue">Executive Document</span>
+                <span class="bat-tag">generate_word_report.bat</span>
+              </div>
+            </div>
+            <div class="card-title">Generate 24-Hour Executive Word Report (.docx)</div>
+            <div class="card-subtitle">
+              Compiles an executive-level RCA document with hourly breakdown tables, key insights, failure category distribution, and remediation recommendations formatted in corporate navy styling.
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-sub-regular_word">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_24Hour_RCA_Report.docx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary blue" onclick="runTask('regular_word')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Generate Word Document
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_24Hour_RCA_Report.docx')">Open Word</button>
+            </div>
+          </div>
+
+          <!-- CARD: Quick CLI RCA -->
+          <div class="task-card" id="card-quick_rca_cli">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category slate">Terminal Analysis</span>
+                <span class="bat-tag">run_rca.bat</span>
+              </div>
+            </div>
+            <div class="card-title">Quick CLI RCA Summary (Top 15 Bookings)</div>
+            <div class="card-subtitle">
+              Runs a fast live terminal inspection of the top 15 cancelled bookings without generating documents. Perfect for quick morning triage and fast status checks.
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip">
+                <div class="file-chip-dot"></div>
+                Live Terminal Stream Output
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary blue" onclick="runTask('quick_rca_cli')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Run Quick CLI RCA
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: OCPI ROAMING TASKS -->
+      <div class="tab-pane" id="pane-roaming">
+        <div class="task-cards-grid">
+          <!-- FEATURED CARD: Upload Excel -> In-Detail Word RCA -->
+          <div class="task-card" style="grid-column: 1 / -1; background: linear-gradient(to right, #ffffff, #f0fdf4); border: 1.5px solid #86efac;">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category green">Dedicated Feature</span>
+                <span class="bat-tag">run_uploaded_roaming_rca.bat</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+              <div>
+                <div class="card-title" style="color: #065f46; font-size: 17px;">Upload Excel &rarr; In-Detail Word RCA Generator</div>
+                <div class="card-subtitle" style="margin-bottom: 0;">
+                  Upload any Excel file containing Roaming Completed &amp; Cancelled reservations. Extracts timing via Manage button, resolves Roaming UID &rarr; Physical EVSE ID via Charging Points grid, queries CPO logs for party IDs (IOC, MPC, ELC), and builds an executive Word report.
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <input type="file" id="roamingCardFileInput" accept=".xlsx" style="display: none;" onchange="handleExcelFileSelect(this.files); switchTab('upload_rca');" />
+                <button class="btn-primary green" onclick="document.getElementById('roamingCardFileInput').click()" style="padding: 10px 18px; font-weight: 700; white-space: nowrap; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                  Upload Excel (.xlsx)
+                </button>
+                <button class="btn-secondary" onclick="switchTab('upload_rca')" style="padding: 10px 16px; font-weight: 600; white-space: nowrap;">
+                  Open Full Studio View &rarr;
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD: Roaming Excel -->
+          <div class="task-card" id="card-roaming_excel">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category green">Roaming Spreadsheet</span>
+                <span class="bat-tag">run_roaming_rca.bat</span>
+              </div>
+            </div>
+            <div class="card-title">Generate Roaming Reservation Excel RCA</div>
+            <div class="card-subtitle">
+              Scrapes OCPI Roaming bookings from ElectreeFi CMS, extracts partner error codes, failure patterns, party IDs, and formats results into categorized Excel sheets.
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-sub-roaming_excel">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Roaming_Reservation_RCA.xlsx
+              </div>
+              <div class="file-chip" id="chip-sub-roaming_excel_all">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Roaming_Reservation_RCA_All_Records.xlsx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary green" onclick="runTask('roaming_excel')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Generate Roaming Excel
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_Roaming_Reservation_RCA.xlsx')">Open Excel</button>
+            </div>
+          </div>
+
+          <!-- CARD: Roaming Charger & Station RCA -->
+          <div class="task-card" id="card-roaming_charger_rca">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category emerald">Charger & Station Audit</span>
+                <span class="bat-tag">run_roaming_charger_rca.bat</span>
+              </div>
+            </div>
+            <div class="card-title">Generate Roaming Charger & Station RCA (Excel - IOC, MPC & ELC Focus)</div>
+            <div class="card-subtitle">
+              Calculates granular Success Rate (&ge;1kWh) and Failure Rate (&lt;1kWh + Cancelled) charger-wise & station-wise strictly for IOC (IOCL Roaming PROD), MPC (CHARGE_iN), and ELC (Electreefi), with complete Fault Attribution and Hardware correlation.
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-sub-roaming_charger_excel">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Roaming_Charger_Wise_RCA.xlsx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary green" onclick="runTask('roaming_charger_rca')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Generate Charger RCA
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_Roaming_Charger_Wise_RCA.xlsx')">Open Excel</button>
+            </div>
+          </div>
+
+          <!-- CARD: Roaming Word -->
+          <div class="task-card" id="card-roaming_word">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category green">Executive Document</span>
+                <span class="bat-tag">generate_roaming_word_report.bat</span>
+              </div>
+            </div>
+            <div class="card-title">Generate Roaming Reservation Word Report (.docx)</div>
+            <div class="card-subtitle">
+              Generates an executive-level RCA Word document evaluating OCPI partner success rates, error codes, and technical recommendations.
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-sub-roaming_word">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_Roaming_Reservation_RCA_Report.docx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary green" onclick="runTask('roaming_word')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Generate Roaming Word Report
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_Roaming_Reservation_RCA_Report.docx')">Open Word</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- TAB: UPLOAD EXCEL & GENERATE IN-DETAIL WORD RCA         -->
+      <!-- ======================================================== -->
+      <div class="tab-pane" id="pane-upload_rca">
+        <!-- Banner -->
+        <div class="section-banner" style="background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); border-color: #047857;">
+          <div>
+            <div class="banner-title" style="color: #6ee7b7;">
+              <svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+              Upload Roaming Reservations Excel &rarr; In-Detail Word RCA
+            </div>
+            <div class="banner-desc" style="color: #a7f3d0;">
+              End-to-end automated audit for uploaded OCPI Roaming Excel files (Completed &amp; Cancelled). Extracts timing via the <b>"Manage"</b> button, resolves <b>Roaming UID &rarr; Physical EvseId</b> via Charging Points, queries CPO logs for party IDs (<b>IOC</b>, <b>MPC</b>, <b>ELC</b>), and synthesizes an executive Word report (.docx).
+            </div>
+          </div>
+          <div class="banner-btn-group">
+            <button class="btn-secondary" onclick="document.getElementById('excelFileInput').click()" style="background: #ffffff; color: #065f46; font-weight: 700;">
+              <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+              Upload Excel (.xlsx)
+            </button>
+          </div>
+        </div>
+
+        <!-- 4-STEP PIPELINE ARCHITECTURE BADGES -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 18px; box-shadow: var(--shadow-sm);">
+          <div class="pipeline-step-badge highlight">
+            <span style="background: #0284c7; color: #fff; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;">1</span>
+            Excel Ingestion (.xlsx)
+          </div>
+          <span style="color: #94a3b8;">&rarr;</span>
+          <div class="pipeline-step-badge highlight">
+            <span style="background: #0284c7; color: #fff; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;">2</span>
+            "Manage" Button Telemetry
+          </div>
+          <span style="color: #94a3b8;">&rarr;</span>
+          <div class="pipeline-step-badge highlight">
+            <span style="background: #0284c7; color: #fff; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;">3</span>
+            UID &rarr; Physical EVSE ID Resolution
+          </div>
+          <span style="color: #94a3b8;">&rarr;</span>
+          <div class="pipeline-step-badge highlight">
+            <span style="background: #0284c7; color: #fff; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;">4</span>
+            CPO Log Query &amp; Word RCA (.docx)
+          </div>
+        </div>
+
+        <!-- MAIN SPLIT CARDS: 1. UPLOAD ZONE, 2. PARTNER PORTALS -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+          <!-- CARD 1: EXCEL FILE UPLOAD -->
+          <div class="task-card" style="min-height: 280px;">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category green">Step 1: Excel Ingest</span>
+                <span class="bat-tag">.xlsx supported</span>
+              </div>
+            </div>
+            <div class="card-title">Upload Roaming Reservations Excel (Dual-File Supported)</div>
+            <div class="card-subtitle">
+              Upload exported spreadsheets from Roaming &rarr; Reservations (one for Cancelled sessions, and optionally one for Completed sessions). Focuses strictly on <b>IOC</b>, <b>VIN</b>, and <b>MPC</b>.
+            </div>
+
+            <!-- Dual Dropzone Buttons -->
+            <input type="file" id="excelFileInputCancelled" accept=".xlsx" style="display: none;" onchange="handleExcelFileSelect(this.files, 'cancelled')" />
+            <input type="file" id="excelFileInputCompleted" accept=".xlsx" style="display: none;" onchange="handleExcelFileSelect(this.files, 'completed')" />
+            <input type="file" id="excelFileInput" accept=".xlsx" style="display: none;" onchange="handleExcelFileSelect(this.files, 'auto')" />
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+              <!-- Dropzone 1: Cancelled Sessions -->
+              <div class="upload-dropzone" id="uploadDropzoneCancelled" onclick="document.getElementById('excelFileInputCancelled').click()" ondragover="handleDragOver(event, 'cancelled')" ondragleave="handleDragLeave(event, 'cancelled')" ondrop="handleFileDrop(event, 'cancelled')" style="padding: 14px 10px; min-height: 120px;">
+                <div class="upload-dropzone-icon" style="width: 38px; height: 38px; background: rgba(239, 68, 68, 0.1); color: var(--danger);">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); text-align: center;" id="uploadDropzoneCancelledText">
+                  1. Cancelled Sessions (.xlsx)
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); text-align: center;" id="cancelledFileStatus">
+                  Click or drag file here
+                </div>
+              </div>
+
+              <!-- Dropzone 2: Completed Sessions -->
+              <div class="upload-dropzone" id="uploadDropzoneCompleted" onclick="document.getElementById('excelFileInputCompleted').click()" ondragover="handleDragOver(event, 'completed')" ondragleave="handleDragLeave(event, 'completed')" ondrop="handleFileDrop(event, 'completed')" style="padding: 14px 10px; min-height: 120px;">
+                <div class="upload-dropzone-icon" style="width: 38px; height: 38px; background: rgba(16, 185, 129, 0.1); color: var(--brand-green);">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); text-align: center;" id="uploadDropzoneCompletedText">
+                  2. Completed Sessions (.xlsx)
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); text-align: center;" id="completedFileStatus">
+                  Click or drag file here (auto-discards &ge; 1 kWh)
+                </div>
+              </div>
+            </div>
+
+            <!-- Single Combined File Link -->
+            <div style="text-align: center; margin-top: 8px;">
+              <span style="font-size: 11px; color: var(--text-muted);">Or upload a single combined file: </span>
+              <a href="javascript:void(0)" onclick="document.getElementById('excelFileInput').click()" style="font-size: 11px; color: var(--brand-green); font-weight: 600; text-decoration: underline;">Browse Single File</a>
+            </div>
+
+            <!-- Upload File Status Badge -->
+            <div id="uploadFileStatusArea" style="margin-top: 12px; display: none;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                <div class="upload-file-badge" id="uploadFilenameBadge">
+                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                  <span id="uploadedFilenameLabel">file.xlsx</span>
+                </div>
+              </div>
+
+              <!-- Metrics Strip -->
+              <div class="summary-metrics-strip" id="uploadMetricsStrip">
+                <div class="summary-metric-card">
+                  <span class="summary-metric-title">Total Records</span>
+                  <span class="summary-metric-value" id="metricTotalRows">-</span>
+                </div>
+                <div class="summary-metric-card">
+                  <span class="summary-metric-title">Target Parties</span>
+                  <span class="summary-metric-value" style="font-size: 13px;" id="metricParties">-</span>
+                </div>
+                <div class="summary-metric-card">
+                  <span class="summary-metric-title">Completed (&ge;1kWh)</span>
+                  <span class="summary-metric-value" style="color: var(--brand-green);" id="metricCompleted">-</span>
+                </div>
+                <div class="summary-metric-card">
+                  <span class="summary-metric-title">Cancelled</span>
+                  <span class="summary-metric-value" style="color: var(--danger);" id="metricCancelled">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 2: CPO PARTNER PORTALS CREDENTIALS -->
+          <div class="task-card" style="min-height: 280px;">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category amber">Step 2: CPO Credentials</span>
+                <span class="bat-tag">data/partner_portals.json</span>
+              </div>
+              <button class="btn-secondary" onclick="savePartnerPortalsConfig()" style="font-size: 11.5px; padding: 4px 10px;">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                Save Credentials
+              </button>
+            </div>
+            <div class="card-title">CPO Portals &amp; Log Credentials (IOC, VIN, MPC)</div>
+            <div class="card-subtitle">
+              Configure URLs and logins for each CPO party ID (IOC, VIN, MPC) so the analyzer can search physical OCPP logs using the resolved physical EvseId.
+            </div>
+
+            <!-- Partner Portals Table -->
+            <div style="overflow-x: auto; max-height: 240px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+                <thead style="background: #f1f5f9; border-bottom: 1px solid var(--border-color); font-weight: 700; color: var(--text-muted);">
+                  <tr>
+                    <th style="padding: 7px 10px; width: 65px;">Party ID</th>
+                    <th style="padding: 7px 10px;">Portal CMS URL</th>
+                    <th style="padding: 7px 10px; width: 100px;">Username</th>
+                    <th style="padding: 7px 10px; width: 100px;">Password</th>
+                    <th style="padding: 7px 10px; width: 70px; text-align: center;">CMS Login</th>
+                    <th style="padding: 7px 10px; width: 45px; text-align: center;">Active</th>
+                  </tr>
+                </thead>
+                <tbody id="partnerPortalsTableBody">
+                  <!-- Rendered dynamically by loadPartnerPortals() -->
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+              <button class="btn-secondary" onclick="addPartnerPortalRow()" style="font-size: 11px; padding: 4px 8px;">
+                + Add Party ID
+              </button>
+              <span style="font-size: 11px; color: var(--text-muted);">Saved automatically to data/partner_portals.json</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PREVIEW INGESTED DATA TABLE (COLLAPSIBLE) -->
+        <div id="ingestedDataPreviewArea" style="display: none; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clip-rule="evenodd"></path></svg>
+              Parsed Ingestion Sample (First 6 Records)
+            </div>
+            <span style="font-size: 11px; color: var(--text-muted);" id="previewRecordsCountText">Showing sample</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+              <thead style="background: #f8fafc; border-bottom: 1px solid var(--border-color); font-weight: 700; color: var(--text-muted);">
+                <tr>
+                  <th style="padding: 6px 10px;">Booking ID</th>
+                  <th style="padding: 6px 10px;">Roaming UID / Charger Code</th>
+                  <th style="padding: 6px 10px;">Gun / Connector</th>
+                  <th style="padding: 6px 10px;">Party</th>
+                  <th style="padding: 6px 10px;">Station / Location</th>
+                  <th style="padding: 6px 10px;">In-Time</th>
+                  <th style="padding: 6px 10px; text-align: right;">Energy (kWh)</th>
+                  <th style="padding: 6px 10px;">Session Type</th>
+                </tr>
+              </thead>
+              <tbody id="ingestedPreviewTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- STEP 3: ACTION & GENERATION PANEL -->
+        <div class="task-card" style="background: linear-gradient(to right, #ffffff, #f0fdf4); border: 1.5px solid #86efac;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="font-size: 16px; font-weight: 800; color: #065f46; display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clip-rule="evenodd"></path></svg>
+                Generate In-Detail Word &amp; Excel RCA Reports
+              </div>
+              <div style="font-size: 12.5px; color: var(--text-muted); max-width: 680px;">
+                Runs the complete pipeline: queries "Manage" button timing &amp; OCPI responses, resolves Roaming UID &rarr; EVSE ID, fetches CPO logs (IOC, VIN, MPC), classifies 4-quadrant attribution, and outputs both <code>ElectreeFi_Uploaded_Roaming_RCA_Report.docx</code> and <code>ElectreeFi_Uploaded_Roaming_RCA_Report.xlsx</code> (100% Production-Safe).
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <button class="btn-primary green" id="btnRunUploadedRca" onclick="executeUploadedRoamingRCA()" style="padding: 12px 22px; font-size: 14px; font-weight: 700; box-shadow: var(--shadow-md);">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Run Roaming RCA Pipeline
+              </button>
+              <button class="btn-secondary" id="btnOpenUploadedWord" onclick="openFile('ElectreeFi_Uploaded_Roaming_RCA_Report.docx')" style="padding: 11px 15px; font-weight: 600;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path></svg>
+                Open Word (.docx)
+              </button>
+              <button class="btn-secondary" id="btnDownloadUploadedWord" onclick="downloadUploadedWordDoc()" style="padding: 11px 15px; font-weight: 600;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Download (.docx)
+              </button>
+              <button class="btn-secondary" id="btnOpenUploadedExcel" onclick="openFile('ElectreeFi_Uploaded_Roaming_RCA_Report.xlsx')" style="padding: 11px 15px; font-weight: 600; color: #047857; border-color: #86efac;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clip-rule="evenodd"></path></svg>
+                Open Excel (.xlsx)
+              </button>
+              <button class="btn-secondary" id="btnDownloadUploadedExcel" onclick="downloadUploadedExcelDoc()" style="padding: 11px 15px; font-weight: 600; color: #047857; border-color: #86efac;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Download (.xlsx)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: 30-DAY OCPI DEEP DIVE -->
+      <div class="tab-pane" id="pane-deepdive">
+        <div class="task-cards-grid">
+          <!-- CARD: 30-Day OCPI Excel -->
+          <div class="task-card" id="card-ocpi_deep_excel">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category indigo">30-Day Analytics</span>
+                <span class="bat-tag">generate_ocpi_excel_analysis.py</span>
+              </div>
+            </div>
+            <div class="card-title">Generate 30-Day OCPI Roaming Metrics Excel</div>
+            <div class="card-subtitle">
+              Processes 30 days of OCPI data to generate high-resolution pivot sheets, partner-by-partner success metrics, manufacturer stats, and failure distribution.
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-ocpi_metrics_excel">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_OCPI_Roaming_Metrics_Analysis.xlsx
+              </div>
+              <div class="file-chip" id="chip-ocpi_metrics_30d_excel">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_OCPI_Roaming_Metrics_Analysis_30Days.xlsx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary indigo" onclick="runTask('ocpi_deep_excel')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Generate 30-Day Metrics Excel
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_OCPI_Roaming_Metrics_Analysis_30Days.xlsx')">Open Excel</button>
+            </div>
+          </div>
+
+          <!-- CARD: OCPI Deep Dive Word -->
+          <div class="task-card" id="card-ocpi_deep_word">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="badge-category indigo">In-Depth Document</span>
+                <span class="bat-tag">generate_ocpi_word_analysis.py</span>
+              </div>
+            </div>
+            <div class="card-title">Generate OCPI Deep Dive Word Analysis Document</div>
+            <div class="card-subtitle">
+              Generates an exhaustive technical Word report with manufacturer tables, station uptime, partner error heatmaps, and mitigation blueprints.
+            </div>
+            <div class="card-files-status">
+              <div class="file-chip" id="chip-ocpi_deep_dive_word">
+                <div class="file-chip-dot"></div>
+                ElectreeFi_OCPI_Roaming_Deep_Dive_Analysis.docx
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary indigo" onclick="runTask('ocpi_deep_word')">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                Generate Deep Dive Word Doc
+              </button>
+              <button class="btn-secondary" onclick="openFile('ElectreeFi_OCPI_Roaming_Deep_Dive_Analysis.docx')">Open Word</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: DELIVERABLES & FILE HUB -->
+      <div class="tab-pane" id="pane-deliverables">
+        <div class="table-card">
+          <div class="table-header-bar">
+            <div class="table-title">Generated RCA Workbooks &amp; Executive Reports</div>
+            <button class="btn-secondary" onclick="openFolder()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+              Open Output Folder in Explorer
+            </button>
+          </div>
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Document / Report</th>
+                <th>Category</th>
+                <th>Size</th>
+                <th>Last Modified</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="filesTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 6: CMS LOGIN & SESSION -->
+      <div class="tab-pane" id="pane-session">
+        <div class="task-card" style="max-width: 780px;">
+          <div class="card-top">
+            <div class="card-badge-row">
+              <span class="badge-category amber">Portal Gateway</span>
+              <span class="bat-tag">login.bat</span>
+            </div>
+          </div>
+          <div class="card-title">ElectreeFi CMS Interactive Login</div>
+          <div class="card-subtitle">
+            Launches a visible Chromium browser window directly to <code>https://cms.ev-charge-network.com</code>. Pre-fills operator credentials and waits for you to solve the CAPTCHA and submit your Email OTP. The authentication cookies and tokens are automatically captured and saved to disk.
+          </div>
+          <div class="card-files-status">
+            <div class="file-chip" id="chip-session-file">
+              <div class="file-chip-dot"></div>
+              data/session_state.json
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-primary amber" onclick="runTask('cms_login')">
+              <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2a1 1 0 102 0V7a5 5 0 00-5-5z" clip-rule="evenodd"></path></svg>
+              Launch Interactive Login Window
+            </button>
+            <button class="btn-secondary" onclick="openExternalUrl('https://cms.ev-charge-network.com')">Visit Portal in Browser</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LIVE DOCKED TERMINAL -->
+    <div class="terminal-drawer" id="terminalDrawer">
+      <div class="terminal-header">
+        <div class="terminal-title-area">
+          <div class="terminal-status-dot" id="termDot"></div>
+          <span class="terminal-heading">Live Automation Terminal</span>
+          <span class="terminal-active-task" id="termTaskName">Idle</span>
+          <span class="terminal-timer" id="termTimer">00:00</span>
+        </div>
+        <div class="terminal-controls">
+          <button class="term-btn abort" id="termAbortBtn" onclick="stopTask()" disabled>
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg>
+            Abort Task
+          </button>
+          <button class="term-btn" onclick="clearTerminal()">Clear</button>
+          <button class="term-btn" onclick="toggleTerminalSize()">Size</button>
+        </div>
+      </div>
+      <div class="terminal-body" id="terminalBody">
+        <div class="log-empty-state">Ready. Click any action button above to launch an RCA automation workflow.</div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    let currentTab = 'search'; // Default to Booking Deep Dive
+    let isRunning = false;
+    let logNextIndex = 0;
+    let logPollTimer = null;
+    let statusPollTimer = null;
+    let terminalState = 'normal';
+
+    // Date Range State matching ElectreeFi CMS
+    let dateRangeState = {
+      preset: 'last7',
+      startDate: '',
+      endDate: ''
+    };
+
+    let latestInvestigationData = null;
+
+    function initDateRange() {
+      selectDatePreset('last7');
+    }
+
+    function formatDateDisplay(d) {
+      const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    }
+
+    function formatIsoDate(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function selectDatePreset(preset) {
+      dateRangeState.preset = preset;
+      const today = new Date();
+      let start = new Date();
+      let end = new Date();
+
+      if (preset === 'today') {
+        start = new Date(today);
+        end = new Date(today);
+      } else if (preset === 'yesterday') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end = new Date(start);
+      } else if (preset === 'last7') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 7);
+        end = new Date(today);
+      } else if (preset === 'last15') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 15);
+        end = new Date(today);
+      } else if (preset === 'last30') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 30);
+        end = new Date(today);
+      } else if (preset === 'thisMonth') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today);
+      } else if (preset === 'lastMonth') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+      } else if (preset === 'custom') {
+        document.getElementById('customDateInputs').style.display = 'flex';
+        return;
+      }
+
+      document.getElementById('customDateInputs').style.display = 'none';
+      dateRangeState.startDate = formatIsoDate(start);
+      dateRangeState.endDate = formatIsoDate(end);
+
+      document.getElementById('dateRangeDisplay').textContent = `${formatDateDisplay(start)} - ${formatDateDisplay(end)}`;
+
+      document.querySelectorAll('.preset-item').forEach(el => {
+        el.classList.toggle('active', el.textContent.toLowerCase().replace(/\s+/g, '') === preset.toLowerCase());
+      });
+
+      closeDateRangeDropdown();
+    }
+
+    function toggleDateRangeDropdown() {
+      const menu = document.getElementById('daterangeDropdown');
+      menu.classList.toggle('show');
+    }
+
+    function closeDateRangeDropdown() {
+      const menu = document.getElementById('daterangeDropdown');
+      menu.classList.remove('show');
+    }
+
+    function applyCustomRange() {
+      const s = document.getElementById('customStartDate').value;
+      const e = document.getElementById('customEndDate').value;
+      if (!s || !e) {
+        showToast('Please select both start and end dates', 'error');
+        return;
+      }
+      dateRangeState.startDate = s;
+      dateRangeState.endDate = e;
+      const dStart = new Date(s);
+      const dEnd = new Date(e);
+      document.getElementById('dateRangeDisplay').textContent = `${formatDateDisplay(dStart)} - ${formatDateDisplay(dEnd)}`;
+      closeDateRangeDropdown();
+    }
+
+    // Close dropdown when clicked outside
+    window.addEventListener('click', (e) => {
+      const btn = document.getElementById('daterange-btn');
+      const menu = document.getElementById('daterangeDropdown');
+      if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+        closeDateRangeDropdown();
+      }
+    });
+
+    function setQuickBooking(id) {
+      document.getElementById('bookingIdInput').value = id;
+      executeBookingSearch();
+    }
+
+    async function executeBookingSearch() {
+      const bookingId = document.getElementById('bookingIdInput').value.trim();
+      if (!bookingId) {
+        showToast('Please enter a Booking ID to investigate', 'error');
+        return;
+      }
+
+      const outputArea = document.getElementById('investigationOutputArea');
+      const searchBtn = document.getElementById('searchSubmitBtn');
+
+      searchBtn.disabled = true;
+      outputArea.innerHTML = `
+        <div class="loading-pulse-box">
+          <div class="spinner-circle"></div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--text-main);">Investigating Booking #${bookingId}</div>
+          <div style="font-size: 12.5px; color: var(--text-muted);">
+            Querying ElectreeFi Cancelled &amp; Completed (&lt;1kW) records, matching central OCPP transactions, and parsing telemetry logs...
+          </div>
+        </div>
+      `;
+
+      try {
+        const res = await fetch('/api/search-booking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            booking_id: bookingId,
+            start_date: dateRangeState.startDate,
+            end_date: dateRangeState.endDate
+          })
+        });
+
+        const data = await res.json();
+        searchBtn.disabled = false;
+
+        if (!data.success || !data.found) {
+          outputArea.innerHTML = `
+            <div class="attribution-hero charger">
+              <div class="attribution-badge-bar">
+                <span class="attribution-pill-tag charger">Booking Not Found</span>
+                <span style="font-size: 12px; color: var(--text-muted);">Date Range: ${dateRangeState.startDate} to ${dateRangeState.endDate}</span>
+              </div>
+              <div class="rca-title-main" style="color: #b91c1c;">No Record Matching Booking ID #${bookingId}</div>
+              <div class="rca-narrative-box">
+                ${data.message || 'The specified Booking ID was not found in Cancelled or Completed (<1kWh) records within the current date range.'}
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);">
+                Tip: Try expanding the Date Range to <strong>Last 30 Days</strong> or verify that the Booking ID was recorded under ElectreeFi.
+              </div>
+            </div>
+          `;
+          showToast(data.message || 'Booking not found in date range', 'error');
+          return;
+        }
+
+        latestInvestigationData = data;
+        renderInvestigationResult(data);
+        showToast(`Investigation complete for Booking #${bookingId}`, 'success');
+
+      } catch (err) {
+        searchBtn.disabled = false;
+        outputArea.innerHTML = `
+          <div class="attribution-hero charger">
+            <div class="rca-title-main" style="color: #b91c1c;">Investigation Request Failed</div>
+            <div class="rca-narrative-box">${err.message}</div>
+          </div>
+        `;
+        showToast(`Error: ${err.message}`, 'error');
+      }
+    }
+
+    function renderInvestigationResult(data) {
+      const b = data.booking;
+      const tx = data.transaction;
+      const rca = data.rca;
+      const logs = data.logs || [];
+
+      // Determine attribution styling class
+      let heroClass = 'vehicle';
+      let pillClass = 'vehicle';
+      let iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H11a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H20a1 1 0 001-1V9.5a1.5 1.5 0 00-.44-1.06l-3-3A1.5 1.5 0 0016.5 5H13V4a1 1 0 00-1-1H3z"></path></svg>';
+
+      const attrUpper = (rca.attribution || '').toUpperCase();
+      if (attrUpper.includes('CHARGER') || attrUpper.includes('HARDWARE') || attrUpper.includes('ISOLATION')) {
+        heroClass = 'charger';
+        pillClass = 'charger';
+        iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>';
+      } else if (attrUpper.includes('USER') || attrUpper.includes('OPERATOR')) {
+        heroClass = 'user';
+        pillClass = 'user';
+        iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
+      } else if (attrUpper.includes('NETWORK') || attrUpper.includes('CMS') || attrUpper.includes('GATEWAY')) {
+        heroClass = 'network';
+        pillClass = 'network';
+        iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A1 1 0 01.808 6.808c5.076-5.077 13.308-5.077 18.384 0a1 1 0 01-1.414 1.414zM14.95 11.05a7 7 0 00-9.9 0 1 1 0 01-1.414-1.414 9 9 0 0112.728 0 1 1 0 01-1.414 1.414zM12.12 13.88a3 3 0 00-4.242 0 1 1 0 01-1.415-1.415 5 5 0 017.072 0 1 1 0 01-1.415 1.415zM9 16a1 1 0 112 0 1 1 0 01-2 0z" clip-rule="evenodd"></path></svg>';
+      }
+
+      // Format timeline rows
+      let timelineRowsHtml = '';
+      if (logs.length > 0) {
+        logs.forEach(log => {
+          let tagClass = 'other';
+          const ev = (log.event || '').toLowerCase();
+          if (ev.includes('start')) tagClass = 'start';
+          else if (ev.includes('stop')) tagClass = 'stop';
+          else if (ev.includes('status')) tagClass = 'status';
+
+          // Status column badge
+          let statusHtml = '<span style="color: #94a3b8;">-</span>';
+          if (log.status) {
+            const s = log.status.toLowerCase();
+            if (s === 'suspendedev') {
+              statusHtml = '<span class="status-pill suspended-ev">SuspendedEV</span>';
+            } else if (s === 'suspendedevse') {
+              statusHtml = '<span class="status-pill suspended-evse">SuspendedEVSE</span>';
+            } else if (s === 'faulted') {
+              statusHtml = '<span class="status-pill faulted">Faulted</span>';
+            } else if (s === 'preparing') {
+              statusHtml = '<span class="status-pill preparing">Preparing</span>';
+            } else if (s === 'charging') {
+              statusHtml = '<span class="status-pill charging">Charging</span>';
+            } else if (s === 'finishing') {
+              statusHtml = '<span class="status-pill finishing">Finishing</span>';
+            } else {
+              statusHtml = `<span class="status-pill other">${escapeHtml(log.status)}</span>`;
+            }
+          }
+
+          // Error code badge
+          let errHtml = '<span style="color: #64748b; font-size: 11.5px;">NoError</span>';
+          if (log.error_code && log.error_code.toLowerCase() !== 'noerror') {
+            errHtml = `<span class="error-pill">${escapeHtml(log.error_code)}</span>`;
+          }
+
+          // Info badge
+          let infoHtml = '<span style="color: #94a3b8;">-</span>';
+          if (log.info) {
+            const isBenign = log.info.toLowerCase().includes('gsm') || !isNaN(log.info);
+            if (isBenign) {
+              infoHtml = `<span style="color: #94a3b8; font-size: 11px;">${escapeHtml(log.info)}</span>`;
+            } else {
+              infoHtml = `<span class="info-pill-highlight">${escapeHtml(log.info)}</span>`;
+            }
+          }
+
+          timelineRowsHtml += `
+            <tr>
+              <td style="font-family: monospace; font-size: 11.5px; color: var(--text-muted); white-space: nowrap;">${log.timestamp || '-'}</td>
+              <td><span class="ocpp-tag ${tagClass}">${escapeHtml(log.event || 'Unknown')}</span></td>
+              <td><span class="dir-badge">${escapeHtml(log.type || '-')}</span></td>
+              <td style="font-weight: 600;">Gun ${log.connector_id !== null && log.connector_id !== undefined ? log.connector_id : '-'}</td>
+              <td>${statusHtml}</td>
+              <td>${errHtml}</td>
+              <td>${infoHtml}</td>
+              <td><div class="raw-payload-cell" ondblclick="copyCellPayload(this)" title="Double click to copy raw message payload">${escapeHtml(log.raw || '')}</div></td>
+            </tr>
+          `;
+        });
+      } else {
+        timelineRowsHtml = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 18px;">No raw OCPP logs recorded around this booking timestamp.</td></tr>';
+      }
+
+      const outputArea = document.getElementById('investigationOutputArea');
+      outputArea.innerHTML = `
+        <div class="investigation-container">
+          
+          <!-- HERO FAULT ATTRIBUTION CARD -->
+          <div class="attribution-hero ${heroClass}">
+            <div class="attribution-badge-bar">
+              <span class="attribution-pill-tag ${pillClass}">
+                ${iconSvg}
+                FAULT ATTRIBUTION: ${rca.attribution}
+              </span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge-category slate">Confidence: ${rca.confidence}</span>
+                <span class="badge-category ${b.session_type === 'Cancelled' ? 'amber' : 'blue'}">${b.session_type}</span>
+                <span class="badge-category emerald" style="font-family: monospace; font-size: 11.5px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; font-weight: 700; padding: 3px 8px; border-radius: 4px;" title="Network & Engine Telemetry">
+                  ⚡ ${data.cached ? 'Instant Cache (0 Hits • 0.2ms)' : `${data.hits_count || 1} API Hits • ${data.latency_ms || 350}ms`}
+                </span>
+                <button class="btn-secondary" style="padding: 5px 10px; font-size: 11.5px;" onclick="copyRcaReport()">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                  Copy RCA Dossier
+                </button>
+              </div>
+            </div>
+
+            <div class="rca-title-main">${rca.root_cause}</div>
+
+            <!-- DETECTED FAULT FIELD CALLOUT -->
+            <div class="detected-field-banner">
+              <span class="detected-field-title">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                Primary Root Cause Field:
+              </span>
+              <span class="detected-field-pill">${escapeHtml(rca.detected_field || '-')}</span>
+              <span class="detected-field-loc">Location in Logs: <code>${escapeHtml(rca.error_location || '-')}</code></span>
+            </div>
+
+            <div class="rca-narrative-box">
+              <strong>What Most Appropriately Went Wrong</strong>
+              ${rca.narrative}
+            </div>
+
+            <div class="rca-action-box">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+              <div><strong>Recommended Action:</strong> ${rca.action_item}</div>
+            </div>
+          </div>
+
+          <!-- 2-COLUMN DETAILS GRID -->
+          <div class="dossier-two-col">
+            <!-- COLUMN 1: BOOKING & VEHICLE INFO -->
+            <div class="info-panel">
+              <div class="panel-heading">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
+                Booking &amp; Vehicle Telemetry
+              </div>
+              <div class="kv-grid">
+                <div class="kv-item">
+                  <span class="kv-k">Booking ID</span>
+                  <span class="kv-v highlight-blue">#${b.booking_id}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Status</span>
+                  <span class="kv-v">${b.status}</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Station Name</span>
+                  <span class="kv-v">${b.station_name}</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Station Address</span>
+                  <span class="kv-v" style="font-weight: 500; font-size: 12px; color: var(--text-muted);">${b.station_address || `${b.city}, ${b.state}`}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Charger Code</span>
+                  <span class="kv-v" style="font-family: monospace;">${b.charger_code}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Connector Gun</span>
+                  <span class="kv-v">Gun #${b.connector_id} (${b.connector_type})</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Vehicle Model</span>
+                  <span class="kv-v">${b.vehicle_make} ${b.vehicle_model}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Vehicle Reg</span>
+                  <span class="kv-v" style="font-family: monospace;">${b.vehicle_number}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">User Name</span>
+                  <span class="kv-v">${b.user_name}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Mobile Number</span>
+                  <span class="kv-v">${b.mobile}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Energy Consumed</span>
+                  <span class="kv-v highlight-danger">${b.energy_consumed_kwh.toFixed(3)} kWh</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Payment / Refund</span>
+                  <span class="kv-v">Rs. ${b.payment_received} / Rs. ${b.refunded_amount}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Booking In Time</span>
+                  <span class="kv-v">${b.booking_in_time}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Booking Out Time</span>
+                  <span class="kv-v">${b.booking_out_time}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMN 2: TRANSACTION & OCPP DETAILS -->
+            <div class="info-panel">
+              <div class="panel-heading">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+                Central Transaction &amp; Meter Readings
+              </div>
+              <div class="kv-grid">
+                <div class="kv-item">
+                  <span class="kv-k">Transaction ID</span>
+                  <span class="kv-v highlight-blue" style="font-family: monospace;">
+                    ${tx ? '#' + tx.transaction_pk : 'None Assigned (Cancelled)'}
+                    <span style="font-size: 11.5px; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 2px 7px; border-radius: 4px; margin-left: 6px; display: inline-block;">ID Tag: ${b.id_tag && b.id_tag !== '-' ? b.id_tag : (tx && tx.id_tag ? tx.id_tag : '-')}</span>
+                  </span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">ID Tag (Auth / RFID Tag)</span>
+                  <span class="kv-v highlight-blue" style="font-family: monospace; font-size: 13.5px; font-weight: 700;">${b.id_tag && b.id_tag !== '-' ? b.id_tag : (tx && tx.id_tag ? tx.id_tag : '-')}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Booking Mode</span>
+                  <span class="kv-v">${b.booking_mode}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Charger Stop Reason</span>
+                  <span class="kv-v highlight-danger">${(tx && tx.stop_reason) ? tx.stop_reason : (b.stop_reason_booking || 'None')}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Server Stop Trigger</span>
+                  <span class="kv-v">${(tx && tx.response_message) ? tx.response_message : (b.stop_trigger_booking || 'None')}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Start Meter Reading</span>
+                  <span class="kv-v" style="font-family: monospace;">${tx ? tx.start_value : '0'}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Stop Meter Reading</span>
+                  <span class="kv-v" style="font-family: monospace;">${tx ? tx.stop_value : '0'}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Initial SOC / Final SOC</span>
+                  <span class="kv-v">${b.initial_soc}% / ${b.final_soc}%</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Battery Capacity</span>
+                  <span class="kv-v">${b.battery_capacity} kWh</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Transaction Start Timestamp</span>
+                  <span class="kv-v">${tx ? tx.start_timestamp : '-'}</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Transaction Stop Timestamp</span>
+                  <span class="kv-v">${tx ? tx.stop_timestamp : '-'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TIMELINE OF OCPP MESSAGES -->
+          <div class="timeline-card">
+            <div class="timeline-header-bar">
+              <div class="timeline-title">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
+                Chronological OCPP Event Timeline (${logs.length} messages captured)
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <span style="font-size: 12px; font-weight: 600; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 3px 9px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                  Slide bottom bar to navigate &rarr;
+                </span>
+                <span style="font-size: 11.5px; color: var(--text-muted);">Connector #${b.connector_id} • Charger ID: ${b.charger_id}</span>
+              </div>
+            </div>
+            <div class="timeline-table-wrapper" id="timelineTableWrapper">
+              <table class="timeline-table">
+                <thead>
+                  <tr>
+                    <th style="min-width: 175px;">Timestamp</th>
+                    <th style="min-width: 155px;">Event Name</th>
+                    <th style="min-width: 95px;">Direction</th>
+                    <th style="min-width: 80px;">Gun</th>
+                    <th style="min-width: 130px;">Status (status)</th>
+                    <th style="min-width: 140px;">Error (errorCode)</th>
+                    <th style="min-width: 160px;">Info (info)</th>
+                    <th style="min-width: 440px; max-width: 620px;">Raw Message Payload</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${timelineRowsHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- DEDICATED SLIDING BAR & CONTROL BAR AT THE BOTTOM -->
+            <div class="timeline-slider-bar">
+              <button type="button" class="slider-nav-btn" onclick="scrollTimelineRelative(-220)" title="Scroll Left (←)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Scroll Left
+              </button>
+
+              <div class="slider-track-container">
+                <span class="slider-label">Metadata</span>
+                <input type="range" class="timeline-range-slider" id="timelineRangeSlider" min="0" max="100" value="0" step="1" oninput="onTimelineSliderInput(this.value)" title="Slide to pan horizontally across timeline columns">
+                <span class="slider-label">Payload &rarr;</span>
+              </div>
+
+              <button type="button" class="slider-nav-btn" onclick="scrollTimelineRelative(220)" title="Scroll Right (→)">
+                Scroll Right
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      initTimelineSliderSync();
+    }
+
+    function scrollTimelineRelative(delta) {
+      const wrapper = document.getElementById('timelineTableWrapper');
+      if (!wrapper) return;
+      wrapper.scrollBy({ left: delta, behavior: 'smooth' });
+    }
+
+    function onTimelineSliderInput(val) {
+      const wrapper = document.getElementById('timelineTableWrapper');
+      if (!wrapper) return;
+      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+      if (maxScroll > 0) {
+        wrapper.scrollLeft = (val / 100) * maxScroll;
+      }
+    }
+
+    function initTimelineSliderSync() {
+      const wrapper = document.getElementById('timelineTableWrapper');
+      const slider = document.getElementById('timelineRangeSlider');
+      if (!wrapper || !slider) return;
+
+      wrapper.addEventListener('scroll', () => {
+        const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+        if (maxScroll > 0) {
+          const pct = (wrapper.scrollLeft / maxScroll) * 100;
+          slider.value = Math.round(pct);
+        } else {
+          slider.value = 0;
+        }
+      });
+    }
+
+    function copyCellPayload(el) {
+      const text = el.innerText || el.textContent;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Raw OCPP message copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Could not copy payload', 'error');
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function copyRcaReport() {
+      if (!latestInvestigationData) return;
+      const b = latestInvestigationData.booking;
+      const tx = latestInvestigationData.transaction;
+      const rca = latestInvestigationData.rca;
+
+      const reportText = `===============================================================
+ELECTREEFI CMS - SINGLE BOOKING ROOT CAUSE ANALYSIS (RCA) DOSSIER
+===============================================================
+Booking ID        : #${b.booking_id}
+Session Type      : ${b.session_type}
+Station Name      : ${b.station_name} (${b.city}, ${b.state})
+Charger Code      : ${b.charger_code} (Gun #${b.connector_id} - ${b.connector_type})
+Vehicle           : ${b.vehicle_make} ${b.vehicle_model} (${b.vehicle_number})
+Driver / User     : ${b.user_name} (${b.mobile})
+Energy Consumed   : ${b.energy_consumed_kwh.toFixed(3)} kWh
+Paid / Refunded   : Rs. ${b.payment_received} / Rs. ${b.refunded_amount}
+Booking Window    : ${b.booking_in_time} -> ${b.booking_out_time}
+Transaction ID    : ${tx ? tx.transaction_pk : 'None Assigned (Cancelled)'}
+ID Tag (Auth/RFID): ${b.id_tag || (tx ? tx.id_tag : '-') || '-'}
+Charger StopReason: ${(tx && tx.stop_reason) ? tx.stop_reason : b.stop_reason_booking}
+
+---------------------------------------------------------------
+FAULT ATTRIBUTION : ${rca.attribution}
+PRIMARY ROOT CAUSE: ${rca.root_cause}
+CONFIDENCE LEVEL  : ${rca.confidence}
+DETECTED FIELD    : ${rca.detected_field || '-'} (in ${rca.error_location || '-'})
+---------------------------------------------------------------
+WHAT WENT WRONG:
+${rca.narrative}
+
+RECOMMENDED ACTION:
+${rca.action_item}
+===============================================================`;
+
+      navigator.clipboard.writeText(reportText).then(() => {
+        showToast('RCA Dossier copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Could not copy report to clipboard', 'error');
+      });
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+      toast.innerHTML = `
+        <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+          ${type === 'error' 
+            ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>'
+            : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>'
+          }
+        </svg>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.4s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 400);
+      }, 4000);
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      document.querySelectorAll('.cms-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+      });
+      document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        let match = false;
+        if (tabId === 'search' && text.includes('booking rca deep dive')) match = true;
+        if (tabId === 'pipelines' && text.includes('full pipeline')) match = true;
+        if (tabId === 'regular' && text.includes('regular bookings')) match = true;
+        if (tabId === 'roaming' && text.includes('roaming rca')) match = true;
+        if (tabId === 'upload_rca' && text.includes('upload excel')) match = true;
+        if (tabId === 'deepdive' && text.includes('30-day')) match = true;
+        if (tabId === 'deliverables' && text.includes('output files')) match = true;
+        if (tabId === 'session' && text.includes('cms login')) match = true;
+        item.classList.toggle('active', match);
+      });
+      document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.toggle('active', pane.id === `pane-${tabId}`);
+      });
+      if (tabId === 'upload_rca') {
+        loadPartnerPortals();
+      }
+    }
+
+    /* ======================================================== */
+    /* ======================================================== */
+    /* UPLOAD EXCEL & ROAMING WORD/EXCEL RCA JAVASCRIPT HANDLERS*/
+    /* ======================================================== */
+    let currentUploadedFiles = {
+      cancelled: null,
+      completed: null
+    };
+    let currentPartnerPortals = {};
+
+    function handleDragOver(e, fileType) {
+      e.preventDefault();
+      e.stopPropagation();
+      let targetId = 'uploadDropzone';
+      if (fileType === 'cancelled') targetId = 'uploadDropzoneCancelled';
+      else if (fileType === 'completed') targetId = 'uploadDropzoneCompleted';
+      const el = document.getElementById(targetId) || document.getElementById('uploadDropzone');
+      if (el) el.classList.add('dragover');
+    }
+
+    function handleDragLeave(e, fileType) {
+      e.preventDefault();
+      e.stopPropagation();
+      let targetId = 'uploadDropzone';
+      if (fileType === 'cancelled') targetId = 'uploadDropzoneCancelled';
+      else if (fileType === 'completed') targetId = 'uploadDropzoneCompleted';
+      const el = document.getElementById(targetId) || document.getElementById('uploadDropzone');
+      if (el) el.classList.remove('dragover');
+    }
+
+    function handleFileDrop(e, fileType = 'auto') {
+      e.preventDefault();
+      e.stopPropagation();
+      ['uploadDropzone', 'uploadDropzoneCancelled', 'uploadDropzoneCompleted'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('dragover');
+      });
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleExcelFileSelect(e.dataTransfer.files, fileType);
+      }
+    }
+
+    async function handleExcelFileSelect(files, fileType = 'auto') {
+      if (!files || files.length === 0) return;
+      const file = files[0];
+      if (!file.name.toLowerCase().endsWith('.xlsx')) {
+        showToast('Please select a valid Excel (.xlsx) file.', 'error');
+        return;
+      }
+
+      showToast(`Uploading ${file.name}...`, 'info');
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const base64Data = e.target.result;
+        try {
+          const res = await fetch('/api/upload-roaming-excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, file_type: fileType, content_base64: base64Data })
+          });
+          const data = await res.json();
+          if (data.success) {
+            const detectedType = (data.file_type || fileType || 'auto').toLowerCase();
+            if (detectedType.includes('cancel')) {
+              currentUploadedFiles.cancelled = data.filename;
+              const statusEl = document.getElementById('cancelledFileStatus');
+              if (statusEl) statusEl.innerHTML = `<b style="color: var(--danger);">&check; ${escapeHtml(data.filename)}</b> (${data.summary.total_records} rows)`;
+            } else if (detectedType.includes('complet')) {
+              currentUploadedFiles.completed = data.filename;
+              const statusEl = document.getElementById('completedFileStatus');
+              if (statusEl) statusEl.innerHTML = `<b style="color: var(--brand-green);">&check; ${escapeHtml(data.filename)}</b> (${data.summary.total_records} rows)`;
+            }
+
+            document.getElementById('uploadFileStatusArea').style.display = 'block';
+            let label = data.filename;
+            if (currentUploadedFiles.cancelled && currentUploadedFiles.completed) {
+              label = `Dual files active: Cancelled (${currentUploadedFiles.cancelled}) & Completed (${currentUploadedFiles.completed})`;
+            }
+            document.getElementById('uploadedFilenameLabel').textContent = label;
+
+            const s = data.summary;
+            document.getElementById('metricTotalRows').textContent = (s.total_records || 0).toLocaleString();
+            document.getElementById('metricParties').textContent = (s.parties && s.parties.length) ? s.parties.join(', ') : 'IOC, VIN, MPC';
+            document.getElementById('metricCompleted').textContent = (s.completed_count || 0).toLocaleString();
+            document.getElementById('metricCancelled').textContent = (s.cancelled_count || 0).toLocaleString();
+
+            if (s.preview && s.preview.length > 0) {
+              document.getElementById('ingestedDataPreviewArea').style.display = 'block';
+              document.getElementById('previewRecordsCountText').textContent = `Showing first ${s.preview.length} of ${s.total_records} records`;
+              const tbody = document.getElementById('ingestedPreviewTableBody');
+              tbody.innerHTML = '';
+              s.preview.forEach(row => {
+                const tr = document.createElement('tr');
+                const isComp = (row.session_category === 'Completed' || row.kwh >= 1.0);
+                tr.innerHTML = `
+                  <td style="padding: 6px 10px; font-weight: 700;">#${escapeHtml(row.booking_id)}</td>
+                  <td style="padding: 6px 10px; font-family: monospace;">${escapeHtml(row.uid)}</td>
+                  <td style="padding: 6px 10px; font-weight: 600; color: #2563eb;">${escapeHtml(row.connector_display || ('Gun ' + (row.connector_id || '1')))}</td>
+                  <td style="padding: 6px 10px;"><span class="badge-category slate">${escapeHtml(row.party_id)}</span></td>
+                  <td style="padding: 6px 10px;">${escapeHtml(row.station_name || '-')}</td>
+                  <td style="padding: 6px 10px; font-size: 11px; color: var(--text-muted);">${escapeHtml(row.in_time || row.date || '-')}</td>
+                  <td style="padding: 6px 10px; text-align: right; font-weight: 700; color: ${isComp ? 'var(--brand-green)' : 'var(--danger)'};">${Number(row.kwh || 0).toFixed(2)}</td>
+                  <td style="padding: 6px 10px; font-size: 11px;"><span class="badge-category ${isComp ? 'green' : 'red'}">${escapeHtml(row.session_category || 'Cancelled')}</span></td>
+                `;
+                tbody.appendChild(tr);
+              });
+            }
+
+            showToast(`Loaded ${data.filename} (${s.total_records} instances found)!`, 'success');
+          } else {
+            showToast(data.message || 'Upload failed', 'error');
+          }
+        } catch (err) {
+          showToast(`Upload error: ${err.message}`, 'error');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function loadPartnerPortals() {
+      try {
+        const res = await fetch('/api/partner-portals');
+        const data = await res.json();
+        currentPartnerPortals = data || {};
+        renderPartnerPortalsTable();
+      } catch (e) {
+        console.error('Failed to load partner portals', e);
+      }
+    }
+
+    function renderPartnerPortalsTable() {
+      const tbody = document.getElementById('partnerPortalsTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const parties = Object.keys(currentPartnerPortals);
+      if (parties.length === 0) {
+        currentPartnerPortals = {
+          "IOC": { name: "IndianOil e-Charge (IOC)", portal_url: "https://cpo-ioc.ev-network.com", session_file: "data/session_IOC.json", active: true },
+          "VIN": { name: "VinFast Auto (VIN)", portal_url: "https://cpo-vin.ev-network.com", session_file: "data/session_VIN.json", active: true },
+          "MPC": { name: "CHARGE_iN (MPC)", portal_url: "https://cpo-mpc.ev-network.com", session_file: "data/session_MPC.json", active: true }
+        };
+      }
+
+      Object.keys(currentPartnerPortals).forEach(pid => {
+        const p = currentPartnerPortals[pid];
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-party', pid);
+        tr.innerHTML = `
+          <td style="padding: 6px 10px;">
+            <span style="font-weight: 700; color: var(--text-main); font-size: 12px;">${escapeHtml(pid)}</span>
+          </td>
+          <td style="padding: 6px 10px;">
+            <input type="text" class="portal-table-input portal-url" value="${escapeHtml(p.portal_url || '')}" placeholder="https://cms.partner.com" />
+          </td>
+          <td style="padding: 6px 10px;">
+            <input type="text" class="portal-table-input portal-username" value="${escapeHtml(p.username || '')}" placeholder="username" />
+          </td>
+          <td style="padding: 6px 10px;">
+            <input type="password" class="portal-table-input portal-password" value="${escapeHtml(p.password || '')}" placeholder="password" />
+          </td>
+          <td style="padding: 6px 10px; text-align: center;">
+            <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 9px; color: var(--brand-green); font-weight: 700; white-space: nowrap;" onclick="triggerPartnerLogin('${escapeHtml(pid)}')">
+              Login &rarr;
+            </button>
+          </td>
+          <td style="padding: 6px 10px; text-align: center;">
+            <input type="checkbox" class="portal-active" ${p.active !== false ? 'checked' : ''} style="cursor: pointer; width: 15px; height: 15px;" />
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function triggerPartnerLogin(partyId) {
+      await savePartnerPortalsConfig();
+      showToast(`Launching browser login for ${partyId}...`, 'info');
+      try {
+        const res = await fetch('/api/login-partner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ party_id: partyId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Browser window opened for ${partyId}. Solve CAPTCHA and submit to save session!`, 'success');
+        } else {
+          showToast(data.message || 'Login launch failed', 'error');
+        }
+      } catch (e) {
+        showToast(`Login error: ${e.message}`, 'error');
+      }
+    }
+
+    function addPartnerPortalRow() {
+      const newPid = prompt('Enter Party ID code (e.g. AURA, JIO, KAZ):');
+      if (!newPid) return;
+      const cleanPid = newPid.trim().toUpperCase();
+      if (!cleanPid) return;
+      if (!currentPartnerPortals[cleanPid]) {
+        currentPartnerPortals[cleanPid] = {
+          name: cleanPid,
+          party_id: cleanPid,
+          portal_url: "https://cms.ev-charge-network.com",
+          username: "",
+          password: "",
+          active: true
+        };
+        renderPartnerPortalsTable();
+      }
+    }
+
+    async function savePartnerPortalsConfig() {
+      const rows = document.querySelectorAll('#partnerPortalsTableBody tr');
+      const updated = {};
+      rows.forEach(tr => {
+        const pid = tr.getAttribute('data-party');
+        const urlInput = tr.querySelector('.portal-url');
+        const userInput = tr.querySelector('.portal-username');
+        const passInput = tr.querySelector('.portal-password');
+        const activeInput = tr.querySelector('.portal-active');
+
+        if (pid) {
+          updated[pid] = {
+            name: currentPartnerPortals[pid] ? currentPartnerPortals[pid].name : pid,
+            party_id: pid,
+            portal_url: urlInput ? urlInput.value.trim() : '',
+            username: userInput ? userInput.value.trim() : '',
+            password: passInput ? passInput.value.trim() : '',
+            active: activeInput ? activeInput.checked : true,
+            notes: `Configured for ${pid} CPO CMS log search`
+          };
+        }
+      });
+
+      try {
+        const res = await fetch('/api/partner-portals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ portals: updated })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentPartnerPortals = updated;
+          showToast('Partner portals configuration saved successfully!', 'success');
+        } else {
+          showToast(data.message || 'Failed to save configuration', 'error');
+        }
+      } catch (e) {
+        showToast(`Save error: ${e.message}`, 'error');
+      }
+    }
+
+    async function executeUploadedRoamingRCA() {
+      await savePartnerPortalsConfig();
+      runTask('roaming_upload_rca');
+    }
+
+    function downloadUploadedWordDoc() {
+      window.location.href = '/api/download-file?filename=ElectreeFi_Uploaded_Roaming_RCA_Report.docx';
+    }
+
+    function downloadUploadedExcelDoc() {
+      window.location.href = '/api/download-file?filename=ElectreeFi_Uploaded_Roaming_RCA_Report.xlsx';
+    }
+
+    function toggleTerminalSize() {
+      const drawer = document.getElementById('terminalDrawer');
+      if (terminalState === 'normal') {
+        drawer.classList.add('expanded');
+        terminalState = 'expanded';
+      } else if (terminalState === 'expanded') {
+        drawer.classList.remove('expanded');
+        drawer.classList.add('minimized');
+        terminalState = 'minimized';
+      } else {
+        drawer.classList.remove('minimized');
+        terminalState = 'normal';
+      }
+    }
+
+    function clearTerminal() {
+      fetch('/api/clear-logs', { method: 'POST' }).then(() => {
+        document.getElementById('terminalBody').innerHTML = '<div class="log-empty-state">Console cleared.</div>';
+        logNextIndex = 0;
+      });
+    }
+
+    async function runTask(taskId) {
+      if (isRunning) {
+        showToast('Another automation task is already running. Please wait or abort it.', 'error');
+        return;
+      }
+
+      const drawer = document.getElementById('terminalDrawer');
+      if (drawer.classList.contains('minimized')) {
+        drawer.classList.remove('minimized');
+        terminalState = 'normal';
+      }
+
+      try {
+        const res = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task_id: taskId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Started: ${taskId}`);
+          document.getElementById('terminalBody').innerHTML = '';
+          logNextIndex = 0;
+          setLogPollingSpeed(true);
+          pollLogs();
+          fetchStatus();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (e) {
+        showToast(`Error initiating task: ${e.message}`, 'error');
+      }
+    }
+
+    async function stopTask() {
+      try {
+        const res = await fetch('/api/stop', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message);
+      } catch (e) {
+        showToast(`Failed to abort: ${e.message}`, 'error');
+      }
+    }
+
+    async function openFile(filename) {
+      try {
+        const res = await fetch('/api/open-file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Opened ${filename}`);
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (e) {
+        showToast(`Failed to open file: ${e.message}`, 'error');
+      }
+    }
+
+    async function openFolder(filename = '') {
+      try {
+        const res = await fetch('/api/open-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Opened folder in Windows Explorer');
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (e) {
+        showToast(`Failed to open folder: ${e.message}`, 'error');
+      }
+    }
+
+    function openExternalUrl(url) {
+      window.open(url, '_blank');
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    async function pollLogs() {
+      try {
+        const res = await fetch(`/api/logs?after=${logNextIndex}`);
+        const data = await res.json();
+
+        if (data.lines && data.lines.length > 0) {
+          const body = document.getElementById('terminalBody');
+          if (body.querySelector('.log-empty-state')) {
+            body.innerHTML = '';
+          }
+
+          data.lines.forEach(line => {
+            const div = document.createElement('div');
+            div.className = 'log-line';
+            if (line.includes('[STEP') || line.includes('>>> Initializing')) {
+              div.className += ' step';
+            } else if (line.includes('[SUCCESS]') || line.includes('SUCCESS:')) {
+              div.className += ' success';
+            } else if (line.includes('[ERROR]') || line.includes('[EXCEPTION]')) {
+              div.className += ' error';
+            } else if (line.startsWith('$')) {
+              div.className += ' command';
+            }
+            div.textContent = line;
+            body.appendChild(div);
+          });
+
+          logNextIndex = data.next_index;
+          body.scrollTop = body.scrollHeight;
+        }
+
+        document.getElementById('termTimer').textContent = formatTime(data.elapsed || 0);
+
+        if (data.running !== isRunning) {
+          fetchStatus();
+        }
+      } catch (e) {
+        // quiet error
+      }
+    }
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+
+        const wasRunning = isRunning;
+        isRunning = data.running;
+
+        const termDot = document.getElementById('termDot');
+        const termTaskName = document.getElementById('termTaskName');
+        const abortBtn = document.getElementById('termAbortBtn');
+
+        if (isRunning) {
+          termDot.className = 'terminal-status-dot running';
+          termTaskName.textContent = data.task_title || data.task_id;
+          abortBtn.disabled = false;
+        } else {
+          abortBtn.disabled = true;
+          if (data.exit_code === 0 && data.task_title) {
+            termDot.className = 'terminal-status-dot success';
+            termTaskName.textContent = `${data.task_title} (Completed)`;
+          } else if (data.exit_code !== 0 && data.task_title) {
+            termDot.className = 'terminal-status-dot error';
+            termTaskName.textContent = `${data.task_title} (Failed: ${data.exit_code})`;
+          } else {
+            termDot.className = 'terminal-status-dot';
+            termTaskName.textContent = 'Idle';
+          }
+        }
+
+        document.querySelectorAll('.task-card').forEach(c => c.classList.remove('running'));
+        if (isRunning && data.task_id) {
+          const activeCard = document.getElementById(`card-${data.task_id}`);
+          if (activeCard) activeCard.classList.add('running');
+        }
+
+        document.querySelectorAll('.btn-primary').forEach(b => {
+          if (isRunning) {
+            b.setAttribute('disabled', 'true');
+          } else {
+            b.removeAttribute('disabled');
+          }
+        });
+
+        if (!wasRunning && isRunning) {
+          setLogPollingSpeed(true);
+        }
+
+        if (wasRunning && !isRunning) {
+          setLogPollingSpeed(false);
+          if (data.exit_code === 0) {
+            showToast(`Task finished successfully!`, 'success');
+          } else {
+            showToast(`Task failed with code ${data.exit_code}`, 'error');
+          }
+        }
+
+        const kpiSession = document.getElementById('kpiSessionStatus');
+        const kpiSessionSub = document.getElementById('kpiSessionSub');
+        if (data.session && data.session.has_session) {
+          kpiSession.textContent = 'Active';
+          kpiSession.style.color = 'var(--brand-green)';
+          kpiSessionSub.textContent = `Token active (${data.session.modified || ''})`;
+        } else {
+          kpiSession.textContent = 'Needs Login';
+          kpiSession.style.color = 'var(--warning)';
+          kpiSessionSub.textContent = 'Run login to authenticate';
+        }
+
+        let readyCount = 0;
+        const tbody = document.getElementById('filesTableBody');
+        tbody.innerHTML = '';
+
+        if (data.files) {
+          data.files.forEach(f => {
+            if (f.exists) readyCount++;
+
+            const chips = document.querySelectorAll(`[id*="${f.id}"]`);
+            chips.forEach(chip => {
+              chip.classList.toggle('ready', f.exists);
+            });
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>
+                <div class="file-name-cell">
+                  <div class="file-type-icon ${f.type}">
+                    ${f.type === 'excel' ? 'XLS' : 'DOC'}
+                  </div>
+                  <div>
+                    <div>${f.title}</div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); font-family: monospace;">${f.name}</div>
+                  </div>
+                </div>
+              </td>
+              <td><span style="font-size: 12px; color: var(--text-muted);">${f.category}</span></td>
+              <td>${f.size}</td>
+              <td style="font-size: 12px; color: var(--text-muted);">${f.modified}</td>
+              <td>
+                <span class="status-badge ${f.exists ? 'available' : 'missing'}">
+                  ${f.exists ? '● Ready' : '○ Not Generated'}
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <button class="btn-secondary" onclick="openFile('${f.name}')" ${!f.exists ? 'disabled' : ''}>
+                  Open
+                </button>
+                <button class="btn-secondary" onclick="openFolder('${f.name}')">
+                  Reveal
+                </button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+
+        document.getElementById('kpiFilesReady').textContent = `${readyCount} / ${data.files ? data.files.length : 0}`;
+        document.getElementById('tabDeliverablesCount').textContent = readyCount;
+
+        const regFile = data.files ? data.files.find(f => f.name === 'ElectreeFi_Cancelled_Bookings_RCA.xlsx') : null;
+        if (regFile && regFile.exists) {
+          document.getElementById('kpiRegularStatus').textContent = 'Generated';
+          document.getElementById('kpiRegularStatus').style.color = 'var(--brand-green)';
+          document.getElementById('kpiRegularSub').textContent = `Size: ${regFile.size}`;
+        } else {
+          document.getElementById('kpiRegularStatus').textContent = 'Not Ready';
+          document.getElementById('kpiRegularSub').textContent = 'Run pipeline to generate';
+        }
+
+        const roamFile = data.files ? data.files.find(f => f.name === 'ElectreeFi_Roaming_Reservation_RCA.xlsx') : null;
+        if (roamFile && roamFile.exists) {
+          document.getElementById('kpiRoamingStatus').textContent = 'Generated';
+          document.getElementById('kpiRoamingStatus').style.color = 'var(--brand-green)';
+          document.getElementById('kpiRoamingSub').textContent = `Size: ${roamFile.size}`;
+        } else {
+          document.getElementById('kpiRoamingStatus').textContent = 'Not Ready';
+          document.getElementById('kpiRoamingSub').textContent = 'Run pipeline to generate';
+        }
+
+      } catch (e) {
+        console.error('Status fetch failed', e);
+      }
+    }
+
+    function setLogPollingSpeed(fast) {
+      if (logPollTimer) clearInterval(logPollTimer);
+      const interval = fast ? 350 : 3000;
+      logPollTimer = setInterval(pollLogs, interval);
+    }
+
+    // Startup polling and initialization (Adaptive Polling: 3000ms idle, 350ms active)
+    window.addEventListener('DOMContentLoaded', () => {
+      initDateRange();
+      switchTab('search');
+      fetchStatus();
+      setLogPollingSpeed(false);
+      statusPollTimer = setInterval(fetchStatus, 3500);
+    });
+  </script>
+</body>
+</html>

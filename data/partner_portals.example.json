@@ -1,0 +1,38 @@
+{
+  "IOC": {
+    "name": "IndianOil e-Charge (IOC)",
+    "party_id": "IOC",
+    "portal_url": "https://cpo-ioc.ev-network.com",
+    "username": "cpo_ioc_admin",
+    "password": "secure_password_sample",
+    "active": true,
+    "notes": "Configured for IOC CPO CMS log search"
+  },
+  "VIN": {
+    "name": "VinFast Auto (VIN)",
+    "party_id": "VIN",
+    "portal_url": "https://cpo-vin.ev-network.com",
+    "username": "cpo_operator",
+    "password": "secure_password_sample",
+    "active": true,
+    "notes": "Configured for VIN CPO CMS log search"
+  },
+  "MPC": {
+    "name": "CHARGE_iN (MPC)",
+    "party_id": "MPC",
+    "portal_url": "https://cpo-mpc.ev-network.com",
+    "username": "ev_admin",
+    "password": "secure_password_sample",
+    "active": true,
+    "notes": "Configured for MPC CPO CMS log search"
+  },
+  "ELC": {
+    "name": "Electreefi Depot CMS (ELC)",
+    "party_id": "ELC",
+    "portal_url": "https://cms.ev-charge-network.com",
+    "username": "ev_admin",
+    "password": "secure_password_sample",
+    "active": true,
+    "notes": "Configured for ELC CPO CMS log search"
+  }
+}

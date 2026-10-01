@@ -1,0 +1,423 @@
+[
+  {
+    "category": "B2B ReportsB2B Reports",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "CDR ReportCDR Report",
+        "href": "/OcpiReports/OcpiSessionCdrReports?moc=2%7CsettingsMenuItems%7CNA%7CCDR%20Report%7C389"
+      },
+      {
+        "title": "Session ReportSession Report",
+        "href": "/OcpiReports/OcpiSessionsReport?moc=2%7CsettingsMenuItems%7CNA%7CSession%20Report%7C390"
+      },
+      {
+        "title": "B2B HistoryB2B History",
+        "href": "/OcpiReports/OcpiStationChargingHistoryReport?area=OCPIReports&moc=2%7CsettingsMenuItems%7CNA%7CCharging%20History%20Report%7C385"
+      }
+    ]
+  },
+  {
+    "category": "Energy ManagementEnergy Management",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Charger LoadCharger Load",
+        "href": "/LoadManagement/ChargerLoad/Report?moc=2%7CsettingsMenuItems%7CNA%7CCharger%20Load%7C387"
+      },
+      {
+        "title": "Energy ConsumptionEnergy Consumption",
+        "href": "/LoadManagement/MeterLoad/Report?moc=2%7CsettingsMenuItems%7CNA%7CEnergy%20Consumption%7C388"
+      }
+    ]
+  },
+  {
+    "category": "Alert ManagementAlert Management",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Alert ConfigurationAlert Configuration",
+        "href": "/AlertManagement/AlertManagement?moc=2%7CsettingsMenuItems%7CNA%7CAlert%20Configuration%7C392"
+      },
+      {
+        "title": "My AlertsMy Alerts",
+        "href": "/AlertManagement/SentAlert?moc=2%7CsettingsMenuItems%7CNA%7CMy%20Alerts%7C393"
+      }
+    ]
+  },
+  {
+    "category": "Survey ManagementSurvey Management",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Survey MasterSurvey Master",
+        "href": "/Survey/Survey?moc=2%7CsettingsMenuItems%7CNA%7CSurvey%20Master%7C466"
+      },
+      {
+        "title": "SurveysSurveys",
+        "href": "/Survey/Site?moc=2%7CsettingsMenuItems%7CNA%7CSurveys%7C467"
+      },
+      {
+        "title": "Vendor MasterVendor Master",
+        "href": "/Survey/VendorMaster?moc=2%7CsettingsMenuItems%7CNA%7CVendor%20Master%7C468"
+      },
+      {
+        "title": "ApproversApprovers",
+        "href": "/Survey/Site/Approvers?moc=2%7CsettingsMenuItems%7CNA%7CApprovers%7C469"
+      }
+    ]
+  },
+  {
+    "category": "CommissioningCommissioning",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Commissioning RequestsCommissioning Requests",
+        "href": "/CommissioningChargers/CommissioningRequests?moc=2%7CsettingsMenuItems%7CNA%7CCommissioning%20Requests%7C471"
+      },
+      {
+        "title": "Commissioning LogsCommissioning Logs",
+        "href": "/LogsManagement/CommissioningLogs?moc=2%7CsettingsMenuItems%7CNA%7CCommissioning%20Logs%7C472"
+      }
+    ]
+  },
+  {
+    "category": "Organization ManagementOrganization Management",
+    "href": "/OrganizationManagement/Organization?moc=2%7CsettingsMenuItems%7CTenantManagement%7CManageTenants%7C12",
+    "sub_items": []
+  },
+  {
+    "category": "DashboardDashboard",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Charging Stations AnalysisCharging Stations Analysis",
+        "href": "/DashboardManagement/ChargingStationTrends?moc=2%7CsettingsMenuItems%7CDashboard%7CChargingStationsAnalysis%7C43"
+      },
+      {
+        "title": "Authorize Code ReportAuthorize Code Report",
+        "href": "/DashboardManagement/AuthorizeCodeReport/LoadManageDetailGrid?moc=2%7CsettingsMenuItems%7CDashboard%7CAuthorizeCodeReport%7C107"
+      },
+      {
+        "title": "Reviews ReportReviews Report",
+        "href": "/DashboardManagement/ReviewReport/LoadManageDetailGrid?moc=2%7CsettingsMenuItems%7CDashboard%7CReviewReport%7C289"
+      },
+      {
+        "title": "Payment Transaction ReportPayment Transaction Report",
+        "href": "/DashboardManagement/PaymentTransaction/LoadManageDetailGrid?moc=2%7CsettingsMenuItems%7CDashboard%7CPaymentTransactionReport%7C108"
+      },
+      {
+        "title": "Payment Refund ReportPayment Refund Report",
+        "href": "/DashboardManagement/RefundTransaction?moc=2%7CsettingsMenuItems%7CDashboard%7CPaymentRefundReport%7C290"
+      },
+      {
+        "title": "Charging Transaction ReportCharging Transaction Report",
+        "href": "/DashboardManagement/ChargingReport?moc=2%7CsettingsMenuItems%7CDashboard%7CChargingReport%7C293"
+      },
+      {
+        "title": "Wallet ReportWallet Report",
+        "href": "/DashboardManagement/WalletReport?moc=2%7CsettingsMenuItems%7CDashboard%7CWalletReport%7C199"
+      },
+      {
+        "title": "Charging Taxes ReportCharging Taxes Report",
+        "href": "/DashboardManagement/BookingDetailReport/LoadManagePriceandTaxesDetail?moc=2%7CsettingsMenuItems%7CDashboard%7CChargingTaxes%7C282"
+      },
+      {
+        "title": "RFID AssignmentRFID Assignment",
+        "href": "/DashboardManagement/RFIDReport?moc=2%7CsettingsMenuItems%7CDashboard%7CRFIDAssignment%7C306"
+      },
+      {
+        "title": "Organization DashboardOrganization Dashboard",
+        "href": "/DashboardManagement/OrganizationHome?moc=2%7CsettingsMenuItems%7CDashboard%7COrganizationHome%7C308"
+      },
+      {
+        "title": "Wallet Balance ReportWallet Balance Report",
+        "href": "/DashboardManagement/UserWalletBalanceReport?moc=2%7CsettingsMenuItems%7CNA%7CWallet%20Balance%20Report%7C364"
+      },
+      {
+        "title": "Charging Point StatisticsCharging Point Statistics",
+        "href": "/DashboardManagement/ChargingStationAvailability/ChargingPointStatisticsGridView?moc=2%7CsettingsMenuItems%7CNA%7CCharging%20Point%20Statistics%7C394"
+      },
+      {
+        "title": "Charger Outage SummaryCharger Outage Summary",
+        "href": "/DashboardManagement/ChargerErrorReport?moc=2%7CsettingsMenuItems%7CNA%7CCharger%20Outage%20Summary%7C460"
+      }
+    ]
+  },
+  {
+    "category": "Charging Details / InvoiceCharging Details / Invoice",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Invoice DetailsInvoice Details",
+        "href": "/ChargingStationManagement/InvoiceDetail?moc=2%7CsettingsMenuItems%7CBookingDetailsInvoice%7CInvoiceDetail%7C82"
+      },
+      {
+        "title": "Charging DetailsCharging Details",
+        "href": "/ChargingStationManagement/AdminBookingDetails?moc=2%7CsettingsMenuItems%7CBookingDetailsInvoice%7CBookingRecords%7C106"
+      },
+      {
+        "title": "Internal ReportsInternal Reports",
+        "href": "/ChargingStationManagement/AdminBookingDetails/LoadBookingView?moc=2%7CsettingsMenuItems%7CBookingDetailsInvoice%7CAutomatedPendingPaymentView%7C354"
+      }
+    ]
+  },
+  {
+    "category": "User & Role ManagementUser & Role Management",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Manage RolesManage Roles",
+        "href": "/OrganizationManagement/RoleManagement?moc=2%7CsettingsMenuItems%7CRoleManagement%7CManageRoles%7C13"
+      },
+      {
+        "title": "Assign RolesAssign Roles",
+        "href": "/OrganizationManagement/RoleAssignment?moc=2%7CsettingsMenuItems%7CRoleManagement%7CAssignRoles%7C14"
+      },
+      {
+        "title": "Role PermissionsRole Permissions",
+        "href": "/OrganizationManagement/RolePermission?moc=2%7CsettingsMenuItems%7CRoleManagement%7CRolePermissions%7C15"
+      },
+      {
+        "title": "Mobile Role PermissionsMobile Role Permissions",
+        "href": "/OrganizationManagement/MobileRolePermission?moc=2%7CsettingsMenuItems%7CRoleManagement%7CMobileRolePermissions%7C220"
+      },
+      {
+        "title": "Manage EmployeeManage Employee",
+        "href": "/OrganizationManagement/EmployeeManagement?moc=2%7CsettingsMenuItems%7CRoleManagement%7CManageUsers%7C16"
+      },
+      {
+        "title": "Manage Access Rule GroupsManage Access Rule Groups",
+        "href": "/OrganizationManagement/AccessManagement?moc=2%7CsettingsMenuItems%7CNA%7CManage%20Access%20Rule%20Groups%7C462"
+      },
+      {
+        "title": "Manage User GroupsManage User Groups",
+        "href": "/OrganizationManagement/UserGroupManagement?moc=2%7CsettingsMenuItems%7CNA%7CManage%20User%20Groups%7C463"
+      }
+    ]
+  },
+  {
+    "category": "Charging StationsCharging Stations",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Manage StationsManage Stations",
+        "href": "/ChargingStationManagement/ChargingStation?moc=2%7CsettingsMenuItems%7CChargingStations%7CManageStations%7C24"
+      },
+      {
+        "title": "Pending ApprovalsPending Approvals",
+        "href": "/ChargingStationManagement/ChargingPriceApprovalManager?moc=2%7CsettingsMenuItems%7CChargingStations%7CManagePriceWorkflow%7C284"
+      },
+      {
+        "title": "Configure Workflow ApproversConfigure Workflow Approvers",
+        "href": "/ChargingStationManagement/ChargingWorkflowManager?moc=2%7CsettingsMenuItems%7CChargingStations%7CWorkflowforChargeAddition%7C112"
+      },
+      {
+        "title": "Charging Points StatusCharging Points Status",
+        "href": "/ChargingStationManagement/ChargingStationChargerPoints?moc=2%7CsettingsMenuItems%7CChargingStations%7CChargingPointsStatus%7C83"
+      }
+    ]
+  },
+  {
+    "category": "Master ManagementMaster Management",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Manage CitiesManage Cities",
+        "href": "/MasterManagement/CityManagement?moc=2%7CsettingsMenuItems%7CMasterManagementMenu%7CManageCities%7C5"
+      },
+      {
+        "title": "Manage StatesManage States",
+        "href": "/MasterManagement/StateManagement?moc=2%7CsettingsMenuItems%7CMasterManagementMenu%7CManageStates%7C4"
+      },
+      {
+        "title": "Manage GST & TaxesManage GST & Taxes",
+        "href": "/MasterManagement/MasterTax?moc=2%7CsettingsMenuItems%7CMasterManagementMenu%7CManageTax%7C281"
+      },
+      {
+        "title": "Manage ManufacturersManage Manufacturers",
+        "href": "/MasterManagement/ManufacturerManagement?moc=2%7CsettingsMenuItems%7CMasterManagementMenu%7CManageManufacturers%7C7"
+      },
+      {
+        "title": "Manage Vehicle ModelsManage Vehicle Models",
+        "href": "/MasterManagement/ModelManagement?moc=2%7CsettingsMenuItems%7CMasterManagementMenu%7CManageModels%7C8"
+      },
+      {
+        "title": "Manage Charger ModelsManage Charger Models",
+        "href": "/MasterManagement/ChargerModel?moc=2%7CsettingsMenuItems%7CMasterManagementMenu%7CChargerModel%7C207"
+      },
+      {
+        "title": "Manage Connector TypeManage Connector Type",
+        "href": "/MasterManagement/ConnectorManagement?moc=2%7CsettingsMenuItems%7CMasterManagementMenu%7CManageConnectorType%7C62"
+      },
+      {
+        "title": "Manage Charger CapacityManage Charger Capacity",
+        "href": "/MasterManagement/MasterChargerCapacity?moc=2%7CsettingsMenuItems%7CMasterManagementMenu%7CMasterChargerCapacity%7C235"
+      },
+      {
+        "title": "Subscription DurationSubscription Duration",
+        "href": "/MasterManagement/SubscriptionDuration?moc=2%7CsettingsMenuItems%7CMasterManagementMenu%7CSubscriptionDuration%7C362"
+      },
+      {
+        "title": "Manage External VendorManage External Vendor",
+        "href": "/MasterManagement/MasterExternalVendor/LoadManageDetailsView?moc=2%7CsettingsMenuItems%7CNA%7CManage%20External%20Vendor%7C367"
+      }
+    ]
+  },
+  {
+    "category": "SettingsSettings",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Error LogsError Logs",
+        "href": "/ApplicationLogs/ErrorLogInformation/LoadErrorLogView?moc=2%7CsettingsMenuItems%7CSettingsMenu%7CErrorLogs%7C28"
+      },
+      {
+        "title": "Manage SubscriptionManage Subscription",
+        "href": "/SubscriptionMaster/ManageSubscription/LoadManageDetailGrid?moc=2%7CsettingsMenuItems%7CSettingsMenu%7CManageSubscription%7C363"
+      },
+      {
+        "title": "PromocodesPromocodes",
+        "href": "/DashboardManagement/PromoCodeReport/LoadManageDetailGrid?moc=2%7CsettingsMenuItems%7CSettingsMenu%7CPromocodeReport%7C110"
+      },
+      {
+        "title": "Notification CampaignNotification Campaign",
+        "href": "/NotificationManagement/BulkCampaign?moc=2%7CsettingsMenuItems%7CNA%7CNotification%20Campaign%7C464"
+      }
+    ]
+  },
+  {
+    "category": "OCPPOCPP",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "TransactionsTransactions",
+        "href": "/OCPPManagement/TransactionDetail?moc=2%7CsettingsMenuItems%7COCPP%7CTransactions%7C51"
+      },
+      {
+        "title": "Charger StatusCharger Status",
+        "href": "/OCPPManagement/OCPP/OCPPChargerStatus?moc=2%7CsettingsMenuItems%7COCPP%7CChargerStatus%7C71"
+      },
+      {
+        "title": "Charging ProfilesCharging Profiles",
+        "href": "/OCPPManagement/ChargingProfile?moc=2%7CsettingsMenuItems%7COCPP%7CChargingProfiles%7C72"
+      },
+      {
+        "title": "Charging Points StatusCharging Points Status",
+        "href": "/OCPPManagement/ChargingStationChargerPoints?moc=2%7CsettingsMenuItems%7COCPP%7CChargingPointsStatus%7C205"
+      },
+      {
+        "title": "Configuration KeyConfiguration Key",
+        "href": "/OCPPManagement/ConfigurationKey?moc=2%7CsettingsMenuItems%7COCPP%7CAuthorizationKey%7C271"
+      },
+      {
+        "title": "Charger Meter Value ReportCharger Meter Value Report",
+        "href": "/Dashboards/ChargerSessionReport?moc=2%7CsettingsMenuItems%7CNA%7CCharger%20Meter%20Value%20Report%7C401"
+      }
+    ]
+  },
+  {
+    "category": "RoamingRoaming",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "LocationsLocations",
+        "href": "/Roaming/OCPILocation/Location?moc=2%7CsettingsMenuItems%7CNA%7CLocations%7C370"
+      },
+      {
+        "title": "CDRSCDRS",
+        "href": "/Roaming/OCPICdrs/Cdrs?moc=2%7CsettingsMenuItems%7CNA%7CCDRS%7C368"
+      },
+      {
+        "title": "SessionsSessions",
+        "href": "/Roaming/OCPISession/Session?moc=2%7CsettingsMenuItems%7CNA%7CSessions%7C369"
+      },
+      {
+        "title": "TariffsTariffs",
+        "href": "/Roaming/OCPITariff/Tariff?moc=2%7CsettingsMenuItems%7CNA%7CTariffs%7C372"
+      },
+      {
+        "title": "ReservationReservation",
+        "href": "/Roaming/OCPIReservation/Reservation?moc=2%7CsettingsMenuItems%7CNA%7CReservation%7C378"
+      }
+    ]
+  },
+  {
+    "category": "Corporate ManagementCorporate Management",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Manage CorporatesManage Corporates",
+        "href": "/CorporateManagement/Corporate?moc=2%7CsettingsMenuItems%7CCorporateManagement%7CManageCorporate%7C68"
+      },
+      {
+        "title": "Manage Corporate UsersManage Corporate Users",
+        "href": "/CorporateManagement/CorporateUser?moc=2%7CsettingsMenuItems%7CCorporateManagement%7CManageDriver%7C69"
+      },
+      {
+        "title": "Manage VehiclesManage Vehicles",
+        "href": "/CorporateManagement/VehicleInformation?moc=2%7CsettingsMenuItems%7CCorporateManagement%7CManageVehicles%7C156"
+      },
+      {
+        "title": "Vehicle AssignmentVehicle Assignment",
+        "href": "/CorporateManagement/VehicleInformation/LoadCorporateVehicleReport?moc=2%7CsettingsMenuItems%7CCorporateManagement%7CVehicleAssignment%7C305"
+      },
+      {
+        "title": "DashboardDashboard",
+        "href": "/DashboardManagement/CorporateAnalytics?moc=2%7CsettingsMenuItems%7CCorporateManagement%7CCorporateManagement%7CDashboard%7C307"
+      },
+      {
+        "title": "ReportsReports",
+        "href": "/FleetManagement/VehicleChargingSessions?moc=2%7CsettingsMenuItems%7CNA%7CReports%7C375"
+      },
+      {
+        "title": "Hub ViewHub View",
+        "href": "/FleetManagement/FleetHubView?moc=2%7CsettingsMenuItems%7CNA%7CHub%20View%7C379"
+      },
+      {
+        "title": "Grid ViewGrid View",
+        "href": "/LoadManagement/LoadManagement/HubDetails?moc=2%7CsettingsMenuItems%7CNA%7CGrid%20View%7C380"
+      }
+    ]
+  },
+  {
+    "category": "Manage CPOManage CPO",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "CPOCPO",
+        "href": "/ServiceProvider/ChargingStationServiceProvider?moc=2%7CsettingsMenuItems%7CManageServiceProvider%7CServiceProvider%7C203"
+      },
+      {
+        "title": "Manage UsersManage Users",
+        "href": "/ServiceProvider/StaffInformation?moc=2%7CsettingsMenuItems%7CManageServiceProvider%7CStaffInformation%7C204"
+      }
+    ]
+  },
+  {
+    "category": "SupportSupport",
+    "href": "#",
+    "sub_items": [
+      {
+        "title": "Support RequestsSupport Requests",
+        "href": "/Support/AssistanceNew?moc=2%7CsettingsMenuItems%7CSupport%7CSupport%7Csupportrequest%7C357"
+      },
+      {
+        "title": "DashboardDashboard",
+        "href": "/Support/SupportDashboard?moc=2%7CsettingsMenuItems%7CNA%7CDashboard%7C461"
+      },
+      {
+        "title": "Search UserSearch User",
+        "href": "/Support/SupportSearchEngine/LoadSearchEngine?moc=2%7CsettingsMenuItems%7CNA%7CSearch%20User%7C366"
+      },
+      {
+        "title": "Proactive CallingProactive Calling",
+        "href": "/Support/LiveSupport?moc=2%7CsettingsMenuItems%7CNA%7CProactive%20Calling%7C428"
+      },
+      {
+        "title": "Charging OperationCharging Operation",
+        "href": "/SupportChargingManagement/SupportCharging/LoadSupportChargingOpertaions?moc=2%7CsettingsMenuItems%7CNA%7CCharging%20Operation%7C429"
+      }
+    ]
+  }
+]

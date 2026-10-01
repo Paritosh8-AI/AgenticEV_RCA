@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ElectreeFi - Booking RCA Deep Dive Studio</title>
+  <style>
+    :root {
+      --brand-green: #00B074;
+      --brand-green-hover: #009663;
+      --brand-green-light: #e6f7f1;
+      --brand-blue: #008be5;
+      --brand-blue-hover: #0277bd;
+      --brand-blue-light: #e0f2fe;
+      --sidebar-bg: #0f172a;
+      --sidebar-surface: #1e293b;
+      --sidebar-border: #334155;
+      --canvas-bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-focus: #008be5;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --purple: #8b5cf6;
+      --purple-light: #ede9fe;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--canvas-bg);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* --- SIDEBAR --- */
+    .sidebar {
+      width: 280px;
+      background-color: var(--sidebar-bg);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      border-right: 1px solid var(--sidebar-border);
+      user-select: none;
+    }
+
+    .sidebar-header {
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--sidebar-surface);
+      background: #0b1120;
+    }
+
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-logo-svg {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+    }
+
+    .brand-text-block {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      color: #ffffff;
+    }
+
+    .brand-title .elec { color: var(--brand-green); }
+
+    .brand-subtitle {
+      font-size: 10px;
+      color: #38bdf8;
+      letter-spacing: 0.3px;
+      margin-top: 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .sidebar-section-title {
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Quick Test Pills */
+    .quick-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .quick-item {
+      background: var(--sidebar-surface);
+      border: 1px solid #334155;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .quick-item:hover {
+      background: rgba(0, 139, 229, 0.16);
+      border-color: var(--brand-blue);
+      transform: translateX(2px);
+    }
+
+    .quick-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .quick-id {
+      font-family: Consolas, monospace;
+      font-weight: 700;
+      font-size: 13px;
+      color: #38bdf8;
+    }
+
+    .quick-tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .quick-tag.vehicle { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    .quick-tag.charger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    .quick-tag.cutoff { background: rgba(0, 139, 229, 0.2); color: #7dd3fc; }
+
+    .quick-desc {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    /* History List */
+    .history-card {
+      background: var(--sidebar-surface);
+      border: 1px solid #334155;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      padding: 6px 8px;
+      border-radius: 4px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid #334155;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.15s ease;
+    }
+
+    .history-item:hover {
+      background: rgba(0, 139, 229, 0.2);
+      border-color: #38bdf8;
+      color: #ffffff;
+    }
+
+    .history-empty {
+      font-size: 11.5px;
+      color: #64748b;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    /* CMS Session Card */
+    .session-widget {
+      background: var(--sidebar-surface);
+      border: 1px solid #334155;
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .session-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .session-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+
+    .session-status-badge.active {
+      background: rgba(16, 185, 129, 0.18);
+      color: #34d399;
+    }
+
+    .session-status-badge.expired {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+    }
+
+    .session-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .session-dot.active { background: #34d399; }
+    .session-dot.expired { background: #fbbf24; }
+
+    .session-meta {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .session-btn-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .session-btn {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .session-btn:hover {
+      background: #1e293b;
+      color: #fff;
+      border-color: #64748b;
+    }
+
+    .sidebar-footer {
+      padding: 12px 16px;
+      background: #0b1120;
+      border-top: 1px solid var(--sidebar-surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    /* --- MAIN VIEWPORT --- */
+    .main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    .top-header {
+      height: 60px;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .breadcrumb-path {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .breadcrumb-path strong {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 22px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Section Banner */
+    .section-banner {
+      background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+      border: 1px solid #bbf7d0;
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .banner-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .banner-title svg { color: var(--brand-blue); }
+
+    .banner-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 900px;
+      line-height: 1.45;
+    }
+
+    /* SEARCH CONTROLS CARD */
+    .search-control-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .search-inputs-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .booking-id-group {
+      flex: 1;
+      min-width: 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .booking-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .booking-input-wrapper svg.search-icon {
+      position: absolute;
+      left: 12px;
+      width: 17px;
+      height: 17px;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+
+    .booking-text-input {
+      width: 100%;
+      height: 42px;
+      padding: 0 36px 0 38px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .booking-text-input:focus {
+      border-color: var(--brand-blue);
+      box-shadow: 0 0 0 3px rgba(0, 139, 229, 0.15);
+    }
+
+    .clear-input-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 50%;
+    }
+
+    .clear-input-btn:hover { color: var(--text-main); background: #f1f5f9; }
+
+    /* Date Range Button & Dropdown */
+    .daterange-picker-group {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 320px;
+    }
+
+    .daterange-btn {
+      height: 42px;
+      padding: 0 14px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .daterange-btn:hover {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .daterange-btn svg { width: 16px; height: 16px; color: var(--brand-blue); }
+
+    .daterange-dropdown-menu {
+      position: absolute;
+      top: 68px;
+      left: 0;
+      width: 340px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      z-index: 1000;
+      padding: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .daterange-dropdown-menu.show { display: flex; }
+
+    .preset-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .preset-item {
+      padding: 7px 10px;
+      border-radius: 4px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+
+    .preset-item:hover {
+      background: var(--brand-blue-light);
+      color: var(--brand-blue);
+      font-weight: 600;
+    }
+
+    .preset-item.active {
+      background: var(--brand-blue);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .custom-range-inputs {
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .date-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date-input-field {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 12px;
+      color: #1e293b;
+      outline: none;
+    }
+
+    .date-input-field:focus { border-color: var(--brand-blue); }
+
+    .search-btn-action {
+      height: 42px;
+      padding: 0 24px;
+      align-self: flex-end;
+      border-radius: var(--radius-sm);
+      background-color: var(--brand-blue);
+      color: #ffffff;
+      border: none;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 4px rgba(0, 139, 229, 0.2);
+      transition: all 0.15s ease;
+    }
+
+    .search-btn-action:hover {
+      background-color: var(--brand-blue-hover);
+      box-shadow: 0 4px 8px rgba(0, 139, 229, 0.25);
+    }
+
+    .search-btn-action:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .sample-ids-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .sample-pill {
+      background: #f1f5f9;
+      border: 1px solid var(--border-color);
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--brand-blue);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sample-pill:hover {
+      background: var(--brand-blue-light);
+      border-color: var(--brand-blue);
+    }
+
+    /* Buttons */
+    .btn-secondary {
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Empty and Loading States */
+    .empty-search-state {
+      padding: 56px 24px;
+      text-align: center;
+      background: #ffffff;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .empty-search-state svg { width: 48px; height: 48px; color: #cbd5e1; }
+
+    .loading-pulse-box {
+      padding: 50px 30px;
+      text-align: center;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .spinner-circle {
+      width: 42px;
+      height: 42px;
+      border: 4px solid #e2e8f0;
+      border-top-color: var(--brand-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Dossier Layout */
+    .investigation-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* HERO FAULT ATTRIBUTION CARD */
+    .attribution-hero {
+      border-radius: var(--radius-md);
+      padding: 24px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .attribution-hero::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+    }
+
+    .attribution-hero.vehicle::before { background: var(--brand-green); }
+    .attribution-hero.charger::before { background: var(--danger); }
+    .attribution-hero.user::before { background: var(--brand-blue); }
+    .attribution-hero.network::before { background: var(--purple); }
+
+    .attribution-badge-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .attribution-pill-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .attribution-pill-tag.vehicle { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .attribution-pill-tag.charger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .attribution-pill-tag.user { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+    .attribution-pill-tag.network { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; }
+
+    .badge-category {
+      display: inline-flex;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .badge-category.slate { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .badge-category.amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-category.blue { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+    .badge-category.emerald { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+
+    .rca-title-main {
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    /* Detected Field Callout */
+    .detected-field-banner {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+
+    .detected-field-title {
+      font-weight: 700;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .detected-field-pill {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: Consolas, monospace;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+
+    .detected-field-loc {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .detected-field-loc code {
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #1e293b;
+      font-weight: 600;
+      font-family: Consolas, monospace;
+    }
+
+    .rca-narrative-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid var(--brand-blue);
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #334155;
+    }
+
+    .rca-narrative-box strong {
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .rca-action-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid var(--brand-green);
+      border-radius: 6px;
+      padding: 12px 18px;
+      font-size: 13px;
+      color: #166534;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .rca-action-box strong { font-weight: 700; }
+
+    /* 2-Column Info Grid */
+    .dossier-two-col {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 1080px) {
+      .dossier-two-col { grid-template-columns: 1fr; }
+    }
+
+    .info-panel {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel-heading {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .panel-heading svg { width: 17px; height: 17px; color: var(--brand-blue); }
+
+    .kv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+    }
+
+    .kv-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .kv-item.full-width { grid-column: span 2; }
+
+    .kv-k {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .kv-v {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .kv-v.highlight-blue { color: var(--brand-blue); }
+    .kv-v.highlight-danger { color: var(--danger); }
+
+    /* Timeline Table */
+    .timeline-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .timeline-header-bar {
+      padding: 14px 20px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .timeline-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timeline-search-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 20px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .timeline-filter-input {
+      flex: 1;
+      max-width: 380px;
+      height: 32px;
+      padding: 0 10px;
+      font-size: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .timeline-filter-input:focus { border-color: var(--brand-blue); }
+
+    .timeline-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      position: relative;
+    }
+
+    .timeline-table-wrapper::-webkit-scrollbar { height: 12px; }
+    .timeline-table-wrapper::-webkit-scrollbar-track { background: #f1f5f9; border-top: 1px solid #e2e8f0; }
+    .timeline-table-wrapper::-webkit-scrollbar-thumb { background: #0284c7; border-radius: 6px; border: 2px solid #f1f5f9; }
+    .timeline-table-wrapper::-webkit-scrollbar-thumb:hover { background: #0369a1; }
+
+    .timeline-table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .timeline-table th {
+      background: #f8fafc;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .timeline-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    .timeline-table tr:hover { background: #f8fafc; }
+
+    .ocpp-tag {
+      font-family: Consolas, monospace;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .ocpp-tag.start { background: #dcfce7; color: #15803d; }
+    .ocpp-tag.stop { background: #fee2e2; color: #b91c1c; }
+    .ocpp-tag.status { background: #e0f2fe; color: #0369a1; }
+    .ocpp-tag.other { background: #f1f5f9; color: #475569; }
+
+    .dir-badge {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2.5px 8px;
+      border-radius: 4px;
+      font-family: Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .status-pill.suspended-ev { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
+    .status-pill.suspended-evse { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .status-pill.faulted { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .status-pill.preparing { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+    .status-pill.charging { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-pill.finishing { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .status-pill.other { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+
+    .error-pill {
+      background: #fee2e2;
+      color: #b91c1c;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: Consolas, monospace;
+      display: inline-block;
+    }
+
+    .info-pill-highlight {
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: inline-block;
+    }
+
+    .raw-payload-cell {
+      font-family: Consolas, "JetBrains Mono", Menlo, monospace;
+      font-size: 11.5px;
+      color: #334155;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      min-width: 420px;
+      max-width: 620px;
+      max-height: 220px;
+      overflow-y: auto;
+      cursor: text;
+      user-select: text;
+    }
+
+    /* Slider Bar */
+    .timeline-slider-bar {
+      background: #ffffff;
+      border-top: 1px solid var(--border-color);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .slider-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 13px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--brand-blue);
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .slider-nav-btn:hover {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+    }
+
+    .slider-track-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slider-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .timeline-range-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .timeline-range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0284c7;
+      cursor: grab;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+
+    /* Toast Container */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 9999;
+    }
+
+    .toast {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-lg);
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-left: 4px solid var(--brand-green);
+      animation: slideIn 0.25s ease-out;
+    }
+
+    .toast.error { border-left-color: var(--danger); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-container">
+        <svg class="brand-logo-svg" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+          <path d="M22 6L11 21H20L18 34L29 19H20L22 6Z" fill="url(#grad)" stroke="#00B074" stroke-width="1.5" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="grad" x1="11" y1="6" x2="29" y2="34" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00B074"/>
+              <stop offset="1" stop-color="#008be5"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="brand-text-block">
+          <div class="brand-title"><span class="elec">Elec</span>treeFi</div>
+          <div class="brand-subtitle">Booking RCA Studio</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-content">
+      <!-- Quick Test Section -->
+      <div>
+        <div class="sidebar-section-title">
+          <span>Quick Test Bookings</span>
+          <span style="font-size: 10px; color: #38bdf8;">Sample RCA</span>
+        </div>
+        <div class="quick-list">
+          <div class="quick-item" onclick="setQuickBooking('6377384')">
+            <div class="quick-item-top">
+              <span class="quick-id">#6377384</span>
+              <span class="quick-tag charger">Rejected</span>
+            </div>
+            <span class="quick-desc">RemoteStart Rejected (Charger)</span>
+          </div>
+
+          <div class="quick-item" onclick="setQuickBooking('6378103')">
+            <div class="quick-item-top">
+              <span class="quick-id">#6378103</span>
+              <span class="quick-tag vehicle">Suspended</span>
+            </div>
+            <span class="quick-desc">SuspendedEV BMS Cutoff</span>
+          </div>
+
+          <div class="quick-item" onclick="setQuickBooking('7571375')">
+            <div class="quick-item-top">
+              <span class="quick-id">#7571375</span>
+              <span class="quick-tag charger">Rejected</span>
+            </div>
+            <span class="quick-desc">RemoteStart Rejection</span>
+          </div>
+
+          <div class="quick-item" onclick="setQuickBooking('7571391')">
+            <div class="quick-item-top">
+              <span class="quick-id">#7571391</span>
+              <span class="quick-tag cutoff">&lt; 1 kWh</span>
+            </div>
+            <span class="quick-desc">Completed with Early Cutoff</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Investigations Section -->
+      <div>
+        <div class="sidebar-section-title">
+          <span>Recent Searches</span>
+          <a href="javascript:void(0)" onclick="clearSearchHistory()" style="color: #94a3b8; text-decoration: none; font-size: 10px;">Clear</a>
+        </div>
+        <div class="history-card">
+          <div class="history-items-list" id="historyItemsList">
+            <div class="history-empty">No recent searches yet</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CMS Session Card -->
+      <div>
+        <div class="sidebar-section-title">
+          <span>CMS Session State</span>
+        </div>
+        <div class="session-widget">
+          <div class="session-header">
+            <span style="font-size: 11.5px; font-weight: 600; color: #e2e8f0;">Portal Auth</span>
+            <span class="session-status-badge active" id="sidebarSessionBadge">
+              <span class="session-dot active" id="sidebarSessionDot"></span>
+              <span id="sidebarSessionText">Checking...</span>
+            </span>
+          </div>
+          <div class="session-meta" id="sidebarSessionMeta">Validating session token...</div>
+          <div class="session-btn-row">
+            <button type="button" class="session-btn" onclick="checkSessionStatus(true)">Verify Auth</button>
+            <button type="button" class="session-btn" onclick="triggerCmsLogin()">Re-Login</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Engine & Cache -->
+      <div>
+        <div class="sidebar-section-title">
+          <span>Engine Controls</span>
+        </div>
+        <div class="session-widget">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1; cursor: pointer;">
+            <input type="checkbox" id="bypassCacheCheckbox" style="cursor: pointer;" />
+            <span>Force Fresh Fetch (Bypass Cache)</span>
+          </label>
+          <button type="button" class="session-btn" style="margin-top: 4px;" onclick="clearEngineCache()">
+            Purge In-Memory Cache
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <span>Dedicated RCA App v2.0</span>
+      <span style="color: var(--brand-green); font-weight: 600;">● Online</span>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN VIEWPORT ================= -->
+  <main class="main-wrapper">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <div class="breadcrumb-path">
+          <span>ElectreeFi</span>
+          <span>/</span>
+          <strong>Booking RCA &amp; Telemetry Deep Dive</strong>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn-secondary" id="btnCopyDossier" onclick="copyRcaReport()" disabled>
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+          Copy Dossier
+        </button>
+        <button type="button" class="btn-secondary" id="btnExportJson" onclick="exportDossierJson()" disabled>
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          Export JSON
+        </button>
+        <button type="button" class="btn-secondary" onclick="openBaseFolder()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+          Folder
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Workspace -->
+    <div class="content-area">
+      <!-- Section Banner -->
+      <div class="section-banner">
+        <div>
+          <div class="banner-title">
+            <svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+            Single Booking RCA &amp; Telemetry Investigator
+          </div>
+          <div class="banner-desc">
+            Inspect any Cancelled booking or Completed booking with low consumption (&lt;1 kWh). Correlates central OCPP transactions, raw charger message logs, and generates a descriptive, attribution-focused RCA (Vehicle vs Charger vs User vs Network).
+          </div>
+        </div>
+      </div>
+
+      <!-- SEARCH CONTROLS CARD -->
+      <div class="search-control-card">
+        <div class="search-inputs-row">
+          <!-- Booking ID Input -->
+          <div class="booking-id-group">
+            <label class="input-label" for="bookingIdInput">Booking ID (Cancelled or &lt; 1 kWh)</label>
+            <div class="booking-input-wrapper">
+              <svg class="search-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+              <input 
+                type="text" 
+                id="bookingIdInput" 
+                class="booking-text-input" 
+                placeholder="Enter Booking ID (e.g. 7571375, 6378103)..."
+                oninput="onBookingInput(this.value)"
+                onkeydown="if(event.key==='Enter') executeBookingSearch()"
+                autofocus
+              />
+              <button type="button" class="clear-input-btn" id="clearInputBtn" onclick="clearBookingInput()" title="Clear">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- CMS Date Range Picker Button & Dropdown -->
+          <div class="daterange-picker-group">
+            <label class="input-label">Date Range (Charging Details Filter)</label>
+            <button type="button" class="daterange-btn" id="daterange-btn" onclick="toggleDateRangeDropdown()">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span id="dateRangeDisplay">Last 7 Days</span>
+              </div>
+              <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+            </button>
+
+            <!-- Dropdown Menu replicating CMS -->
+            <div class="daterange-dropdown-menu" id="daterangeDropdown">
+              <div class="preset-list">
+                <div class="preset-item" onclick="selectDatePreset('today')">Today</div>
+                <div class="preset-item" onclick="selectDatePreset('yesterday')">Yesterday</div>
+                <div class="preset-item active" onclick="selectDatePreset('last7')">Last 7 Days</div>
+                <div class="preset-item" onclick="selectDatePreset('last15')">Last 15 Days</div>
+                <div class="preset-item" onclick="selectDatePreset('last30')">Last 30 Days</div>
+                <div class="preset-item" onclick="selectDatePreset('thisMonth')">This Month</div>
+                <div class="preset-item" onclick="selectDatePreset('lastMonth')">Last Month</div>
+                <div class="preset-item" onclick="selectDatePreset('custom')">Custom Range</div>
+              </div>
+
+              <div class="custom-range-inputs" id="customDateInputs" style="display: none;">
+                <div class="date-input-row">
+                  <input type="date" id="customStartDate" class="date-input-field" />
+                  <span style="font-size: 11px; color: #94a3b8;">to</span>
+                  <input type="date" id="customEndDate" class="date-input-field" />
+                </div>
+                <button type="button" class="btn-secondary" style="padding: 6px; font-size: 12px; justify-content: center; background: var(--brand-blue); color: #fff; border-color: var(--brand-blue);" onclick="applyCustomRange()">
+                  Apply Custom Range
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Primary Search Button -->
+          <button class="search-btn-action" id="searchSubmitBtn" onclick="executeBookingSearch()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            Investigate Booking RCA
+          </button>
+        </div>
+
+        <!-- Quick Test Pills -->
+        <div class="sample-ids-row">
+          <span>Quick Test Bookings:</span>
+          <span class="sample-pill" onclick="setQuickBooking('6377384')">6377384 (RemoteStart Rejected)</span>
+          <span class="sample-pill" onclick="setQuickBooking('6378103')">6378103 (Vehicle SuspendedEV)</span>
+          <span class="sample-pill" onclick="setQuickBooking('7571375')">7571375 (RemoteStart Rejection)</span>
+          <span class="sample-pill" onclick="setQuickBooking('7571391')">7571391 (Completed &lt;1kW)</span>
+        </div>
+      </div>
+
+      <!-- SEARCH RESULTS CONTAINER -->
+      <div id="investigationOutputArea">
+        <div class="empty-search-state">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <div style="font-size: 16px; font-weight: 700; color: var(--text-main);">No Booking Investigated Yet</div>
+          <div style="font-size: 13px; max-width: 500px; line-height: 1.5;">Enter any Cancelled booking ID or Completed booking ID with consumption under 1 kW to extract full telemetry, transaction records, and descriptive fault attribution.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // State variables
+    let dateRangeState = {
+      preset: 'last7',
+      startDate: '',
+      endDate: ''
+    };
+
+    let latestInvestigationData = null;
+    let searchHistory = [];
+
+    // History handling
+    function loadSearchHistory() {
+      try {
+        const stored = localStorage.getItem('electreefi_rca_history');
+        if (stored) {
+          searchHistory = JSON.parse(stored);
+          renderSearchHistory();
+        }
+      } catch (e) {
+        searchHistory = [];
+      }
+    }
+
+    function saveSearchHistory(bookingId, status, attribution) {
+      if (!bookingId) return;
+      searchHistory = searchHistory.filter(h => h.id !== bookingId);
+      searchHistory.unshift({
+        id: bookingId,
+        status: status || 'Investigated',
+        attribution: attribution || '',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      if (searchHistory.length > 10) searchHistory.pop();
+      try {
+        localStorage.setItem('electreefi_rca_history', JSON.stringify(searchHistory));
+      } catch (e) {}
+      renderSearchHistory();
+    }
+
+    function renderSearchHistory() {
+      const listEl = document.getElementById('historyItemsList');
+      if (!listEl) return;
+      if (searchHistory.length === 0) {
+        listEl.innerHTML = '<div class="history-empty">No recent searches yet</div>';
+        return;
+      }
+      listEl.innerHTML = searchHistory.map(h => `
+        <div class="history-item" onclick="setQuickBooking('${h.id}')" title="Click to investigate #${h.id}">
+          <span style="font-family: monospace; font-weight: 700; color: #38bdf8;">#${h.id}</span>
+          <span style="font-size: 10.5px; color: #94a3b8;">${h.time}</span>
+        </div>
+      `).join('');
+    }
+
+    function clearSearchHistory() {
+      searchHistory = [];
+      try { localStorage.removeItem('electreefi_rca_history'); } catch (e) {}
+      renderSearchHistory();
+      showToast('Search history cleared');
+    }
+
+    // Input handling
+    function onBookingInput(val) {
+      const clearBtn = document.getElementById('clearInputBtn');
+      if (clearBtn) clearBtn.style.display = val.trim().length > 0 ? 'flex' : 'none';
+    }
+
+    function clearBookingInput() {
+      const input = document.getElementById('bookingIdInput');
+      if (input) {
+        input.value = '';
+        onBookingInput('');
+        input.focus();
+      }
+    }
+
+    function setQuickBooking(id) {
+      const input = document.getElementById('bookingIdInput');
+      if (input) {
+        input.value = id;
+        onBookingInput(id);
+      }
+      executeBookingSearch();
+    }
+
+    // Date Range Presets
+    function initDateRange() {
+      selectDatePreset('last7');
+    }
+
+    function formatDateDisplay(d) {
+      const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    }
+
+    function formatIsoDate(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function selectDatePreset(preset) {
+      dateRangeState.preset = preset;
+      const today = new Date();
+      let start = new Date();
+      let end = new Date();
+
+      if (preset === 'today') {
+        start = new Date(today);
+        end = new Date(today);
+      } else if (preset === 'yesterday') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end = new Date(start);
+      } else if (preset === 'last7') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 7);
+        end = new Date(today);
+      } else if (preset === 'last15') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 15);
+        end = new Date(today);
+      } else if (preset === 'last30') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 30);
+        end = new Date(today);
+      } else if (preset === 'thisMonth') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today);
+      } else if (preset === 'lastMonth') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+      } else if (preset === 'custom') {
+        document.getElementById('customDateInputs').style.display = 'flex';
+        return;
+      }
+
+      document.getElementById('customDateInputs').style.display = 'none';
+      dateRangeState.startDate = formatIsoDate(start);
+      dateRangeState.endDate = formatIsoDate(end);
+
+      document.getElementById('dateRangeDisplay').textContent = `${formatDateDisplay(start)} - ${formatDateDisplay(end)}`;
+
+      document.querySelectorAll('.preset-item').forEach(el => {
+        el.classList.toggle('active', el.textContent.toLowerCase().replace(/\s+/g, '') === preset.toLowerCase());
+      });
+
+      closeDateRangeDropdown();
+    }
+
+    function toggleDateRangeDropdown() {
+      const menu = document.getElementById('daterangeDropdown');
+      menu.classList.toggle('show');
+    }
+
+    function closeDateRangeDropdown() {
+      const menu = document.getElementById('daterangeDropdown');
+      menu.classList.remove('show');
+    }
+
+    function applyCustomRange() {
+      const s = document.getElementById('customStartDate').value;
+      const e = document.getElementById('customEndDate').value;
+      if (!s || !e) {
+        showToast('Please select both start and end dates', 'error');
+        return;
+      }
+      dateRangeState.startDate = s;
+      dateRangeState.endDate = e;
+      const dStart = new Date(s);
+      const dEnd = new Date(e);
+      document.getElementById('dateRangeDisplay').textContent = `${formatDateDisplay(dStart)} - ${formatDateDisplay(dEnd)}`;
+      closeDateRangeDropdown();
+    }
+
+    // Close dropdown on outside click
+    window.addEventListener('click', (e) => {
+      const btn = document.getElementById('daterange-btn');
+      const menu = document.getElementById('daterangeDropdown');
+      if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+        closeDateRangeDropdown();
+      }
+    });
+
+    // Main Booking Search Execution
+    async function executeBookingSearch(customDateStart = null, customDateEnd = null) {
+      const bookingId = document.getElementById('bookingIdInput').value.trim();
+      if (!bookingId) {
+        showToast('Please enter a Booking ID to investigate', 'error');
+        return;
+      }
+
+      const startDate = customDateStart || dateRangeState.startDate;
+      const endDate = customDateEnd || dateRangeState.endDate;
+      const bypassCache = document.getElementById('bypassCacheCheckbox').checked;
+
+      const outputArea = document.getElementById('investigationOutputArea');
+      const searchBtn = document.getElementById('searchSubmitBtn');
+      const copyBtn = document.getElementById('btnCopyDossier');
+      const exportBtn = document.getElementById('btnExportJson');
+
+      searchBtn.disabled = true;
+      if (copyBtn) copyBtn.disabled = true;
+      if (exportBtn) exportBtn.disabled = true;
+
+      outputArea.innerHTML = `
+        <div class="loading-pulse-box">
+          <div class="spinner-circle"></div>
+          <div style="font-size: 16px; font-weight: 700; color: var(--text-main);">Investigating Booking #${bookingId}</div>
+          <div style="font-size: 13px; color: var(--text-muted); max-width: 520px; line-height: 1.5;">
+            Querying ElectreeFi Cancelled &amp; Completed (&lt;1kW) records, matching central OCPP transactions, and parsing telemetry logs...
+          </div>
+        </div>
+      `;
+
+      try {
+        const res = await fetch('/api/search-booking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            booking_id: bookingId,
+            start_date: startDate,
+            end_date: endDate,
+            bypass_cache: bypassCache
+          })
+        });
+
+        const data = await res.json();
+        searchBtn.disabled = false;
+
+        if (!data.success || !data.found) {
+          outputArea.innerHTML = `
+            <div class="attribution-hero charger">
+              <div class="attribution-badge-bar">
+                <span class="attribution-pill-tag charger">Booking Not Found</span>
+                <span style="font-size: 12px; color: var(--text-muted);">Date Range: ${startDate} to ${endDate}</span>
+              </div>
+              <div class="rca-title-main" style="color: #b91c1c;">No Record Matching Booking ID #${bookingId}</div>
+              <div class="rca-narrative-box">
+                ${data.message || 'The specified Booking ID was not found in Cancelled or Completed (<1kWh) records within the current date range.'}
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 4px;">
+                <span style="font-size: 12.5px; color: var(--text-muted);">Tip: The booking may have occurred earlier or under a broader timeframe.</span>
+                <button type="button" class="btn-secondary" style="background: var(--brand-blue); color: #fff; border-color: var(--brand-blue);" onclick="searchLast30Days('${bookingId}')">
+                  Search in Last 30 Days
+                </button>
+              </div>
+            </div>
+          `;
+          showToast(data.message || 'Booking not found in date range', 'error');
+          return;
+        }
+
+        latestInvestigationData = data;
+        if (copyBtn) copyBtn.disabled = false;
+        if (exportBtn) exportBtn.disabled = false;
+
+        saveSearchHistory(bookingId, data.booking.session_type, data.rca.attribution);
+        renderInvestigationResult(data);
+        showToast(`Investigation complete for Booking #${bookingId}`, 'success');
+
+      } catch (err) {
+        searchBtn.disabled = false;
+        outputArea.innerHTML = `
+          <div class="attribution-hero charger">
+            <div class="rca-title-main" style="color: #b91c1c;">Investigation Request Failed</div>
+            <div class="rca-narrative-box">${err.message}</div>
+          </div>
+        `;
+        showToast(`Error: ${err.message}`, 'error');
+      }
+    }
+
+    function searchLast30Days(bookingId) {
+      selectDatePreset('last30');
+      document.getElementById('bookingIdInput').value = bookingId;
+      executeBookingSearch();
+    }
+
+    // Render Dossier
+    function renderInvestigationResult(data) {
+      const b = data.booking;
+      const tx = data.transaction;
+      const rca = data.rca;
+      const logs = data.logs || [];
+
+      // Determine attribution styling class
+      let heroClass = 'vehicle';
+      let pillClass = 'vehicle';
+      let iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H11a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H20a1 1 0 001-1V9.5a1.5 1.5 0 00-.44-1.06l-3-3A1.5 1.5 0 0016.5 5H13V4a1 1 0 00-1-1H3z"></path></svg>';
+
+      const attrUpper = (rca.attribution || '').toUpperCase();
+      if (attrUpper.includes('CHARGER') || attrUpper.includes('HARDWARE') || attrUpper.includes('ISOLATION')) {
+        heroClass = 'charger';
+        pillClass = 'charger';
+        iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>';
+      } else if (attrUpper.includes('USER') || attrUpper.includes('OPERATOR')) {
+        heroClass = 'user';
+        pillClass = 'user';
+        iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
+      } else if (attrUpper.includes('NETWORK') || attrUpper.includes('CMS') || attrUpper.includes('GATEWAY')) {
+        heroClass = 'network';
+        pillClass = 'network';
+        iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A1 1 0 01.808 6.808c5.076-5.077 13.308-5.077 18.384 0a1 1 0 01-1.414 1.414zM14.95 11.05a7 7 0 00-9.9 0 1 1 0 01-1.414-1.414 9 9 0 0112.728 0 1 1 0 01-1.414 1.414zM12.12 13.88a3 3 0 00-4.242 0 1 1 0 01-1.415-1.415 5 5 0 017.072 0 1 1 0 01-1.415 1.415zM9 16a1 1 0 112 0 1 1 0 01-2 0z" clip-rule="evenodd"></path></svg>';
+      }
+
+      // Format timeline rows
+      let timelineRowsHtml = '';
+      if (logs.length > 0) {
+        logs.forEach(log => {
+          let tagClass = 'other';
+          const ev = (log.event || '').toLowerCase();
+          if (ev.includes('start')) tagClass = 'start';
+          else if (ev.includes('stop')) tagClass = 'stop';
+          else if (ev.includes('status')) tagClass = 'status';
+
+          // Status column badge
+          let statusHtml = '<span style="color: #94a3b8;">-</span>';
+          if (log.status) {
+            const s = log.status.toLowerCase();
+            if (s === 'suspendedev') statusHtml = '<span class="status-pill suspended-ev">SuspendedEV</span>';
+            else if (s === 'suspendedevse') statusHtml = '<span class="status-pill suspended-evse">SuspendedEVSE</span>';
+            else if (s === 'faulted') statusHtml = '<span class="status-pill faulted">Faulted</span>';
+            else if (s === 'preparing') statusHtml = '<span class="status-pill preparing">Preparing</span>';
+            else if (s === 'charging') statusHtml = '<span class="status-pill charging">Charging</span>';
+            else if (s === 'finishing') statusHtml = '<span class="status-pill finishing">Finishing</span>';
+            else statusHtml = `<span class="status-pill other">${escapeHtml(log.status)}</span>`;
+          }
+
+          // Error code badge
+          let errHtml = '<span style="color: #64748b; font-size: 11.5px;">NoError</span>';
+          if (log.error_code && log.error_code.toLowerCase() !== 'noerror') {
+            errHtml = `<span class="error-pill">${escapeHtml(log.error_code)}</span>`;
+          }
+
+          // Info badge
+          let infoHtml = '<span style="color: #94a3b8;">-</span>';
+          if (log.info) {
+            const isBenign = log.info.toLowerCase().includes('gsm') || !isNaN(log.info);
+            if (isBenign) {
+              infoHtml = `<span style="color: #94a3b8; font-size: 11px;">${escapeHtml(log.info)}</span>`;
+            } else {
+              infoHtml = `<span class="info-pill-highlight">${escapeHtml(log.info)}</span>`;
+            }
+          }
+
+          timelineRowsHtml += `
+            <tr class="timeline-row">
+              <td style="font-family: monospace; font-size: 11.5px; color: var(--text-muted); white-space: nowrap;">${log.timestamp || '-'}</td>
+              <td><span class="ocpp-tag ${tagClass}">${escapeHtml(log.event || 'Unknown')}</span></td>
+              <td><span class="dir-badge">${escapeHtml(log.type || '-')}</span></td>
+              <td style="font-weight: 600;">Gun ${log.connector_id !== null && log.connector_id !== undefined ? log.connector_id : '-'}</td>
+              <td>${statusHtml}</td>
+              <td>${errHtml}</td>
+              <td>${infoHtml}</td>
+              <td><div class="raw-payload-cell" ondblclick="copyCellPayload(this)" title="Double click to copy raw message payload">${escapeHtml(log.raw || '')}</div></td>
+            </tr>
+          `;
+        });
+      } else {
+        timelineRowsHtml = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 22px;">No raw OCPP logs recorded around this booking timestamp.</td></tr>';
+      }
+
+      const outputArea = document.getElementById('investigationOutputArea');
+      outputArea.innerHTML = `
+        <div class="investigation-container">
+          
+          <!-- HERO FAULT ATTRIBUTION CARD -->
+          <div class="attribution-hero ${heroClass}">
+            <div class="attribution-badge-bar">
+              <span class="attribution-pill-tag ${pillClass}">
+                ${iconSvg}
+                FAULT ATTRIBUTION: ${rca.attribution}
+              </span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge-category slate">Confidence: ${rca.confidence}</span>
+                <span class="badge-category ${b.session_type === 'Cancelled' ? 'amber' : 'blue'}">${b.session_type}</span>
+                <span class="badge-category emerald" style="font-family: monospace; font-size: 11.5px;" title="Engine Telemetry">
+                  ⚡ ${data.cached ? 'Instant Cache (0 Hits • 0.2ms)' : `${data.hits_count || 1} API Hits • ${data.latency_ms || 350}ms`}
+                </span>
+                <button type="button" class="btn-secondary" style="padding: 5px 10px; font-size: 11.5px;" onclick="copyRcaReport()">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                  Copy RCA Dossier
+                </button>
+              </div>
+            </div>
+
+            <div class="rca-title-main">${rca.root_cause}</div>
+
+            <!-- DETECTED FAULT FIELD CALLOUT -->
+            <div class="detected-field-banner">
+              <span class="detected-field-title">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                Primary Root Cause Field:
+              </span>
+              <span class="detected-field-pill">${escapeHtml(rca.detected_field || '-')}</span>
+              <span class="detected-field-loc">Location in Logs: <code>${escapeHtml(rca.error_location || '-')}</code></span>
+            </div>
+
+            <div class="rca-narrative-box">
+              <strong>What Most Appropriately Went Wrong</strong>
+              ${rca.narrative}
+            </div>
+
+            <div class="rca-action-box">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+              <div><strong>Recommended Action:</strong> ${rca.action_item}</div>
+            </div>
+          </div>
+
+          <!-- 2-COLUMN DETAILS GRID -->
+          <div class="dossier-two-col">
+            <!-- COLUMN 1: BOOKING & VEHICLE INFO -->
+            <div class="info-panel">
+              <div class="panel-heading">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
+                Booking &amp; Vehicle Telemetry
+              </div>
+              <div class="kv-grid">
+                <div class="kv-item">
+                  <span class="kv-k">Booking ID</span>
+                  <span class="kv-v highlight-blue">#${b.booking_id}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Status</span>
+                  <span class="kv-v">${b.status}</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Station Name</span>
+                  <span class="kv-v">${b.station_name}</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Station Address</span>
+                  <span class="kv-v" style="font-weight: 500; font-size: 12px; color: var(--text-muted);">${b.station_address || `${b.city}, ${b.state}`}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Charger Code</span>
+                  <span class="kv-v" style="font-family: monospace;">${b.charger_code}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Connector Gun</span>
+                  <span class="kv-v">Gun #${b.connector_id} (${b.connector_type})</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Vehicle Model</span>
+                  <span class="kv-v">${b.vehicle_make} ${b.vehicle_model}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Vehicle Reg</span>
+                  <span class="kv-v" style="font-family: monospace;">${b.vehicle_number}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">User Name</span>
+                  <span class="kv-v">${b.user_name}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Mobile Number</span>
+                  <span class="kv-v">${b.mobile}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Energy Consumed</span>
+                  <span class="kv-v highlight-danger">${b.energy_consumed_kwh.toFixed(3)} kWh</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Payment / Refund</span>
+                  <span class="kv-v">Rs. ${b.payment_received} / Rs. ${b.refunded_amount}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Booking In Time</span>
+                  <span class="kv-v">${b.booking_in_time}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Booking Out Time</span>
+                  <span class="kv-v">${b.booking_out_time}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMN 2: TRANSACTION & OCPP DETAILS -->
+            <div class="info-panel">
+              <div class="panel-heading">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+                Central Transaction &amp; Meter Readings
+              </div>
+              <div class="kv-grid">
+                <div class="kv-item">
+                  <span class="kv-k">Transaction ID</span>
+                  <span class="kv-v highlight-blue" style="font-family: monospace;">
+                    ${tx ? '#' + tx.transaction_pk : 'None Assigned (Cancelled)'}
+                    <span style="font-size: 11.5px; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 2px 7px; border-radius: 4px; margin-left: 6px; display: inline-block;">ID Tag: ${b.id_tag && b.id_tag !== '-' ? b.id_tag : (tx && tx.id_tag ? tx.id_tag : '-')}</span>
+                  </span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">ID Tag (Auth / RFID Tag)</span>
+                  <span class="kv-v highlight-blue" style="font-family: monospace; font-size: 13.5px; font-weight: 700;">${b.id_tag && b.id_tag !== '-' ? b.id_tag : (tx && tx.id_tag ? tx.id_tag : '-')}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Booking Mode</span>
+                  <span class="kv-v">${b.booking_mode}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Charger Stop Reason</span>
+                  <span class="kv-v highlight-danger">${(tx && tx.stop_reason) ? tx.stop_reason : (b.stop_reason_booking || 'None')}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Server Stop Trigger</span>
+                  <span class="kv-v">${(tx && tx.response_message) ? tx.response_message : (b.stop_trigger_booking || 'None')}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Start Meter Reading</span>
+                  <span class="kv-v" style="font-family: monospace;">${tx ? tx.start_value : '0'}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Stop Meter Reading</span>
+                  <span class="kv-v" style="font-family: monospace;">${tx ? tx.stop_value : '0'}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Initial SOC / Final SOC</span>
+                  <span class="kv-v">${b.initial_soc}% / ${b.final_soc}%</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Battery Capacity</span>
+                  <span class="kv-v">${b.battery_capacity} kWh</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Transaction Start Timestamp</span>
+                  <span class="kv-v">${tx ? tx.start_timestamp : '-'}</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Transaction Stop Timestamp</span>
+                  <span class="kv-v">${tx ? tx.stop_timestamp : '-'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TIMELINE OF OCPP MESSAGES -->
+          <div class="timeline-card">
+            <div class="timeline-header-bar">
+              <div class="timeline-title">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
+                Chronological OCPP Event Timeline (${logs.length} messages captured)
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <span style="font-size: 12px; font-weight: 600; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 3px 9px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                  Slide bottom bar to navigate &rarr;
+                </span>
+                <span style="font-size: 11.5px; color: var(--text-muted);">Connector #${b.connector_id} • Charger ID: ${b.charger_id}</span>
+              </div>
+            </div>
+
+            <!-- Filter Input for Timeline -->
+            <div class="timeline-search-bar">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20" style="color: #94a3b8;"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+              <input type="text" class="timeline-filter-input" id="timelineFilterInput" placeholder="Filter timeline (e.g. status, remote, stop, error)..." oninput="filterTimelineRows(this.value)" />
+              <span id="timelineFilterCount" style="font-size: 11.5px; color: var(--text-muted);">Showing all ${logs.length} events</span>
+            </div>
+
+            <div class="timeline-table-wrapper" id="timelineTableWrapper">
+              <table class="timeline-table" id="timelineTable">
+                <thead>
+                  <tr>
+                    <th style="min-width: 175px;">Timestamp</th>
+                    <th style="min-width: 155px;">Event Name</th>
+                    <th style="min-width: 95px;">Direction</th>
+                    <th style="min-width: 80px;">Gun</th>
+                    <th style="min-width: 130px;">Status (status)</th>
+                    <th style="min-width: 140px;">Error (errorCode)</th>
+                    <th style="min-width: 160px;">Info (info)</th>
+                    <th style="min-width: 440px; max-width: 620px;">Raw Message Payload</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${timelineRowsHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- DEDICATED SLIDING BAR & CONTROL BAR AT THE BOTTOM -->
+            <div class="timeline-slider-bar">
+              <button type="button" class="slider-nav-btn" onclick="scrollTimelineRelative(-220)" title="Scroll Left (←)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Scroll Left
+              </button>
+
+              <div class="slider-track-container">
+                <span class="slider-label">Metadata</span>
+                <input type="range" class="timeline-range-slider" id="timelineRangeSlider" min="0" max="100" value="0" step="1" oninput="onTimelineSliderInput(this.value)" title="Slide to pan horizontally across timeline columns">
+                <span class="slider-label">Payload &rarr;</span>
+              </div>
+
+              <button type="button" class="slider-nav-btn" onclick="scrollTimelineRelative(220)" title="Scroll Right (→)">
+                Scroll Right
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      initTimelineSliderSync();
+    }
+
+    // Timeline filtering
+    function filterTimelineRows(query) {
+      const q = (query || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('#timelineTable tbody tr.timeline-row');
+      let visible = 0;
+      rows.forEach(r => {
+        const text = r.textContent.toLowerCase();
+        const matches = !q || text.includes(q);
+        r.style.display = matches ? '' : 'none';
+        if (matches) visible++;
+      });
+      const countEl = document.getElementById('timelineFilterCount');
+      if (countEl) {
+        countEl.textContent = q ? `Showing ${visible} of ${rows.length} events` : `Showing all ${rows.length} events`;
+      }
+    }
+
+    function scrollTimelineRelative(delta) {
+      const wrapper = document.getElementById('timelineTableWrapper');
+      if (!wrapper) return;
+      wrapper.scrollBy({ left: delta, behavior: 'smooth' });
+    }
+
+    function onTimelineSliderInput(val) {
+      const wrapper = document.getElementById('timelineTableWrapper');
+      if (!wrapper) return;
+      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+      if (maxScroll > 0) {
+        wrapper.scrollLeft = (val / 100) * maxScroll;
+      }
+    }
+
+    function initTimelineSliderSync() {
+      const wrapper = document.getElementById('timelineTableWrapper');
+      const slider = document.getElementById('timelineRangeSlider');
+      if (!wrapper || !slider) return;
+
+      wrapper.addEventListener('scroll', () => {
+        const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+        if (maxScroll > 0) {
+          const pct = (wrapper.scrollLeft / maxScroll) * 100;
+          slider.value = Math.round(pct);
+        } else {
+          slider.value = 0;
+        }
+      });
+    }
+
+    function copyCellPayload(el) {
+      const text = el.innerText || el.textContent;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Raw OCPP message copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Could not copy payload', 'error');
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Dossier Export / Copy Functions
+    function copyRcaReport() {
+      if (!latestInvestigationData) {
+        showToast('No investigation results to copy', 'error');
+        return;
+      }
+      const b = latestInvestigationData.booking;
+      const tx = latestInvestigationData.transaction;
+      const rca = latestInvestigationData.rca;
+
+      const reportText = `===============================================================
+ELECTREEFI CMS - SINGLE BOOKING ROOT CAUSE ANALYSIS (RCA) DOSSIER
+===============================================================
+Booking ID        : #${b.booking_id}
+Session Type      : ${b.session_type}
+Station Name      : ${b.station_name} (${b.city}, ${b.state})
+Charger Code      : ${b.charger_code} (Gun #${b.connector_id} - ${b.connector_type})
+Vehicle           : ${b.vehicle_make} ${b.vehicle_model} (${b.vehicle_number})
+Driver / User     : ${b.user_name} (${b.mobile})
+Energy Consumed   : ${b.energy_consumed_kwh.toFixed(3)} kWh
+Paid / Refunded   : Rs. ${b.payment_received} / Rs. ${b.refunded_amount}
+Booking Window    : ${b.booking_in_time} -> ${b.booking_out_time}
+Transaction ID    : ${tx ? tx.transaction_pk : 'None Assigned (Cancelled)'}
+ID Tag (Auth/RFID): ${b.id_tag || (tx ? tx.id_tag : '-') || '-'}
+Charger StopReason: ${(tx && tx.stop_reason) ? tx.stop_reason : b.stop_reason_booking}
+
+---------------------------------------------------------------
+FAULT ATTRIBUTION : ${rca.attribution}
+PRIMARY ROOT CAUSE: ${rca.root_cause}
+CONFIDENCE LEVEL  : ${rca.confidence}
+DETECTED FIELD    : ${rca.detected_field || '-'} (in ${rca.error_location || '-'})
+---------------------------------------------------------------
+WHAT WENT WRONG:
+${rca.narrative}
+
+RECOMMENDED ACTION:
+${rca.action_item}
+===============================================================`;
+
+      navigator.clipboard.writeText(reportText).then(() => {
+        showToast('RCA Dossier copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Could not copy report to clipboard', 'error');
+      });
+    }
+
+    function exportDossierJson() {
+      if (!latestInvestigationData) {
+        showToast('No investigation results to export', 'error');
+        return;
+      }
+      const jsonStr = JSON.stringify(latestInvestigationData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ElectreeFi_Booking_RCA_${latestInvestigationData.booking.booking_id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded investigation JSON');
+    }
+
+    // Session status check
+    async function checkSessionStatus(userTriggered = false) {
+      try {
+        const res = await fetch('/api/session-status');
+        const data = await res.json();
+        
+        const badge = document.getElementById('sidebarSessionBadge');
+        const dot = document.getElementById('sidebarSessionDot');
+        const text = document.getElementById('sidebarSessionText');
+        const meta = document.getElementById('sidebarSessionMeta');
+
+        if (data.is_valid) {
+          badge.className = 'session-status-badge active';
+          dot.className = 'session-dot active';
+          text.textContent = 'Active';
+          meta.textContent = `Token active (${data.modified || 'Stored'})`;
+          if (userTriggered) showToast('CMS session is active and verified!', 'success');
+        } else {
+          badge.className = 'session-status-badge expired';
+          dot.className = 'session-dot expired';
+          text.textContent = 'Expired';
+          meta.textContent = data.has_session ? 'Token expired; re-login needed' : 'No session token file';
+          if (userTriggered) showToast('Session is invalid or expired. Please re-login.', 'error');
+        }
+      } catch (e) {
+        console.error('Session check failed', e);
+      }
+    }
+
+    async function triggerCmsLogin() {
+      try {
+        showToast('Launching visible CMS login browser window...');
+        const res = await fetch('/api/trigger-login', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Login launched');
+      } catch (e) {
+        showToast(`Failed to trigger login: ${e.message}`, 'error');
+      }
+    }
+
+    async function clearEngineCache() {
+      try {
+        const res = await fetch('/api/clear-cache', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Cache purged', 'success');
+      } catch (e) {
+        showToast(`Error clearing cache: ${e.message}`, 'error');
+      }
+    }
+
+    async function openBaseFolder() {
+      try {
+        await fetch('/api/open-folder', { method: 'POST' });
+        showToast('Opened project folder in Windows Explorer');
+      } catch (e) {
+        showToast(`Failed to open folder: ${e.message}`, 'error');
+      }
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+      toast.innerHTML = `
+        <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+          ${type === 'error' 
+            ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>'
+            : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>'
+          }
+        </svg>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.4s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 400);
+      }, 4000);
+    }
+
+    // Startup
+    window.addEventListener('DOMContentLoaded', () => {
+      initDateRange();
+      loadSearchHistory();
+      checkSessionStatus(false);
+    });
+  </script>
+</body>
+</html>
