@@ -28,20 +28,20 @@ In production roaming networks, **18% to 25% of charging sessions abort prematur
 
 ```mermaid
 graph TD
-    A[OCPI Roaming Session Data<br/>Completed & Cancelled Workbooks] --> B[Low-Energy Anomaly Filter<br/>Discard Normal Sessions >= 1.0 kWh]
-    B --> C[Temporal Handshake Segmentation<br/>0-30s | 30-90s | 90-180s | >180s]
-    C --> D[NLP Error Buffer Tokenizer<br/>Regex & Semantic Clustering]
-    D --> E[Battery Saturation Profiler<br/>Initial vs Final SOC >= 80%]
-    E --> F[Causal Inference Engine<br/>Multi-Party Fault Attribution Matrix]
+    A["OCPI Roaming Session Data<br/>Completed & Cancelled Workbooks"] --> B["Low-Energy Anomaly Filter<br/>Discard Normal Sessions &gt;= 1.0 kWh"]
+    B --> C["Temporal Handshake Segmentation<br/>0-30s / 30-90s / 90-180s / &gt;180s"]
+    C --> D["NLP Error Buffer Tokenizer<br/>Regex & Semantic Clustering"]
+    D --> E["Battery Saturation Profiler<br/>Initial vs Final SOC &gt;= 80%"]
+    E --> F["Causal Inference Engine<br/>Multi-Party Fault Attribution Matrix"]
     
-    F --> G1[Charger / Hardware Side<br/>Cable Lock, Ground Trip, Isolation]
-    F --> G2[Vehicle / BMS Side<br/>CAN Timeout, Over-voltage, SOC Full]
-    F --> G3[CPO Platform / Protocol Side<br/>OCPI Rejection, Auth Timeout]
-    F --> G4[User / Operational Side<br/>App Cancel, Premature Unplug]
+    F --> G1["Charger / Hardware Side<br/>Cable Lock, Ground Trip, Isolation"]
+    F --> G2["Vehicle / BMS Side<br/>CAN Timeout, Over-voltage, SOC Full"]
+    F --> G3["CPO Platform / Protocol Side<br/>OCPI Rejection, Auth Timeout"]
+    F --> G4["User / Operational Side<br/>App Cancel, Premature Unplug"]
 
-    F --> H[FastMCP Agentic Server<br/>Autonomous LLM Diagnostic Tools]
-    F --> I[Executive Word Report .docx<br/>C-Level Metrics & Remediation]
-    F --> J[Analytical Excel Workbook .xlsx<br/>6-Tab Manufacturer & Station Deep Dive]
+    F --> H["FastMCP Agentic Server<br/>Autonomous LLM Diagnostic Tools"]
+    F --> I["Executive Word Report (.docx)<br/>C-Level Metrics & Remediation"]
+    F --> J["Analytical Excel Workbook (.xlsx)<br/>6-Tab Manufacturer & Station Deep Dive"]
 ```
 
 ### 1. Multi-Stage Causal Inference Graph
