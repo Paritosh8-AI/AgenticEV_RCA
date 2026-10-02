@@ -20,7 +20,7 @@ In production roaming networks, **18% to 25% of charging sessions abort prematur
 - Telemetry logs are fragmented across raw JSON-RPC envelopes, unstructured vendor error strings (`"0x1F"`, `"EVCommunicationError"`, `"InvalidSession"`), and disconnected meter values.
 - Parties default to finger-pointing: CPO claims the EV BMS dropped the contactor, while the automaker claims the charger failed the isolation test.
 
-**The ElectreeFi Intelligent RCA Platform** solves this by combining **deterministic temporal anomaly detection, NLP error tokenization, and a multi-party causal inference graph** into an automated system capable of triaging thousands of sessions in seconds—synthesizing executive Word briefings and forensic 6-tab Excel workbooks with 100% deterministic attribution accuracy.
+**The AgenticEV Intelligent RCA Platform** solves this by combining **deterministic temporal anomaly detection, NLP error tokenization, and a multi-party causal inference graph** into an automated system capable of triaging thousands of sessions in seconds—synthesizing executive Word briefings and forensic 6-tab Excel workbooks with 100% deterministic attribution accuracy.
 
 ---
 
