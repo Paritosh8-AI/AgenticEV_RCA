@@ -275,19 +275,5 @@ tests/test_rca_mapper.py::test_map_to_cs_rca_text_without_rejected_remote_start 
 ============================= 21 passed in 1.97s ==============================
 ```
 
----
-
-## 🎯 AI / ML Project Pitch & Resume Highlights
-
-When presenting or pitching this project to interviewers, investors, or engineering leads, emphasize these key technical achievements:
-
-- **Domain Complexity & Scale**: Developed an end-to-end telemetry analysis platform processing multi-party EV charging transactions across OCPP 1.6-J and OCPI 2.2 roaming protocols.
-- **Hybrid AI/ML Architecture**: Architected a causal inference engine combining temporal anomaly detection, NLP error tokenization, and multi-variable state machine graphs to achieve 100% deterministic attribution accuracy across hardware, vehicle BMS, cloud protocol, and driver behavior.
-- **Noise Reduction & Data Cleansing**: Engineered an intelligent low-energy filtering pipeline ($< 1.0\text{ kWh}$) that automatically purges normal charging transactions and applies battery saturation curve analysis to prevent false-positive charger blame.
-- **Agentic AI Integration**: Implemented a Model Context Protocol (FastMCP) server exposing native autonomous tools, enabling LLM agents to conduct real-time conversational diagnostics and live telemetry inspection.
-- **Full-Stack Execution**: Delivered both a headless automated CLI pipeline, a dual desktop web application with streaming SSE logging, and automated generation of publication-ready Word and multi-sheet Excel reports.
-
----
-
 ## 📄 License
 This project is licensed under the [MIT License](LICENSE).
