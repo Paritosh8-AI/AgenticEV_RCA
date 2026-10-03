@@ -1,5 +1,6 @@
 # AgenticEV RCA Studio & Intelligent Diagnostics Platform
 
+[![CI](https://github.com/Paritosh8-AI/AgenticEV_RCA/actions/workflows/ci.yml/badge.svg)](https://github.com/Paritosh8-AI/AgenticEV_RCA/actions)
 [![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![FastMCP](https://img.shields.io/badge/MCP-FastMCP%202.2-green.svg?logo=anthropic&logoColor=white)](https://modelcontextprotocol.io/)
 [![Playwright](https://img.shields.io/badge/Playwright-Automated%20Telemetry-orange.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
