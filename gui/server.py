@@ -766,6 +766,38 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(result).encode("utf-8"))
             return
 
+        elif path == "/api/chat-telemetry":
+            if str(BASE_DIR) not in sys.path:
+                sys.path.insert(0, str(BASE_DIR))
+            from src.rca.telemetry_copilot import copilot
+
+            user_query = str(payload.get("message", "")).strip()
+            if not user_query:
+                self.send_response(HTTPStatus.BAD_REQUEST)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "message": "No query message provided."}).encode("utf-8"))
+                return
+
+            try:
+                result = copilot.ask(user_query)
+                result["success"] = True
+            except Exception as e:
+                result = {
+                    "success": False,
+                    "answer": f"### ⚠️ Analysis Exception\n\nFailed to process query: `{str(e)}`",
+                    "metrics": [],
+                    "suggested_questions": ["Summarize network health", "Which stations have the most failures?"]
+                }
+
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode("utf-8"))
+            return
+
         elif path == "/api/upload-roaming-excel":
             try:
                 fname = payload.get("filename", "uploaded_roaming.xlsx")
@@ -915,7 +947,7 @@ def start_server(port: int = 58210):
 
 
 if __name__ == "__main__":
-    port = 58210
+    port = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 58210
     server = start_server(port)
     try:
         server.serve_forever()

@@ -1887,6 +1887,414 @@
       border-color: #93c5fd;
       color: #0284c7;
     }
+  
+    /* --- AI TELEMETRY COPILOT STYLES --- */
+    .chat-copilot-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 600px;
+    }
+
+    .chat-suggestions-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .chat-suggestions-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .chat-prompt-pill {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 5px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chat-prompt-pill:hover {
+      background: #f3e8ff;
+      border-color: #a855f7;
+      color: #7c3aed;
+      transform: translateY(-1px);
+    }
+
+    .chat-messages-window {
+      flex: 1;
+      min-height: 440px;
+      max-height: 540px;
+      overflow-y: auto;
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: #fdfdfd;
+    }
+
+    .chat-msg {
+      display: flex;
+      gap: 12px;
+      max-width: 86%;
+      animation: chatFadeIn 0.2s ease-out;
+    }
+
+    @keyframes chatFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-msg.copilot {
+      align-self: flex-start;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .chat-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .chat-avatar.copilot {
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(124, 58, 237, 0.35);
+    }
+
+    .chat-avatar.user {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    }
+
+    .chat-bubble-content {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px 18px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+      color: var(--text-main);
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+
+    .chat-msg.copilot .chat-bubble-content {
+      border-top-left-radius: 4px;
+      border-color: #e2e8f0;
+    }
+
+    .chat-msg.user .chat-bubble-content {
+      border-top-right-radius: 4px;
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0369a1;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+    }
+
+    .chat-sender-name {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #7c3aed;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chat-msg.user .chat-sender-name {
+      color: #e0f2fe;
+    }
+
+    .chat-timestamp {
+      font-size: 10px;
+      font-weight: 400;
+      color: #94a3b8;
+    }
+
+    .chat-msg.user .chat-timestamp {
+      color: #bae6fd;
+    }
+
+    .chat-text h3 {
+      font-size: 15px;
+      font-weight: 800;
+      margin: 8px 0 6px 0;
+      color: #0f172a;
+    }
+
+    .chat-text h4 {
+      font-size: 13.5px;
+      font-weight: 700;
+      margin: 8px 0 4px 0;
+      color: #1e293b;
+    }
+
+    .chat-text p {
+      margin-bottom: 8px;
+    }
+
+    .chat-text ul {
+      margin: 6px 0 8px 20px;
+    }
+
+    .chat-text li {
+      margin-bottom: 4px;
+    }
+
+    .chat-text blockquote {
+      border-left: 3px solid #7c3aed;
+      background: #f5f3ff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      margin: 8px 0;
+      font-size: 12.5px;
+      color: #5b21b6;
+    }
+
+    .chat-metric-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .chat-metric-chip {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      flex-direction: column;
+      min-width: 120px;
+    }
+
+    .chat-metric-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .chat-metric-lbl {
+      font-size: 10.5px;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .chat-chart-card {
+      margin-top: 12px;
+      background: #0b1120;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #ffffff;
+    }
+
+    .chat-chart-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #93c5fd;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chat-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 11.5px;
+    }
+
+    .chat-bar-label {
+      width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #cbd5e1;
+    }
+
+    .chat-bar-track {
+      flex: 1;
+      height: 12px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .chat-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .chat-bar-val {
+      width: 45px;
+      text-align: right;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .chat-code-block-wrap {
+      position: relative;
+      margin-top: 10px;
+    }
+
+    .chat-code-box {
+      background: #0b1120;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+      border: 1px solid #1e293b;
+    }
+
+    .chat-copy-action-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .chat-copy-action-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .chat-input-container {
+      padding: 14px 20px;
+      background: #ffffff;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .chat-input-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .chat-textarea {
+      flex: 1;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13.5px;
+      color: var(--text-main);
+      font-family: inherit;
+      outline: none;
+      resize: none;
+      max-height: 110px;
+      transition: border-color 0.15s ease;
+      line-height: 1.4;
+    }
+
+    .chat-textarea:focus {
+      border-color: #a855f7;
+      box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+    }
+
+    .chat-actions-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-btn-clear {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #64748b;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .chat-btn-clear:hover {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .chat-btn-send {
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 3px 6px rgba(124, 58, 237, 0.3);
+      transition: all 0.15s ease;
+    }
+
+    .chat-btn-send:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(124, 58, 237, 0.4);
+    }
+
+    .chat-btn-send:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .chat-input-hint {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
   </style>
 </head>
 <body>
@@ -1915,7 +2323,12 @@
 
     <nav class="sidebar-nav">
       <div class="nav-section-label">Investigation &amp; Lookup</div>
-      <div class="nav-item featured" onclick="switchTab('search')">
+            <div class="nav-item featured" style="background: rgba(147, 51, 234, 0.16); color: #c084fc; border-left: 3.5px solid #a855f7;" onclick="switchTab('chat_copilot')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-5 0h-2v2h2V9z" clip-rule="evenodd"></path></svg>
+        Chat with Telemetry (AI)
+      </div>
+
+<div class="nav-item featured" onclick="switchTab('search')">
         <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
         Booking RCA Deep Dive
       </div>
@@ -1970,20 +2383,20 @@
         <div class="breadcrumb-path">
           <span>&lt; Back</span>
           <span>/</span>
-          <a href="#" onclick="openExternalUrl('https://cms.ev-charge-network.com')">ElectreeFi CMS Portal</a>
+          <a href="#" onclick="openExternalUrl('https://emonitoring.electreefi.com')">ElectreeFi CMS Portal</a>
           <span>/</span>
           <span class="current">Automation &amp; RCA Studio</span>
         </div>
       </div>
       <div class="header-right">
-        <button class="portal-link-btn" onclick="openExternalUrl('https://cms.ev-charge-network.com')">
+        <button class="portal-link-btn" onclick="openExternalUrl('https://emonitoring.electreefi.com')">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
           Open ElectreeFi CMS
         </button>
         <div class="user-profile-badge">
           <div class="user-avatar">PM</div>
           <div class="user-details">
-            <span class="user-name">Alex Morgan</span>
+            <span class="user-name">Paritosh Mukherjee</span>
             <span class="user-role">EVSP Operations</span>
           </div>
         </div>
@@ -2043,7 +2456,12 @@
       <!-- CMS TAB NAVIGATION BAR -->
       <div class="tab-bar-container">
         <div class="cms-tabs">
-          <button class="cms-tab-btn featured-tab" data-tab="search" onclick="switchTab('search')">
+                    <button class="cms-tab-btn featured-tab" data-tab="chat_copilot" onclick="switchTab('chat_copilot')" style="color: #a855f7; background: rgba(168, 85, 247, 0.10); border: 1px solid rgba(168, 85, 247, 0.25);">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-5 0h-2v2h2V9z" clip-rule="evenodd"></path></svg>
+            AI Telemetry Copilot
+            <span class="tab-counter" style="background: #a855f7; color: #ffffff;">LIVE AI</span>
+          </button>
+<button class="cms-tab-btn featured-tab" data-tab="search" onclick="switchTab('search')">
             <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
             Booking RCA Deep Dive
           </button>
@@ -2842,6 +3260,78 @@
         </div>
       </div>
 
+
+      <!-- ======================================================== -->
+      <!-- TAB: AI TELEMETRY COPILOT                                -->
+      <!-- ======================================================== -->
+      <div class="tab-pane" id="pane-chat_copilot">
+        <!-- Banner -->
+        <div class="section-banner" style="background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); border-color: #4f46e5;">
+          <div>
+            <div class="banner-title" style="color: #c7d2fe;">
+              <svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-5 0h-2v2h2V9z" clip-rule="evenodd"></path></svg>
+              AI Telemetry Copilot &mdash; Chat with Your Network Telemetry
+            </div>
+            <div class="banner-desc" style="color: #e0e7ff;">
+              Ask natural language questions across all ingested charging sessions, OCPP error buffers, and partner CPO telemetry. Real-time causal attribution, station failure rankings, battery saturation analysis, and automated vendor escalation drafting.
+            </div>
+          </div>
+          <div class="banner-btn-group">
+            <span class="platform-pill" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4);">
+              <span class="platform-pill-dot" style="background: #c084fc;"></span>
+              Neural Causal Engine Active
+            </span>
+          </div>
+        </div>
+
+        <!-- Copilot Container -->
+        <div class="chat-copilot-container">
+          <!-- Quick Prompt Suggestions Bar -->
+          <div class="chat-suggestions-bar">
+            <span class="chat-suggestions-label">⚡ Quick Queries:</span>
+            <div class="chat-prompt-pill" onclick="sendChatPrompt('Which stations have the most failures?')">📍 Top Problem Stations</div>
+            <div class="chat-prompt-pill" onclick="sendChatPrompt('Show hardware vs BMS fault distribution')">🔌 Hardware vs BMS Breakdown</div>
+            <div class="chat-prompt-pill" onclick="sendChatPrompt('Compare Delta vs Exicom vs ABB charger models')">🏭 Charger Models Comparison</div>
+            <div class="chat-prompt-pill" onclick="sendChatPrompt('Show low-consumption (<1 kWh) sessions with battery saturation')">🔋 Battery Saturation (&ge;80% SOC)</div>
+            <div class="chat-prompt-pill" onclick="sendChatPrompt('Summarize IOC vs VinFast vs Charge_IN failure rates')">🤝 Roaming Partners SLA</div>
+            <div class="chat-prompt-pill" onclick="sendChatPrompt('Draft an engineering escalation email for problem stations')">✉️ Draft Escalation Email</div>
+          </div>
+
+          <!-- Chat Messages Scroll Window -->
+          <div class="chat-messages-window" id="chatMessagesWindow">
+            <!-- Initial Copilot Greeting Bubble -->
+            <div class="chat-msg copilot">
+              <div class="chat-avatar copilot">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+              </div>
+              <div class="chat-bubble-content">
+                <div class="chat-sender-name">Telemetry AI Copilot <span class="chat-timestamp">Just now</span></div>
+                <div class="chat-text">
+                  Hello! I am your <b>Agentic Telemetry Copilot</b>. I have indexed your network's charging sessions and telemetry workbooks.
+                  <br/><br/>
+                  You can ask me anything about <b>station failure rankings</b>, <b>cable lock / solenoid trips</b>, <b>BMS timeouts</b>, or request an <b>auto-drafted vendor escalation email</b>. Click any of the quick query pills above or type below!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input Bar -->
+          <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+              <textarea id="chatInputText" class="chat-textarea" placeholder="Ask a question about charging telemetry, failure hotspots, vendor SLA, or type 'Draft email'..." rows="1" onkeydown="handleChatKeyDown(event)"></textarea>
+              <div class="chat-actions-group">
+                <button type="button" class="chat-btn-clear" onclick="clearChatHistory()" title="Clear Chat History">Clear</button>
+                <button type="button" class="chat-btn-send" id="chatSendBtn" onclick="submitChatMessage()">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                  Ask AI
+                </button>
+              </div>
+            </div>
+            <div class="chat-input-hint">Press <b>Enter</b> to send, <b>Shift + Enter</b> for new line • Powered by Causal Inference Engine</div>
+          </div>
+        </div>
+      </div>
+
       <!-- TAB 6: CMS LOGIN & SESSION -->
       <div class="tab-pane" id="pane-session">
         <div class="task-card" style="max-width: 780px;">
@@ -2853,7 +3343,7 @@
           </div>
           <div class="card-title">ElectreeFi CMS Interactive Login</div>
           <div class="card-subtitle">
-            Launches a visible Chromium browser window directly to <code>https://cms.ev-charge-network.com</code>. Pre-fills operator credentials and waits for you to solve the CAPTCHA and submit your Email OTP. The authentication cookies and tokens are automatically captured and saved to disk.
+            Launches a visible Chromium browser window directly to <code>https://emonitoring.electreefi.com</code>. Pre-fills operator credentials and waits for you to solve the CAPTCHA and submit your Email OTP. The authentication cookies and tokens are automatically captured and saved to disk.
           </div>
           <div class="card-files-status">
             <div class="file-chip" id="chip-session-file">
@@ -2866,7 +3356,7 @@
               <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2a1 1 0 102 0V7a5 5 0 00-5-5z" clip-rule="evenodd"></path></svg>
               Launch Interactive Login Window
             </button>
-            <button class="btn-secondary" onclick="openExternalUrl('https://cms.ev-charge-network.com')">Visit Portal in Browser</button>
+            <button class="btn-secondary" onclick="openExternalUrl('https://emonitoring.electreefi.com')">Visit Portal in Browser</button>
           </div>
         </div>
       </div>
@@ -3509,6 +3999,224 @@ ${rca.action_item}
       });
     }
 
+    
+    /* ======================================================== */
+    /* AI TELEMETRY COPILOT CLIENT LOGIC                        */
+    /* ======================================================== */
+    function handleChatKeyDown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        submitChatMessage();
+      }
+    }
+
+    function sendChatPrompt(promptText) {
+      const input = document.getElementById('chatInputText');
+      if (input) {
+        input.value = promptText;
+        submitChatMessage();
+      }
+    }
+
+    function clearChatHistory() {
+      const win = document.getElementById('chatMessagesWindow');
+      if (win) {
+        win.innerHTML = `
+          <div class="chat-msg copilot">
+            <div class="chat-avatar copilot">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+            </div>
+            <div class="chat-bubble-content">
+              <div class="chat-sender-name">Telemetry AI Copilot <span class="chat-timestamp">Just now</span></div>
+              <div class="chat-text">
+                Chat history cleared. What telemetry question can I help you investigate next?
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function formatMarkdownText(rawText) {
+      if (!rawText) return '';
+      let formatted = rawText;
+
+      // Code blocks
+      formatted = formatted.replace(/```([a-zA-Z]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+        const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `
+          <div class="chat-code-block-wrap">
+            <button type="button" class="chat-copy-action-btn" onclick="copyCodeSnippet(this)">Copy</button>
+            <div class="chat-code-box">${escaped.trim()}</div>
+          </div>
+        `;
+      });
+
+      // Headers
+      formatted = formatted.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+      formatted = formatted.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+
+      // Blockquotes
+      formatted = formatted.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+      // Bold & Italic
+      formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+      formatted = formatted.replace(/\*(.*?)\*/g, '<i>$1</i>');
+      formatted = formatted.replace(/`([^`]+)`/g, '<code style="background:#f1f5f9; color:#0f172a; padding:2px 5px; border-radius:4px; font-size:12px;">$1</code>');
+
+      // Unordered lists
+      formatted = formatted.replace(/^\s*-\s+(.*$)/gim, '<li>$1</li>');
+      formatted = formatted.replace(/(<li>.*<\/li>)/gim, '<ul>$1</ul>');
+
+      // Clean multiple uls
+      formatted = formatted.replace(/<\/ul>\s*<ul>/g, '');
+
+      // Line breaks
+      formatted = formatted.replace(/\n\n/g, '<br/><br/>');
+      formatted = formatted.replace(/\n/g, '<br/>');
+
+      return formatted;
+    }
+
+    function copyCodeSnippet(btn) {
+      const codeBox = btn.nextElementSibling;
+      if (!codeBox) return;
+      const text = codeBox.innerText || codeBox.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.background = '#10b981';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.background = '';
+        }, 2000);
+      }).catch(() => {
+        showToast('Failed to copy', 'error');
+      });
+    }
+
+    async function submitChatMessage() {
+      const input = document.getElementById('chatInputText');
+      const sendBtn = document.getElementById('chatSendBtn');
+      const win = document.getElementById('chatMessagesWindow');
+      if (!input || !win) return;
+
+      const message = input.value.trim();
+      if (!message) return;
+
+      input.value = '';
+      sendBtn.disabled = true;
+
+      const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      // Append User Message Bubble
+      const userMsgHtml = `
+        <div class="chat-msg user">
+          <div class="chat-avatar user">You</div>
+          <div class="chat-bubble-content">
+            <div class="chat-sender-name">Operator <span class="chat-timestamp">${timeNow}</span></div>
+            <div class="chat-text">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+          </div>
+        </div>
+      `;
+      win.insertAdjacentHTML('beforeend', userMsgHtml);
+
+      // Append Loading Indicator
+      const loadingId = 'loading-' + Date.now();
+      const loadingHtml = `
+        <div class="chat-msg copilot" id="${loadingId}">
+          <div class="chat-avatar copilot">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+          </div>
+          <div class="chat-bubble-content" style="display:flex; align-items:center; gap:8px;">
+            <div class="spinner-circle" style="width:16px; height:16px; border-width:2px;"></div>
+            <span style="font-size:12.5px; color:#64748b;">Telemetry Copilot analyzing session graphs...</span>
+          </div>
+        </div>
+      `;
+      win.insertAdjacentHTML('beforeend', loadingHtml);
+      win.scrollTop = win.scrollHeight;
+
+      try {
+        const response = await fetch('/api/chat-telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: message })
+        });
+        const data = await response.json();
+
+        const loadingElem = document.getElementById(loadingId);
+        if (loadingElem) loadingElem.remove();
+
+        const answerHtml = formatMarkdownText(data.answer || 'No response synthesized.');
+
+        // Build Metrics Row if present
+        let metricsHtml = '';
+        if (data.metrics && data.metrics.length > 0) {
+          metricsHtml = '<div class="chat-metric-row">';
+          data.metrics.forEach(m => {
+            metricsHtml += `
+              <div class="chat-metric-chip">
+                <span class="chat-metric-val">${m.value}</span>
+                <span class="chat-metric-lbl">${m.label}</span>
+              </div>
+            `;
+          });
+          metricsHtml += '</div>';
+        }
+
+        // Build Chart Card if present
+        let chartHtml = '';
+        if (data.chart_data && data.chart_data.labels && data.chart_data.values) {
+          const maxVal = Math.max(...data.chart_data.values, 1);
+          chartHtml = `
+            <div class="chat-chart-card">
+              <div class="chat-chart-title">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path></svg>
+                ${data.chart_data.title || 'Telemetry Distribution'}
+              </div>
+          `;
+          data.chart_data.labels.forEach((lbl, idx) => {
+            const val = data.chart_data.values[idx] || 0;
+            const pct = Math.round((val / maxVal) * 100);
+            chartHtml += `
+              <div class="chat-bar-row">
+                <span class="chat-bar-label" title="${lbl}">${lbl}</span>
+                <div class="chat-bar-track">
+                  <div class="chat-bar-fill" style="width: ${pct}%;"></div>
+                </div>
+                <span class="chat-bar-val">${val}</span>
+              </div>
+            `;
+          });
+          chartHtml += '</div>';
+        }
+
+        const copilotMsgHtml = `
+          <div class="chat-msg copilot">
+            <div class="chat-avatar copilot">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+            </div>
+            <div class="chat-bubble-content">
+              <div class="chat-sender-name">Telemetry AI Copilot <span class="chat-timestamp">${timeNow}</span></div>
+              <div class="chat-text">${answerHtml}</div>
+              ${metricsHtml}
+              ${chartHtml}
+            </div>
+          </div>
+        `;
+        win.insertAdjacentHTML('beforeend', copilotMsgHtml);
+
+      } catch (err) {
+        const loadingElem = document.getElementById(loadingId);
+        if (loadingElem) loadingElem.remove();
+        showToast('Error communicating with Telemetry Copilot', 'error');
+      } finally {
+        sendBtn.disabled = false;
+        win.scrollTop = win.scrollHeight;
+      }
+    }
+
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
@@ -3546,6 +4254,7 @@ ${rca.action_item}
         if (tabId === 'deepdive' && text.includes('30-day')) match = true;
         if (tabId === 'deliverables' && text.includes('output files')) match = true;
         if (tabId === 'session' && text.includes('cms login')) match = true;
+        if (tabId === 'chat_copilot' && (text.includes('chat') || text.includes('copilot'))) match = true;
         item.classList.toggle('active', match);
       });
       document.querySelectorAll('.tab-pane').forEach(pane => {
@@ -3695,9 +4404,9 @@ ${rca.action_item}
       const parties = Object.keys(currentPartnerPortals);
       if (parties.length === 0) {
         currentPartnerPortals = {
-          "IOC": { name: "IndianOil e-Charge (IOC)", portal_url: "https://cpo-ioc.ev-network.com", session_file: "data/session_IOC.json", active: true },
-          "VIN": { name: "VinFast Auto (VIN)", portal_url: "https://cpo-vin.ev-network.com", session_file: "data/session_VIN.json", active: true },
-          "MPC": { name: "CHARGE_iN (MPC)", portal_url: "https://cpo-mpc.ev-network.com", session_file: "data/session_MPC.json", active: true }
+          "IOC": { name: "IndianOil e-Charge (IOC)", portal_url: "https://indianoilecharge.in", session_file: "data/session_IOC.json", active: true },
+          "VIN": { name: "VinFast Auto (VIN)", portal_url: "https://cms-web.vinfastauto.in", session_file: "E:/VinFast/data/session_state.json", active: true },
+          "MPC": { name: "CHARGE_iN (MPC)", portal_url: "https://web-chargein.mahindra.com", session_file: "E:/Charge_IN/data/session_state.json", active: true }
         };
       }
 
@@ -3760,7 +4469,7 @@ ${rca.action_item}
         currentPartnerPortals[cleanPid] = {
           name: cleanPid,
           party_id: cleanPid,
-          portal_url: "https://cms.ev-charge-network.com",
+          portal_url: "https://emonitoring.electreefi.com",
           username: "",
           password: "",
           active: true
