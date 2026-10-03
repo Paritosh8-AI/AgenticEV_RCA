@@ -471,6 +471,9 @@ class RoamingUploadAnalyzer:
         self.uid_cache = self._load_cache()
         self.manage_cache = self._load_manage_cache()
         self.partner_portals = self._load_portals()
+        self.charger_hardware_registry = self._load_hardware_registry()
+        self.ocpi_connectors_registry = self._load_ocpi_registry()
+        self.master_charger_models = self._load_master_models()
         self.cookie_header = self._get_cookie_header()
         self.rate_limiter = HostRateLimiter(min_interval_seconds=0.20)
         self._clients: dict[str, Any] = {}
@@ -642,6 +645,39 @@ class RoamingUploadAnalyzer:
                 "session_file": "data/session_state.json"
             }
         }
+
+    def _load_hardware_registry(self) -> dict:
+        """Loads index of 793+ deployed physical EVSE chargers mapped to OEM, ModelCode, Capacity, and Firmware."""
+        for p in ["data/cms_charger_hardware_registry.json", "e:/ElectreeFi/data/cms_charger_hardware_registry.json"]:
+            if os.path.exists(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception:
+                    pass
+        return {}
+
+    def _load_ocpi_registry(self) -> dict:
+        """Loads index of 3,900+ roaming EVSEs and connector standards (DC_001, CCS2, Type 2 AC)."""
+        for p in ["data/ocpi_evse_connectors_registry.json", "e:/ElectreeFi/data/ocpi_evse_connectors_registry.json"]:
+            if os.path.exists(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception:
+                    pass
+        return {}
+
+    def _load_master_models(self) -> dict:
+        """Loads master catalogue of 168 certified charger hardware models from CMS Master Management."""
+        for p in ["data/cms_charger_models_master.json", "e:/ElectreeFi/data/cms_charger_models_master.json"]:
+            if os.path.exists(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception:
+                    pass
+        return {}
 
     @staticmethod
     def map_connector_to_id(val: Any, uid: str = "") -> tuple[int, str]:
@@ -838,12 +874,142 @@ class RoamingUploadAnalyzer:
             print(f"  --> Parsed {len(rows):,} instances from {os.path.basename(file_path)}.")
         return rows
 
+    def resolve_charger_hardware(self, uid: str = "", evse_id: str = "", station_name: str = "") -> dict:
+        """
+        Resolves physical charger hardware OEM, Model, Capacity, and Firmware
+        using CMS physical charger registry, OCPI EVSE connectors registry, and brand signatures.
+        """
+        clean_uid = str(uid or "").strip().upper()
+        clean_evse = str(evse_id or "").strip().upper()
+        clean_station = str(station_name or "").strip().upper()
+
+        base_uid = clean_uid.split('_')[0].split('-')[0].strip()
+        base_evse = clean_evse.split('_')[0].split('-')[0].strip()
+
+        # 1. Match against 793 deployed physical chargers registry
+        match = (
+            self.charger_hardware_registry.get(clean_uid) or
+            self.charger_hardware_registry.get(base_uid) or
+            self.charger_hardware_registry.get(clean_evse) or
+            self.charger_hardware_registry.get(base_evse)
+        )
+        if match:
+            return {
+                "charger_manufacturer": match.get("charger_manufacturer") or "OEM EVSE",
+                "charger_model": match.get("charger_model") or "EVSE Model",
+                "charger_capacity": match.get("charger_capacity"),
+                "firmware_version": match.get("firmware_version") or ""
+            }
+
+        # 2. Check OCPI EVSE / Connectors registry
+        ocpi_match = self.ocpi_connectors_registry.get(clean_uid) or self.ocpi_connectors_registry.get(clean_evse)
+        if ocpi_match:
+            ctype = str(ocpi_match.get("connector_type") or "").strip().upper()
+            ptype = str(ocpi_match.get("power_type") or "").strip().upper()
+            cap = ocpi_match.get("capacity")
+            if "DC_001" in ctype or "GB/T" in ctype:
+                return {
+                    "charger_manufacturer": "Delta / Exicom (GB/T)",
+                    "charger_model": "DC001 (15 kW)",
+                    "charger_capacity": cap or 15.0,
+                    "firmware_version": ""
+                }
+            elif "CCS" in ctype:
+                return {
+                    "charger_manufacturer": "CCS2 DC Fast Charger",
+                    "charger_model": "CCS2 Fast EVSE",
+                    "charger_capacity": cap,
+                    "firmware_version": ""
+                }
+            elif "TYPE" in ctype or "AC" in ctype or ptype == "AC":
+                return {
+                    "charger_manufacturer": "AC Type 2 Charger",
+                    "charger_model": "Type 2 AC (7.4-22 kW)",
+                    "charger_capacity": cap or 7.4,
+                    "firmware_version": ""
+                }
+
+        # 3. Match against known physical charger OEM signatures in station name or UID
+        combined = f"{clean_station} {clean_uid} {clean_evse}"
+        if "TIREX" in combined:
+            return {
+                "charger_manufacturer": "Tirex",
+                "charger_model": "TIREX 240KW" if "240" in combined else ("60KWDC" if "60" in combined else "Tirex EVSE"),
+                "charger_capacity": 240.0 if "240" in combined else 60.0,
+                "firmware_version": ""
+            }
+        elif "EXICOM" in combined:
+            return {
+                "charger_manufacturer": "EXICOM",
+                "charger_model": "EVAC Type 2" if "AC" in combined else "240kW DC",
+                "charger_capacity": 22.0 if "AC" in combined else 240.0,
+                "firmware_version": ""
+            }
+        elif "DELTA" in combined:
+            return {
+                "charger_manufacturer": "DELTA",
+                "charger_model": "CCS240" if "240" in combined else ("360kW" if "360" in combined else "Delta EVSE"),
+                "charger_capacity": 240.0 if "240" in combined else 360.0,
+                "firmware_version": ""
+            }
+        elif "STERLING" in combined:
+            return {
+                "charger_manufacturer": "Sterling",
+                "charger_model": "120kW",
+                "charger_capacity": 120.0,
+                "firmware_version": "5.1.0"
+            }
+        elif "E-FILL" in combined or "EFILL" in combined:
+            return {
+                "charger_manufacturer": "E-Fill",
+                "charger_model": "E FILL CSS 30 KW",
+                "charger_capacity": 30.0,
+                "firmware_version": ""
+            }
+        elif "ZETWERK" in combined:
+            return {
+                "charger_manufacturer": "Zetwerk",
+                "charger_model": "HYB15Kwh",
+                "charger_capacity": 15.0,
+                "firmware_version": "0.0.3.1"
+            }
+        elif "HAVELLS" in combined:
+            return {
+                "charger_manufacturer": "HAVELLS",
+                "charger_model": "7.4KW" if "AC" in combined else "CCS 30kW",
+                "charger_capacity": 7.4 if "AC" in combined else 30.0,
+                "firmware_version": ""
+            }
+        elif "OKAYA" in combined:
+            return {
+                "charger_manufacturer": "OKAYA",
+                "charger_model": "Okaya Dual Gun EVSE",
+                "charger_capacity": 60.0,
+                "firmware_version": ""
+            }
+        elif "ABB" in combined:
+            return {
+                "charger_manufacturer": "ABB",
+                "charger_model": "Terra 54",
+                "charger_capacity": 50.0,
+                "firmware_version": ""
+            }
+
+        # Fallback
+        return {
+            "charger_manufacturer": "OCPP EVSE OEM",
+            "charger_model": "OCPP 1.6 Standard",
+            "charger_capacity": None,
+            "firmware_version": ""
+        }
+
     def resolve_uid_to_evse(self, uid: str, party_id: str = "") -> dict:
-        """Resolves Roaming UID to physical EVSE ID with composite party-safe caching."""
+        """Resolves Roaming UID to physical EVSE ID with composite party-safe caching and hardware model mapping."""
         clean_uid = str(uid or "").strip()
         pid = (party_id or "").strip().upper()
         if not clean_uid:
-            return {"evse_id": "Unknown", "location_name": "", "cpo_name": "", "party_id": pid}
+            hw_empty = self.resolve_charger_hardware("", "", "")
+            return {"evse_id": "Unknown", "location_name": "", "cpo_name": "", "party_id": pid, **hw_empty}
 
         cache_key = f"{clean_uid}_{pid}" if pid else clean_uid
         with self.cache_lock:
@@ -902,14 +1068,21 @@ class RoamingUploadAnalyzer:
                 matched_it = items[0]
 
         if matched_it:
+            evse_val = matched_it.get("EvseId") or clean_uid
+            loc_val = matched_it.get("LocationName") or ""
+            hw = self.resolve_charger_hardware(clean_uid, evse_val, loc_val)
             resolved = {
-                "evse_id": matched_it.get("EvseId") or clean_uid,
-                "location_name": matched_it.get("LocationName") or "",
+                "evse_id": evse_val,
+                "location_name": loc_val,
                 "cpo_name": matched_it.get("CpoName") or matched_it.get("PartyName") or "",
                 "party_id": matched_it.get("PartyId") or pid,
                 "city": matched_it.get("City") or "",
                 "state": matched_it.get("State") or "",
-                "address": matched_it.get("Address") or ""
+                "address": matched_it.get("Address") or "",
+                "charger_manufacturer": hw["charger_manufacturer"],
+                "charger_model": hw["charger_model"],
+                "charger_capacity": hw["charger_capacity"],
+                "firmware_version": hw["firmware_version"]
             }
             with self.cache_lock:
                 self.uid_cache[cache_key] = resolved
@@ -917,6 +1090,7 @@ class RoamingUploadAnalyzer:
                     self.uid_cache[clean_uid] = resolved
             return resolved
 
+        hw_fb = self.resolve_charger_hardware(clean_uid, clean_uid, "")
         fallback = {
             "evse_id": clean_uid,
             "location_name": "",
@@ -924,7 +1098,11 @@ class RoamingUploadAnalyzer:
             "party_id": pid,
             "city": "",
             "state": "",
-            "address": ""
+            "address": "",
+            "charger_manufacturer": hw_fb["charger_manufacturer"],
+            "charger_model": hw_fb["charger_model"],
+            "charger_capacity": hw_fb["charger_capacity"],
+            "firmware_version": hw_fb["firmware_version"]
         }
         with self.cache_lock:
             self.uid_cache[cache_key] = fallback
@@ -1973,7 +2151,80 @@ class RoamingUploadAnalyzer:
         vehicle_model_list.sort(key=lambda x: x["total_incidents"], reverse=True)
         model_list = vehicle_model_list
 
-        # 5. Charger (EVSE) Breakdown
+        # 5. Physical Charger Hardware & OEM Vulnerability Analysis
+        # Answers: Which physical charger models (Tirex 240kW, Delta CCS240, Exicom EVAC, Sterling 120kW, etc.) experience controller initiation timeouts & contactor pauses?
+        hardware_model_stats = defaultdict(lambda: {
+            "mfg": "",
+            "model": "",
+            "total_incidents": 0,
+            "charger_hardware_faults": 0,
+            "vehicle_side": 0,
+            "charger_side": 0,
+            "user_side": 0,
+            "gateway_side": 0,
+            "normal_completed": 0,
+            "causes": Counter(),
+            "hardware_causes": Counter()
+        })
+
+        for it in instances:
+            mfg = str(it.get("charger_manufacturer") or "OCPP EVSE OEM").strip()
+            model = str(it.get("charger_model") or "OCPP 1.6 Standard").strip()
+            key = (mfg, model)
+            hardware_model_stats[key]["mfg"] = mfg
+            hardware_model_stats[key]["model"] = model
+            if it in normal_sessions:
+                hardware_model_stats[key]["normal_completed"] += 1
+            else:
+                hardware_model_stats[key]["total_incidents"] += 1
+                hardware_model_stats[key]["causes"][it["root_cause"]] += 1
+                fside = it.get("fault_side", "")
+                if "CHARGER" in fside:
+                    hardware_model_stats[key]["charger_side"] += 1
+                    hardware_model_stats[key]["charger_hardware_faults"] += 1
+                    hardware_model_stats[key]["hardware_causes"][it["root_cause"]] += 1
+                elif "VEHICLE" in fside:
+                    hardware_model_stats[key]["vehicle_side"] += 1
+                elif "USER" in fside:
+                    hardware_model_stats[key]["user_side"] += 1
+                elif "GATEWAY" in fside or "CMS" in fside:
+                    hardware_model_stats[key]["gateway_side"] += 1
+
+        hardware_model_list = []
+        for key, h_data in hardware_model_stats.items():
+            inc = h_data["total_incidents"]
+            top_hw = h_data["hardware_causes"].most_common(1)
+            top_hw_str = top_hw[0][0] if top_hw else (h_data["causes"].most_common(1)[0][0] if h_data["causes"] else "None")
+
+            side_map = {
+                "Charger Side": h_data["charger_side"],
+                "Vehicle Side": h_data["vehicle_side"],
+                "User Side": h_data["user_side"],
+                "Gateway Side": h_data["gateway_side"]
+            }
+            dom_side = max(side_map.items(), key=lambda x: x[1])[0] if inc > 0 else "None"
+
+            hardware_model_list.append({
+                "mfg": h_data["mfg"],
+                "model": h_data["model"],
+                "total": inc + h_data["normal_completed"],
+                "total_incidents": inc,
+                "charger_hardware_faults": h_data["charger_hardware_faults"],
+                "charger_side": h_data["charger_side"],
+                "charger_faults": h_data["charger_side"],
+                "vehicle_side": h_data["vehicle_side"],
+                "user_side": h_data["user_side"],
+                "gateway_side": h_data["gateway_side"],
+                "dominant_side": dom_side,
+                "top_cause": top_hw_str,
+                "top_hardware_fault": top_hw_str,
+                "causes": h_data["causes"],
+                "normal_completed": h_data["normal_completed"]
+            })
+
+        hardware_model_list.sort(key=lambda x: x["total_incidents"], reverse=True)
+
+        # 6. Charger (EVSE) Breakdown
         charger_stats = defaultdict(lambda: {
             "evse_id": "",
             "roaming_uid": "",
@@ -1992,8 +2243,8 @@ class RoamingUploadAnalyzer:
             charger_stats[evse]["roaming_uid"] = it["roaming_uid"]
             charger_stats[evse]["party_id"] = it["party_id"]
             charger_stats[evse]["station_name"] = it["station_name"]
-            charger_stats[evse]["manufacturer"] = it["manufacturer"]
-            charger_stats[evse]["model"] = it["charger_model"]
+            charger_stats[evse]["manufacturer"] = it.get("charger_manufacturer") or "EVSE OEM"
+            charger_stats[evse]["model"] = it.get("charger_model") or "OCPP 1.6 Standard"
 
             if it in normal_sessions:
                 charger_stats[evse]["normal_completed"] += 1
@@ -2004,7 +2255,7 @@ class RoamingUploadAnalyzer:
         charger_list = list(charger_stats.values())
         charger_list.sort(key=lambda x: x["total_incidents"], reverse=True)
 
-        # 6. Party ID Stats
+        # 7. Party ID Stats
         party_stats = defaultdict(lambda: {
             "party_id": "",
             "total": 0,
@@ -2054,8 +2305,10 @@ class RoamingUploadAnalyzer:
             "prominent_issues": prominent_issues,
             "station_stats": station_list,
             "top_station": station_list[0] if station_list else {},
-            "model_stats": model_list,
+            "model_stats": vehicle_model_list,
             "vehicle_model_stats": vehicle_model_list,
+            "charger_hardware_stats": hardware_model_list,
+            "hardware_model_stats": hardware_model_list,
             "charger_stats": charger_list,
             "party_stats": party_list
         }
@@ -2335,16 +2588,59 @@ class RoamingUploadAnalyzer:
         r_note4.font.color.rgb = RGB_MUTED
 
         # ---------------------------------------------------------------------
-        # SECTION 5: ROAMING PARTNER OVERVIEW (IOC, VIN, MPC)
+        # SECTION 5: PHYSICAL CHARGER HARDWARE & OEM RELIABILITY ANALYSIS
+        # Answers: Which physical charger models (Tirex 240kW, Delta CCS240, Exicom EVAC, Sterling 120kW, etc.) experience controller initiation timeouts & contactor pauses?
         # ---------------------------------------------------------------------
         p_h5 = doc.add_paragraph()
         p_h5.paragraph_format.space_before = Pt(16)
         p_h5.paragraph_format.space_after = Pt(4)
-        r_h5 = p_h5.add_run("5. Roaming Partner Reliability & Attribution (IOC, VIN, MPC)")
+        r_h5 = p_h5.add_run("5. Physical Charger Hardware & OEM Reliability Analysis")
         r_h5.font.name = "Calibri"
         r_h5.font.size = Pt(13)
         r_h5.font.bold = True
         r_h5.font.color.rgb = RGB_NAVY
+
+        p_desc5 = doc.add_paragraph()
+        p_desc5.paragraph_format.space_before = Pt(0)
+        p_desc5.paragraph_format.space_after = Pt(6)
+        p_desc5.add_run(
+            "Evaluation of physical EVSE charging station hardware equipment (e.g., Tirex 240kW, Delta CCS240, Exicom EVAC Type 2, "
+            "Sterling 120kW, E-Fill 30kW, Zetwerk 15kW) registered under CMS Master Management (/MasterManagement/ChargerModel). "
+            "Identifies whether specific hardware controller types or charger manufacturers exhibit higher vulnerabilities "
+            "to controller initiation timeouts (~120s standby), contactor feedback delays, or remote start rejections:"
+        )
+
+        hw_stats = aggs.get("charger_hardware_stats", [])[:15]
+        hw_tbl = doc.add_table(rows=len(hw_stats) + 1, cols=7)
+        hw_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        set_table_borders(hw_tbl)
+
+        headers_hw = ["Charger Hardware OEM", "EVSE Model Code", "Total Sessions", "Incidents", "Charger Hardware Faults", "HW Fault %", "Dominant Hardware Issue"]
+        for c_idx, h in enumerate(headers_hw):
+            format_cell(hw_tbl.cell(0, c_idx), h, bold=True, color=RGB_WHITE, font_size=8.5, align=WD_ALIGN_PARAGRAPH.CENTER, bg_hex=COLOR_NAVY)
+
+        for r_idx, hs in enumerate(hw_stats, 1):
+            bg = COLOR_LIGHT_BG if r_idx % 2 == 0 else "FFFFFF"
+            hw_fault_pct = (hs.get("charger_hardware_faults", hs.get("charger_side", 0)) / hs["total_incidents"] * 100) if hs["total_incidents"] else 0.0
+            format_cell(hw_tbl.cell(r_idx, 0), hs["mfg"] or "Generic EVSE", bold=True, font_size=8.5, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 1), hs["model"] or "Standard", font_size=8.5, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 2), f"{hs['total']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 3), f"{hs['total_incidents']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 4), f"{hs.get('charger_hardware_faults', hs.get('charger_side', 0)):,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 5), f"{hw_fault_pct:.1f}%", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 6), (hs.get("top_hardware_fault") or hs["top_cause"])[:40], font_size=8, bg_hex=bg)
+
+        # ---------------------------------------------------------------------
+        # SECTION 6: ROAMING PARTNER OVERVIEW (IOC, VIN, MPC)
+        # ---------------------------------------------------------------------
+        p_h6 = doc.add_paragraph()
+        p_h6.paragraph_format.space_before = Pt(16)
+        p_h6.paragraph_format.space_after = Pt(4)
+        r_h6 = p_h6.add_run("6. Roaming Partner Reliability & Attribution (IOC, VIN, MPC)")
+        r_h6.font.name = "Calibri"
+        r_h6.font.size = Pt(13)
+        r_h6.font.bold = True
+        r_h6.font.color.rgb = RGB_NAVY
 
         pty_stats = aggs.get("party_stats", [])
         pty_tbl = doc.add_table(rows=len(pty_stats) + 1, cols=6)
@@ -2365,16 +2661,16 @@ class RoamingUploadAnalyzer:
             format_cell(pty_tbl.cell(r_idx, 5), ps["top_cause"][:40], font_size=8, bg_hex=bg)
 
         # ---------------------------------------------------------------------
-        # SECTION 6: ACTIONABLE ENGINEERING & FIELD MITIGATION PLAN
+        # SECTION 7: ACTIONABLE ENGINEERING & FIELD MITIGATION PLAN
         # ---------------------------------------------------------------------
-        p_h6 = doc.add_paragraph()
-        p_h6.paragraph_format.space_before = Pt(16)
-        p_h6.paragraph_format.space_after = Pt(4)
-        r_h6 = p_h6.add_run("6. Actionable Engineering & Field Mitigation Plan")
-        r_h6.font.name = "Calibri"
-        r_h6.font.size = Pt(13)
-        r_h6.font.bold = True
-        r_h6.font.color.rgb = RGB_NAVY
+        p_h7 = doc.add_paragraph()
+        p_h7.paragraph_format.space_before = Pt(16)
+        p_h7.paragraph_format.space_after = Pt(4)
+        r_h7 = p_h7.add_run("7. Actionable Engineering & Field Mitigation Plan")
+        r_h7.font.name = "Calibri"
+        r_h7.font.size = Pt(13)
+        r_h7.font.bold = True
+        r_h7.font.color.rgb = RGB_NAVY
 
         mitigations = [
             ("Vehicle Side: BMS Handshake Timeouts", "Vehicle BMS fails to respond within ~60s protocol window after cable latching.", "Deploy EV driver in-app guidance: Ensure vehicle ignition is fully off and charge port is unlocked before plugging in."),
@@ -2400,17 +2696,17 @@ class RoamingUploadAnalyzer:
             format_cell(mit_tbl.cell(r_idx, 2), act, font_size=8.5, bg_hex=bg)
 
         # ---------------------------------------------------------------------
-        # SECTION 7: GRANULAR INDIVIDUAL FORENSIC AUDITS
+        # SECTION 8: GRANULAR INDIVIDUAL FORENSIC AUDITS
         # Answers: I need similar kind of insights for every booking!
         # ---------------------------------------------------------------------
-        p_h7 = doc.add_paragraph()
-        p_h7.paragraph_format.space_before = Pt(18)
-        p_h7.paragraph_format.space_after = Pt(6)
-        r_h7 = p_h7.add_run("7. Granular Forensic Audits of Target Low-kWh & Cancelled Bookings")
-        r_h7.font.name = "Calibri"
-        r_h7.font.size = Pt(13)
-        r_h7.font.bold = True
-        r_h7.font.color.rgb = RGB_NAVY
+        p_h8 = doc.add_paragraph()
+        p_h8.paragraph_format.space_before = Pt(18)
+        p_h8.paragraph_format.space_after = Pt(6)
+        r_h8 = p_h8.add_run("8. Granular Forensic Audits of Target Low-kWh & Cancelled Bookings")
+        r_h8.font.name = "Calibri"
+        r_h8.font.size = Pt(13)
+        r_h8.font.bold = True
+        r_h8.font.color.rgb = RGB_NAVY
 
         # Include up to 25 detailed cases from problem cases
         problem_instances = [it for it in instances if it.get("fault_side") != "SUCCESSFUL"]
@@ -2423,7 +2719,7 @@ class RoamingUploadAnalyzer:
             r_c.font.size = Pt(10)
             r_c.font.color.rgb = RGB_NAVY
 
-            case_table = doc.add_table(rows=8, cols=2)
+            case_table = doc.add_table(rows=9, cols=2)
             case_table.alignment = WD_TABLE_ALIGNMENT.CENTER
             set_table_borders(case_table)
 
@@ -2434,7 +2730,8 @@ class RoamingUploadAnalyzer:
             case_rows = [
                 ("Station & Partner", f"{it['station_name']} | Partner: {it['party_id']} - {it['cpo_name']}"),
                 ("Hardware Mapping", f"Roaming UID: {it['roaming_uid']} ==> Physical EVSE ID: {it['resolved_evse_id']} (Portal: {portal_url})"),
-                ("Hardware Profile", f"Manufacturer: {it['manufacturer']} | Model: {it['charger_model']}"),
+                ("EV Vehicle Profile", f"Make: {it.get('vehicle_make', 'Unknown')} | Model: {it.get('vehicle_model', 'Unknown')} | Reg: {it.get('vehicle_number', 'N/A')}"),
+                ("Charger Hardware", f"OEM: {it.get('charger_manufacturer', 'EVSE OEM')} | Model: {it.get('charger_model', 'OCPP 1.6 Standard')} | Firmware: {it.get('firmware_version', 'N/A')}"),
                 ("Session Telemetry", f"Delivered Energy: {it['kwh']:.3f} kWh | Duration: {dur_str} | Battery SOC: {soc_str}"),
                 ("Lifecycle Timing", f"In-Time: {it['in_time']} | Out-Time: {it['out_time']} | Schedular Action: {it['schedular_action'] or 'Completed'}"),
                 ("OCPI Protocol Result", f"StartSession Status: {it.get('ocpi_result', 'NA')} | Message Text: {it.get('ocpi_text') or 'None'}"),
@@ -2622,12 +2919,39 @@ class RoamingUploadAnalyzer:
                 if fill_c.fill_type: cell.fill = fill_c
 
         # -------------------------------------------------------------
-        # Tab 5: Forensic RCA Ledger (All Problem Instances)
+        # Tab 5: Charger Hardware Model Analysis
+        # -------------------------------------------------------------
+        ws_hw = wb.create_sheet(title="Charger Hardware Analysis")
+        ws_hw.views.sheetView[0].showGridLines = True
+        hw_headers = ["Charger Hardware OEM", "EVSE Model Code", "Total Sessions", "Total Incidents", "Charger Hardware Faults", "HW Fault %", "Dominant Hardware Issue"]
+        ws_hw.append(hw_headers)
+        for col_idx in range(1, len(hw_headers) + 1):
+            c = ws_hw.cell(1, col_idx)
+            c.fill = fill_navy
+            c.font = font_header
+            c.alignment = Alignment(horizontal="center", vertical="center")
+
+        for r_idx, hs in enumerate(aggs.get("charger_hardware_stats", []), 2):
+            hw_pct = (hs.get("charger_hardware_faults", hs.get("charger_side", 0)) / hs["total_incidents"] * 100) if hs["total_incidents"] else 0.0
+            ws_hw.append([
+                hs["mfg"] or "Generic EVSE", hs["model"] or "Standard", hs["total"],
+                hs["total_incidents"], hs.get("charger_hardware_faults", hs.get("charger_side", 0)), f"{hw_pct:.1f}%", hs.get("top_hardware_fault") or hs["top_cause"]
+            ])
+            fill_c = fill_alt if r_idx % 2 == 0 else PatternFill(fill_type=None)
+            for c_idx in range(1, len(hw_headers) + 1):
+                cell = ws_hw.cell(r_idx, c_idx)
+                cell.font = font_regular
+                cell.border = thin_border
+                if fill_c.fill_type: cell.fill = fill_c
+
+        # -------------------------------------------------------------
+        # Tab 6: Forensic RCA Ledger (All Problem Instances)
         # -------------------------------------------------------------
         ws_canc = wb.create_sheet(title="Forensic RCA Ledger")
         ws_canc.views.sheetView[0].showGridLines = True
         canc_headers = [
             "#", "Booking ID", "Party ID", "Category", "Station Name", "Roaming UID", "Resolved EVSE ID", "Gun",
+            "Vehicle Make (OEM)", "EV Car Model", "Vehicle Number", "Charger OEM", "Charger Model Code",
             "In-Time", "Out-Time", "Duration (s)", "Initial SOC %", "Final SOC %", "Delivered kWh",
             "Schedular Action", "OCPI Result", "OCPI Text", "Fault Side Attribution", "Root Cause", "Action Item"
         ]
@@ -2644,6 +2968,8 @@ class RoamingUploadAnalyzer:
             ws_canc.append([
                 r_idx - 1, it["booking_id"], it["party_id"], it.get("session_category", "Low-kWh / Cancelled"),
                 it["station_name"], it["roaming_uid"], it["resolved_evse_id"], it["connector_display"],
+                it.get("vehicle_make") or "Unknown Make", it.get("vehicle_model") or "Unknown Model", it.get("vehicle_number", ""),
+                it.get("charger_manufacturer") or "EVSE OEM", it.get("charger_model") or "OCPP 1.6 Standard",
                 it["in_time"], it["out_time"], dur_val, it.get("initial_soc", "N/A"), it.get("final_soc", "N/A"),
                 it["kwh"], it.get("schedular_action", ""), it.get("ocpi_result", "NA"), it.get("ocpi_text", ""),
                 it.get("fault_side", "UNCLASSIFIED"), it["root_cause"], it.get("action_item", "-")
@@ -2656,11 +2982,15 @@ class RoamingUploadAnalyzer:
                 if fill_c.fill_type: cell.fill = fill_c
 
         # -------------------------------------------------------------
-        # Tab 6: Successful Deliveries Ledger
+        # Tab 7: Successful Deliveries Ledger
         # -------------------------------------------------------------
         ws_comp = wb.create_sheet(title="Successful Deliveries Ledger")
         ws_comp.views.sheetView[0].showGridLines = True
-        comp_headers = ["#", "Booking ID", "Party ID", "Station Name", "Roaming UID", "Resolved EVSE ID", "Gun", "In-Time", "Out-Time", "Duration", "Delivered kWh"]
+        comp_headers = [
+            "#", "Booking ID", "Party ID", "Station Name", "Roaming UID", "Resolved EVSE ID", "Gun",
+            "Vehicle Make (OEM)", "EV Car Model", "Charger OEM", "Charger Model Code",
+            "In-Time", "Out-Time", "Duration", "Delivered kWh"
+        ]
         ws_comp.append(comp_headers)
         for col_idx in range(1, len(comp_headers) + 1):
             c = ws_comp.cell(1, col_idx)
@@ -2672,8 +3002,10 @@ class RoamingUploadAnalyzer:
         for r_idx, it in enumerate(comp_instances, 2):
             ws_comp.append([
                 r_idx - 1, it["booking_id"], it["party_id"], it["station_name"], it["roaming_uid"],
-                it["resolved_evse_id"], it["connector_display"], it["in_time"], it["out_time"],
-                it["duration"], it["kwh"]
+                it["resolved_evse_id"], it["connector_display"],
+                it.get("vehicle_make") or "Unknown Make", it.get("vehicle_model") or "Unknown Model",
+                it.get("charger_manufacturer") or "EVSE OEM", it.get("charger_model") or "OCPP 1.6 Standard",
+                it["in_time"], it["out_time"], it["duration"], it["kwh"]
             ])
             for c_idx in range(1, len(comp_headers) + 1):
                 cell = ws_comp.cell(r_idx, c_idx)

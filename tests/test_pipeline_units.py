@@ -189,3 +189,28 @@ def test_vehicle_model_aggregation_disambiguation():
     assert mahindra["charger_side"] == 1
     assert mahindra["vehicle_bms_faults"] == 0
 
+    hw_stats = aggs["charger_hardware_stats"]
+    assert len(hw_stats) == 2
+    delta = next(it for it in hw_stats if it["mfg"] == "DELTA")
+    assert delta["model"] == "Delta UFC50"
+    exicom = next(it for it in hw_stats if it["mfg"] == "EXICOM")
+    assert exicom["model"] == "Exicom Harmony"
+    assert exicom["charger_hardware_faults"] == 1
+
+
+def test_resolve_charger_hardware_lookup():
+    from src.rca.roaming_upload_analyzer import RoamingUploadAnalyzer
+    analyzer = RoamingUploadAnalyzer()
+
+    # Test brand signature resolution
+    res_tirex = analyzer.resolve_charger_hardware(station_name="IOCL Tirex Speedway 240kW")
+    assert res_tirex["charger_manufacturer"] == "Tirex"
+    assert "240" in res_tirex["charger_model"]
+
+    res_exicom = analyzer.resolve_charger_hardware(station_name="Adhoc Exicom DC Fast Charging")
+    assert res_exicom["charger_manufacturer"] == "EXICOM"
+
+    res_delta = analyzer.resolve_charger_hardware(station_name="Highway Delta CCS240 Plaza")
+    assert res_delta["charger_manufacturer"] == "DELTA"
+
+
