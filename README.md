@@ -89,6 +89,11 @@ An operational cockpit allowing field engineers to input any Booking ID or Sessi
 
 ![Single Booking Deep Dive Studio](screenshots/booking_deep_dive_studio.png)
 
+### 3. Interactive AI Telemetry Copilot (`gui/static/index.html`)
+A conversational intelligence layer allowing operations teams and engineering leadership to query charging station failure hotspots, compare hardware model reliability (Delta, Exicom, ABB), inspect battery saturation cutoffs, and auto-draft vendor escalation notices in real time.
+
+![AI Telemetry Copilot](screenshots/ai_telemetry_copilot.png)
+
 ---
 
 ## 📊 Dual Executive & Engineering Output Synthesis
