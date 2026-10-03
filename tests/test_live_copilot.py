@@ -191,3 +191,48 @@ def test_copilot_live_escalation_email():
         res = copilot.ask("Draft an engineering escalation email for today's issues")
         assert "Generated Live Escalation Notice" in res["answer"]
         assert "25 Aborted Sessions Detected Today" in res["answer"]
+
+
+def test_copilot_live_charger_models_routing():
+    copilot = TelemetryCopilot()
+    mock_models = {
+        "is_live": True,
+        "timestamp": "2026-10-03 14:00:00",
+        "total_models": 168,
+        "certified_manufacturers_count": 14,
+        "manufacturers": {"DELTA": 16, "EXICOM": 13, "OKAYA": 7, "MASSTECH": 5, "ABB": 4},
+        "connectors": {"CCS2": 110, "GB/T 20234.3": 35, "Type 2 AC": 15},
+        "protocols": {"OCPP 1.6": 168},
+        "models": [
+            {
+                "model_id": 207,
+                "model_code": "DC001",
+                "manufacturer": "DELTA",
+                "capacity": "15 kW",
+                "outputs": 1,
+                "connectors": "GB/T 20234.3",
+                "protocol": "OCPP 1.6"
+            },
+            {
+                "model_id": 208,
+                "model_code": "UFC50/50KW2IN1",
+                "manufacturer": "DELTA",
+                "capacity": "50 kW",
+                "outputs": 2,
+                "connectors": "CCS2",
+                "protocol": "OCPP 1.6"
+            }
+        ]
+    }
+
+    with patch.object(copilot.live_client, "is_authenticated", return_value=True), \
+         patch.object(copilot.live_client, "fetch_live_charger_models", return_value=mock_models):
+
+        res = copilot.ask("Show charger models on the network")
+        assert "Master Charger Models & Hardware OEMs (168 Registered Models)" in res["answer"]
+        assert "DELTA" in res["answer"]
+        assert "DC001" in res["answer"]
+        assert "Charger Models vs. Vehicle Models Distinction" in res["answer"]
+        assert any(m["label"] == "Total Charger Models" and m["value"] == "168 models" for m in res["metrics"])
+        assert any(m["label"] == "Top Charger OEM" and "DELTA" in m["value"] for m in res["metrics"])
+

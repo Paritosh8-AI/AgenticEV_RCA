@@ -488,7 +488,7 @@ class RoamingUploadAnalyzer:
             if pid in self._clients:
                 return self._clients[pid]
             portal_cfg = self.partner_portals.get(pid, {})
-            base_url = portal_cfg.get("portal_url") or "https://cms.ev-charge-network.com"
+            base_url = portal_cfg.get("portal_url") or "https://emonitoring.electreefi.com"
             cookie_hdr = self.get_cookie_header_for_party(pid)
             headers = {
                 "Cookie": cookie_hdr,
@@ -527,7 +527,7 @@ class RoamingUploadAnalyzer:
                 with open(self.session_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 cookies = data.get("cookies", [])
-                return "; ".join([f"{c['name']}={c['value']}" for c in cookies if "ev-charge-network.com" in c.get("domain", "")])
+                return "; ".join([f"{c['name']}={c['value']}" for c in cookies if "electreefi.com" in c.get("domain", "")])
         except Exception:
             pass
         return ""
@@ -541,9 +541,9 @@ class RoamingUploadAnalyzer:
 
         party_session_files = [f"data/session_{pid}.json", f"data/session_state_{pid}.json"]
         if pid == "MPC":
-            party_session_files.extend(["data/session_MPC.json", "data/session_MPC.json"])
+            party_session_files.extend(["E:/Charge_IN/data/session_state.json", "E:/Chargein/data/session_state.json"])
         elif pid == "VIN":
-            party_session_files.extend(["data/session_VIN.json", "data/session_VIN.json"])
+            party_session_files.extend(["E:/VinFast/data/session_state.json", "E:/Vinfast/data/session_state.json"])
 
         portal_cfg = self.partner_portals.get(pid, {})
         custom_session = portal_cfg.get("session_file")
@@ -573,7 +573,7 @@ class RoamingUploadAnalyzer:
                     matching = [c for c in cookies if domain in c.get("domain", "")]
                     if matching:
                         return "; ".join([f"{c['name']}={c['value']}" for c in matching])
-                return "; ".join([f"{c['name']}={c['value']}" for c in cookies if "ev-charge-network.com" in c.get("domain", "")])
+                return "; ".join([f"{c['name']}={c['value']}" for c in cookies if "electreefi.com" in c.get("domain", "")])
             except Exception:
                 pass
 
@@ -623,22 +623,22 @@ class RoamingUploadAnalyzer:
         return {
             "IOC": {
                 "name": "IndianOil e-Charge (IOC)",
-                "portal_url": "https://cpo-ioc.ev-network.com",
+                "portal_url": "https://indianoilecharge.in",
                 "session_file": "data/session_IOC.json"
             },
             "VIN": {
                 "name": "VinFast Auto (VIN)",
-                "portal_url": "https://cpo-vin.ev-network.com",
-                "session_file": "data/session_VIN.json"
+                "portal_url": "https://cms-web.vinfastauto.in",
+                "session_file": "E:/VinFast/data/session_state.json"
             },
             "MPC": {
                 "name": "CHARGE_iN (MPC)",
-                "portal_url": "https://cpo-mpc.ev-network.com",
-                "session_file": "data/session_MPC.json"
+                "portal_url": "https://web-chargein.mahindra.com",
+                "session_file": "E:/Charge_IN/data/session_state.json"
             },
             "ELC": {
                 "name": "Electreefi Hub (ELC)",
-                "portal_url": "https://cms.ev-charge-network.com",
+                "portal_url": "https://emonitoring.electreefi.com",
                 "session_file": "data/session_state.json"
             }
         }
@@ -721,9 +721,13 @@ class RoamingUploadAnalyzer:
                 col_map['kwh'] = idx
             elif any(k in hl for k in ['vehicle number', 'vehiclenumber', 'vehicle']) and 'vehicle_number' not in col_map:
                 col_map['vehicle_number'] = idx
-            elif any(k in hl for k in ['manufacturer name', 'manufacturer']) and 'manufacturer' not in col_map:
+            elif any(k in hl for k in ['charger model', 'chargermodel', 'evse model', 'hardware model']) and 'charger_model' not in col_map:
+                col_map['charger_model'] = idx
+            elif any(k in hl for k in ['charger manufacturer', 'chargermanufacturer', 'charger oem']) and 'charger_manufacturer' not in col_map:
+                col_map['charger_manufacturer'] = idx
+            elif any(k in hl for k in ['manufacturer name', 'manufacturer', 'vehicle make']) and 'manufacturer' not in col_map:
                 col_map['manufacturer'] = idx
-            elif any(k in hl for k in ['model name', 'modelname', 'model']) and 'model' not in col_map:
+            elif any(k in hl for k in ['model name', 'modelname', 'model', 'vehicle model']) and 'model' not in col_map:
                 col_map['model'] = idx
             elif any(k in hl for k in ['reason', 'action', 'schedularaction', 'status']) and 'excel_raw_status' not in col_map:
                 col_map['excel_raw_status'] = idx
@@ -775,6 +779,8 @@ class RoamingUploadAnalyzer:
             veh_num = str(ws.cell(row=r, column=col_map['vehicle_number']).value or "").strip() if 'vehicle_number' in col_map else ""
             mfg_val = str(ws.cell(row=r, column=col_map['manufacturer']).value or "").strip() if 'manufacturer' in col_map else ""
             model_val = str(ws.cell(row=r, column=col_map['model']).value or "").strip() if 'model' in col_map else ""
+            charger_mfg = str(ws.cell(row=r, column=col_map['charger_manufacturer']).value or "").strip() if 'charger_manufacturer' in col_map else ""
+            charger_mod = str(ws.cell(row=r, column=col_map['charger_model']).value or "").strip() if 'charger_model' in col_map else ""
             excel_raw_status = str(ws.cell(row=r, column=col_map['excel_raw_status']).value or "").strip() if 'excel_raw_status' in col_map else ""
 
             # --- LOW-CONSUMPTION FILTER RULE ---
@@ -813,8 +819,12 @@ class RoamingUploadAnalyzer:
                 "duration": dur_val,
                 "kwh": kwh_val,
                 "vehicle_number": veh_num,
-                "manufacturer": mfg_val,
-                "model": model_val,
+                "vehicle_make": mfg_val,
+                "vehicle_model": model_val,
+                "manufacturer": mfg_val,  # Retained for backward-compatibility (Vehicle OEM)
+                "model": model_val,        # Retained for backward-compatibility (Vehicle Model)
+                "charger_manufacturer": charger_mfg,
+                "charger_model": charger_mod,
                 "excel_raw_status": excel_raw_status,  # Stored purely for audit reference; NEVER used for RCA
                 "session_category": cat,
                 "source_file": os.path.basename(file_path)
@@ -850,7 +860,7 @@ class RoamingUploadAnalyzer:
             "filter": f"UId~eq~'{clean_uid}'"
         }
 
-        self.rate_limiter.acquire("cms.ev-charge-network.com")
+        self.rate_limiter.acquire("emonitoring.electreefi.com")
         items = []
         client = self._get_http_client("ELC")
         if client:
@@ -863,7 +873,7 @@ class RoamingUploadAnalyzer:
                 pass
 
         if not items:
-            url = "https://cms.ev-charge-network.com/Roaming/OCPILocation/LoadLocationChargerConnectorsThroughAjax?StatusId=1"
+            url = "https://emonitoring.electreefi.com/Roaming/OCPILocation/LoadLocationChargerConnectorsThroughAjax?StatusId=1"
             headers = {
                 "Cookie": self.cookie_header,
                 "User-Agent": "Mozilla/5.0",
@@ -962,7 +972,7 @@ class RoamingUploadAnalyzer:
         pid = (party_id or "").strip().upper()
         
         # Step 1: Try high-speed JSON detail endpoint on ElectreeFi Hub (fastest, lightweight, structured)
-        self.rate_limiter.acquire("cms.ev-charge-network.com")
+        self.rate_limiter.acquire("emonitoring.electreefi.com")
         client_elc = self._get_http_client("ELC")
         if client_elc:
             try:
@@ -1023,7 +1033,7 @@ class RoamingUploadAnalyzer:
         # Step 2: Fallback to HTML endpoint on ElectreeFi Hub
         if client_elc:
             try:
-                self.rate_limiter.acquire("cms.ev-charge-network.com")
+                self.rate_limiter.acquire("emonitoring.electreefi.com")
                 resp = client_elc.get(f"/Roaming/OCPIReservation/GetChargingStatus?bookingId={clean_id}", timeout=12.0)
                 if resp.status_code == 200:
                     html_text = resp.text
@@ -1707,9 +1717,12 @@ class RoamingUploadAnalyzer:
                 "party_id": party,
                 "station_name": row.get("station_name") or evse_info.get("location_name") or "Unknown Station",
                 "location_address": evse_info.get("address") or f"{evse_info.get('city')}, {evse_info.get('state')}".strip(", "),
-                "vehicle": f"{row.get('model', '')} ({row.get('vehicle_number', '')})".strip(" ()"),
-                "manufacturer": row.get("manufacturer") or "Unknown",
-                "charger_model": row.get("model") or "EVSE",
+                "vehicle": f"{row.get('vehicle_model') or row.get('model', '')} ({row.get('vehicle_number', '')})".strip(" ()"),
+                "vehicle_make": row.get("vehicle_make") or row.get("manufacturer") or "Unknown Make",
+                "vehicle_model": row.get("vehicle_model") or row.get("model") or "Unknown Model",
+                "manufacturer": row.get("vehicle_make") or row.get("manufacturer") or "Unknown Make",
+                "charger_model": row.get("charger_model") or evse_info.get("charger_model") or "OCPP 1.6 EVSE",
+                "charger_manufacturer": row.get("charger_manufacturer") or evse_info.get("charger_manufacturer") or "EVSE OEM",
                 "date": row.get("date"),
                 "in_time": in_time,
                 "out_time": out_time,
@@ -1885,74 +1898,80 @@ class RoamingUploadAnalyzer:
 
         station_list.sort(key=lambda x: x["total_incidents"], reverse=True)
 
-        # 4. Charger Model & Hardware Vulnerability Analysis
-        model_stats = defaultdict(lambda: {
+        # 4. EV Vehicle Model & BMS Vulnerability Analysis
+        # Answers: What customer EV models experience BMS handshake / contactor disconnect issues?
+        vehicle_model_stats = defaultdict(lambda: {
             "mfg": "",
             "model": "",
             "total_incidents": 0,
+            "vehicle_bms_faults": 0,
             "vehicle_side": 0,
             "charger_side": 0,
             "user_side": 0,
             "gateway_side": 0,
             "normal_completed": 0,
             "causes": Counter(),
-            "hardware_causes": Counter()
+            "bms_causes": Counter()
         })
 
         for it in instances:
-            mfg = str(it.get("manufacturer") or "Unknown").strip()
-            model = str(it.get("charger_model") or "EVSE").strip()
+            mfg = str(it.get("vehicle_make") or it.get("manufacturer") or "Unknown Make").strip()
+            model = str(it.get("vehicle_model") or it.get("model") or "Unknown Model").strip()
             key = (mfg, model)
-            model_stats[key]["mfg"] = mfg
-            model_stats[key]["model"] = model
+            vehicle_model_stats[key]["mfg"] = mfg
+            vehicle_model_stats[key]["model"] = model
             if it in normal_sessions:
-                model_stats[key]["normal_completed"] += 1
+                vehicle_model_stats[key]["normal_completed"] += 1
             else:
-                model_stats[key]["total_incidents"] += 1
-                model_stats[key]["causes"][it["root_cause"]] += 1
+                vehicle_model_stats[key]["total_incidents"] += 1
+                vehicle_model_stats[key]["causes"][it["root_cause"]] += 1
                 fside = it.get("fault_side", "")
-                if "CHARGER SIDE" in fside:
-                    model_stats[key]["charger_side"] += 1
-                    model_stats[key]["hardware_causes"][it["root_cause"]] += 1
-                elif "VEHICLE" in fside:
-                    model_stats[key]["vehicle_side"] += 1
+                if "VEHICLE" in fside:
+                    vehicle_model_stats[key]["vehicle_side"] += 1
+                    vehicle_model_stats[key]["vehicle_bms_faults"] += 1
+                    vehicle_model_stats[key]["bms_causes"][it["root_cause"]] += 1
+                elif "CHARGER" in fside:
+                    vehicle_model_stats[key]["charger_side"] += 1
                 elif "USER" in fside:
-                    model_stats[key]["user_side"] += 1
+                    vehicle_model_stats[key]["user_side"] += 1
                 elif "GATEWAY" in fside or "CMS" in fside:
-                    model_stats[key]["gateway_side"] += 1
+                    vehicle_model_stats[key]["gateway_side"] += 1
 
-        model_list = []
-        for key, m_data in model_stats.items():
+        vehicle_model_list = []
+        for key, m_data in vehicle_model_stats.items():
             inc = m_data["total_incidents"]
-            top_hw = m_data["hardware_causes"].most_common(1)
-            top_hw_str = top_hw[0][0] if top_hw else (m_data["causes"].most_common(1)[0][0] if m_data["causes"] else "None")
+            top_bms = m_data["bms_causes"].most_common(1)
+            top_bms_str = top_bms[0][0] if top_bms else (m_data["causes"].most_common(1)[0][0] if m_data["causes"] else "None")
 
             side_map = {
-                "Charger Side": m_data["charger_side"],
                 "Vehicle Side": m_data["vehicle_side"],
+                "Charger Side": m_data["charger_side"],
                 "User Side": m_data["user_side"],
                 "Gateway Side": m_data["gateway_side"]
             }
             dom_side = max(side_map.items(), key=lambda x: x[1])[0] if inc > 0 else "None"
 
-            model_list.append({
+            vehicle_model_list.append({
                 "mfg": m_data["mfg"],
                 "model": m_data["model"],
                 "total": inc + m_data["normal_completed"],
                 "total_incidents": inc,
+                "vehicle_bms_faults": m_data["vehicle_bms_faults"],
+                "vehicle_side": m_data["vehicle_side"],
                 "charger_side": m_data["charger_side"],
                 "charger_faults": m_data["charger_side"],
-                "vehicle_side": m_data["vehicle_side"],
                 "user_side": m_data["user_side"],
                 "gateway_side": m_data["gateway_side"],
                 "dominant_side": dom_side,
-                "top_cause": top_hw_str,
-                "top_hardware_fault": top_hw_str,
+                "top_cause": top_bms_str,
+                "top_bms_issue": top_bms_str,
+                "top_hardware_fault": top_bms_str,
                 "causes": m_data["causes"],
                 "normal_completed": m_data["normal_completed"]
             })
 
-        model_list.sort(key=lambda x: x["total_incidents"], reverse=True)
+        vehicle_model_list.sort(key=lambda x: x["total_incidents"], reverse=True)
+        model_list = vehicle_model_list
 
         # 5. Charger (EVSE) Breakdown
         charger_stats = defaultdict(lambda: {
@@ -2036,6 +2055,7 @@ class RoamingUploadAnalyzer:
             "station_stats": station_list,
             "top_station": station_list[0] if station_list else {},
             "model_stats": model_list,
+            "vehicle_model_stats": vehicle_model_list,
             "charger_stats": charger_list,
             "party_stats": party_list
         }
@@ -2261,13 +2281,13 @@ class RoamingUploadAnalyzer:
             format_cell(iss_tbl.cell(r_idx, 5), iss["action_item"], font_size=8, bg_hex=bg)
 
         # ---------------------------------------------------------------------
-        # SECTION 4: CHARGER MODEL & HARDWARE TYPE VULNERABILITY ANALYSIS
-        # Answers: What side are they from... charger model type side?
+        # SECTION 4: EV VEHICLE MODEL & BMS VULNERABILITY ANALYSIS
+        # Answers: What customer EV models experience BMS handshake / contactor disconnect issues?
         # ---------------------------------------------------------------------
         p_h4 = doc.add_paragraph()
         p_h4.paragraph_format.space_before = Pt(16)
         p_h4.paragraph_format.space_after = Pt(4)
-        r_h4 = p_h4.add_run("4. Charger Model & Hardware Type Vulnerability Analysis")
+        r_h4 = p_h4.add_run("4. EV Vehicle Model & BMS Vulnerability Analysis")
         r_h4.font.name = "Calibri"
         r_h4.font.size = Pt(13)
         r_h4.font.bold = True
@@ -2277,29 +2297,42 @@ class RoamingUploadAnalyzer:
         p_desc4.paragraph_format.space_before = Pt(0)
         p_desc4.paragraph_format.space_after = Pt(6)
         p_desc4.add_run(
-            "Evaluation of whether specific hardware controller types or charger manufacturers exhibit higher "
-            "vulnerabilities to standby timeouts, firmware lockups, or remote start rejections:"
+            "Evaluation of customer Electric Vehicle (EV) makes and models (e.g., Tata Nexon EV, Mahindra XEV 9e, MG Windsor EV) "
+            "to identify BMS communication readiness, contactor timing issues, and inlet compatibility faults at charging stations:"
         )
 
-        mod_stats = aggs.get("model_stats", [])[:12]
+        mod_stats = aggs.get("vehicle_model_stats", aggs.get("model_stats", []))[:15]
         mod_tbl = doc.add_table(rows=len(mod_stats) + 1, cols=7)
         mod_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         set_table_borders(mod_tbl)
 
-        headers_m = ["Manufacturer", "Model Code", "Total Sessions", "Total Incidents", "Charger Hardware Faults", "HW Fault %", "Dominant Model Issue"]
+        headers_m = ["Vehicle Make (OEM)", "EV Car Model", "Total Sessions", "Total Incidents", "Vehicle BMS Faults", "BMS Fault %", "Dominant Vehicle/BMS Issue"]
         for c_idx, h in enumerate(headers_m):
             format_cell(mod_tbl.cell(0, c_idx), h, bold=True, color=RGB_WHITE, font_size=8.5, align=WD_ALIGN_PARAGRAPH.CENTER, bg_hex=COLOR_NAVY)
 
         for r_idx, ms in enumerate(mod_stats, 1):
             bg = COLOR_LIGHT_BG if r_idx % 2 == 0 else "FFFFFF"
-            hw_pct = (ms["charger_faults"] / ms["total"] * 100) if ms["total"] else 0.0
+            bms_pct = (ms.get("vehicle_bms_faults", ms.get("vehicle_side", 0)) / ms["total_incidents"] * 100) if ms["total_incidents"] else 0.0
             format_cell(mod_tbl.cell(r_idx, 0), ms["mfg"] or "Generic", bold=True, font_size=8.5, bg_hex=bg)
             format_cell(mod_tbl.cell(r_idx, 1), ms["model"] or "Standard", font_size=8.5, bg_hex=bg)
             format_cell(mod_tbl.cell(r_idx, 2), f"{ms['total']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
             format_cell(mod_tbl.cell(r_idx, 3), f"{ms['total_incidents']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
-            format_cell(mod_tbl.cell(r_idx, 4), f"{ms['charger_faults']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
-            format_cell(mod_tbl.cell(r_idx, 5), f"{hw_pct:.1f}%", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
-            format_cell(mod_tbl.cell(r_idx, 6), ms["top_cause"][:40], font_size=8, bg_hex=bg)
+            format_cell(mod_tbl.cell(r_idx, 4), f"{ms.get('vehicle_bms_faults', ms.get('vehicle_side', 0)):,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(mod_tbl.cell(r_idx, 5), f"{bms_pct:.1f}%", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(mod_tbl.cell(r_idx, 6), (ms.get("top_bms_issue") or ms["top_cause"])[:40], font_size=8, bg_hex=bg)
+
+        p_note4 = doc.add_paragraph()
+        p_note4.paragraph_format.space_before = Pt(4)
+        p_note4.paragraph_format.space_after = Pt(8)
+        r_note4 = p_note4.add_run(
+            "Note: Physical EVSE charging hardware models (Delta, Exicom, OKAYA, Masstech, ABB, etc.) deployed across "
+            "the charging network are centrally registered in CMS Master Management (/MasterManagement/ChargerModel). "
+            "The table above specifically audits customer EV car models to isolate vehicle-side BMS protocol and contactor non-compliance."
+        )
+        r_note4.font.name = "Calibri"
+        r_note4.font.size = Pt(8)
+        r_note4.font.italic = True
+        r_note4.font.color.rgb = RGB_MUTED
 
         # ---------------------------------------------------------------------
         # SECTION 5: ROAMING PARTNER OVERVIEW (IOC, VIN, MPC)
@@ -2394,7 +2427,7 @@ class RoamingUploadAnalyzer:
             case_table.alignment = WD_TABLE_ALIGNMENT.CENTER
             set_table_borders(case_table)
 
-            portal_url = self.partner_portals.get(it["party_id"], {}).get("portal_url", "https://cms.ev-charge-network.com")
+            portal_url = self.partner_portals.get(it["party_id"], {}).get("portal_url", "https://emonitoring.electreefi.com")
             dur_str = f"{it.get('duration_seconds', 0)}s" if it.get("duration_seconds") else (it.get("duration") or "0s")
             soc_str = f"Initial: {it.get('initial_soc', 'N/A')}% | Final: {it.get('final_soc', 'N/A')}%"
 
@@ -2563,11 +2596,11 @@ class RoamingUploadAnalyzer:
                 if fill_c.fill_type: cell.fill = fill_c
 
         # -------------------------------------------------------------
-        # Tab 4: Model & Hardware Analysis
+        # Tab 4: EV Vehicle Model Analysis
         # -------------------------------------------------------------
-        ws_m = wb.create_sheet(title="Model & Hardware Analysis")
+        ws_m = wb.create_sheet(title="EV Vehicle Model Analysis")
         ws_m.views.sheetView[0].showGridLines = True
-        mod_headers = ["Manufacturer", "Model Code", "Total Sessions", "Total Incidents", "Charger Hardware Faults", "HW Fault %", "Dominant Model Issue"]
+        mod_headers = ["Vehicle Make (OEM)", "EV Car Model", "Total Sessions", "Total Incidents", "Vehicle BMS Faults", "BMS Fault %", "Dominant Vehicle/BMS Issue"]
         ws_m.append(mod_headers)
         for col_idx in range(1, len(mod_headers) + 1):
             c = ws_m.cell(1, col_idx)
@@ -2575,11 +2608,11 @@ class RoamingUploadAnalyzer:
             c.font = font_header
             c.alignment = Alignment(horizontal="center", vertical="center")
 
-        for r_idx, ms in enumerate(aggs.get("model_stats", []), 2):
-            hw_pct = (ms["charger_faults"] / ms["total"] * 100) if ms["total"] else 0.0
+        for r_idx, ms in enumerate(aggs.get("vehicle_model_stats", aggs.get("model_stats", [])), 2):
+            bms_pct = (ms.get("vehicle_bms_faults", ms.get("vehicle_side", 0)) / ms["total_incidents"] * 100) if ms["total_incidents"] else 0.0
             ws_m.append([
                 ms["mfg"] or "Generic", ms["model"] or "Standard", ms["total"],
-                ms["total_incidents"], ms["charger_faults"], f"{hw_pct:.1f}%", ms["top_cause"]
+                ms["total_incidents"], ms.get("vehicle_bms_faults", ms.get("vehicle_side", 0)), f"{bms_pct:.1f}%", ms.get("top_bms_issue") or ms["top_cause"]
             ])
             fill_c = fill_alt if r_idx % 2 == 0 else PatternFill(fill_type=None)
             for c_idx in range(1, len(mod_headers) + 1):

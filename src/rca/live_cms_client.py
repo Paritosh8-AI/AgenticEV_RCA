@@ -507,6 +507,72 @@ class LiveCMSClient:
             "connectors": connectors
         }
 
+    def fetch_live_charger_models(self, force_refresh: bool = False) -> Dict[str, Any]:
+        """
+        Fetches the master catalogue of physical EVSE Charger Models from:
+        https://emonitoring.electreefi.com/MasterManagement/ChargerModel
+        (/MasterManagement/ChargerModel/LoadChargerModelViewThroughAjax)
+        Distinguishes Charger Hardware Models (Delta, Exicom, ABB, Okaya, etc.)
+        from customer Electric Vehicle (EV) models (eVerito, Nexon, etc.).
+        """
+        cache_key = "live_charger_models"
+        now = time.time()
+        if not force_refresh and cache_key in self._cache and (now - self._cache_ttls.get(cache_key, 0) < self.default_ttl):
+            return self._cache[cache_key]
+
+        res = self._post_ajax(
+            "/MasterManagement/ChargerModel/LoadChargerModelViewThroughAjax",
+            payload={"page": "1", "pageSize": "500", "filter": ""}
+        )
+
+        items = res.get("Data", [])
+        total_count = res.get("Total") or len(items)
+        manufacturers = {}
+        connectors = {}
+        protocols = {}
+        models = []
+
+        for it in items:
+            mfg = (it.get("ManufacturerName") or "Other").strip()
+            manufacturers[mfg] = manufacturers.get(mfg, 0) + 1
+
+            code = (it.get("ChargerCode") or "Standard").strip()
+            conn = (it.get("OutputConnector") or "CCS2").strip()
+            if conn:
+                connectors[conn] = connectors.get(conn, 0) + 1
+
+            proto = (it.get("ChargingProtocol") or "OCPP 1.6").strip()
+            if proto:
+                protocols[proto] = protocols.get(proto, 0) + 1
+
+            cap = it.get("Capicity") or it.get("OutputRating") or 0.0
+            models.append({
+                "model_id": it.get("ModelId"),
+                "model_code": code,
+                "manufacturer": mfg,
+                "capacity_kw": cap,
+                "outputs": it.get("NumberOfOutput") or "1",
+                "connector_type": conn,
+                "output_current": it.get("OutputCurrent") or "N/A",
+                "protocol": proto,
+                "status_id": it.get("StatusId", 1)
+            })
+
+        summary = {
+            "is_live": True,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "total_models": total_count,
+            "manufacturers": manufacturers,
+            "connectors": connectors,
+            "protocols": protocols,
+            "models": models,
+            "error": res.get("error")
+        }
+
+        self._cache[cache_key] = summary
+        self._cache_ttls[cache_key] = now
+        return summary
+
 
 # Singleton instance
 live_client = LiveCMSClient()

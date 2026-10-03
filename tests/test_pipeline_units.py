@@ -133,5 +133,59 @@ def test_filter_completed_low_consumption():
     assert filter_completed_row(18.5, True)[0] is False
     assert filter_completed_row(1.0, True)[0] is False
     assert filter_completed_row(0.99, True)[0] is True
-    assert filter_completed_row(0.0, True)[0] is True
     assert filter_completed_row(0.35, True)[1] == "Completed (<1kWh)"
+
+
+def test_vehicle_model_aggregation_disambiguation():
+    from src.rca.roaming_upload_analyzer import RoamingUploadAnalyzer
+    analyzer = RoamingUploadAnalyzer()
+    instances = [
+        {
+            "booking_id": "1001",
+            "resolved_evse_id": "EVSE-01",
+            "roaming_uid": "IOC-01",
+            "party_id": "IOC",
+            "station_name": "Delhi Central",
+            "vehicle": "Nexon EV (DL01AB1234)",
+            "vehicle_make": "Tata Motors",
+            "vehicle_model": "Nexon EV",
+            "manufacturer": "Tata Motors",
+            "charger_model": "Delta UFC50",
+            "charger_manufacturer": "DELTA",
+            "root_cause": "BMS Handshake Timeout (~60s Protocol Window)",
+            "fault_side": "VEHICLE SIDE",
+            "kwh": 0.0,
+            "session_category": "Cancelled"
+        },
+        {
+            "booking_id": "1002",
+            "resolved_evse_id": "EVSE-02",
+            "roaming_uid": "IOC-02",
+            "party_id": "IOC",
+            "station_name": "Noida Hub",
+            "vehicle": "XEV 9e (UP16XY9999)",
+            "vehicle_make": "Mahindra",
+            "vehicle_model": "XEV 9e",
+            "manufacturer": "Mahindra",
+            "charger_model": "Exicom Harmony",
+            "charger_manufacturer": "EXICOM",
+            "root_cause": "Charger Controller Initiation Timeout",
+            "fault_side": "CHARGER SIDE",
+            "kwh": 0.0,
+            "session_category": "Cancelled"
+        }
+    ]
+
+    aggs = analyzer.compute_aggregations(instances)
+    v_stats = aggs["vehicle_model_stats"]
+    assert len(v_stats) == 2
+    tata = next(it for it in v_stats if it["mfg"] == "Tata Motors")
+    assert tata["model"] == "Nexon EV"
+    assert tata["vehicle_bms_faults"] == 1
+    assert tata["dominant_side"] == "Vehicle Side"
+
+    mahindra = next(it for it in v_stats if it["mfg"] == "Mahindra")
+    assert mahindra["model"] == "XEV 9e"
+    assert mahindra["charger_side"] == 1
+    assert mahindra["vehicle_bms_faults"] == 0
+

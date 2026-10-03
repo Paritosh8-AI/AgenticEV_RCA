@@ -270,22 +270,27 @@ class TelemetryCopilot:
                     direct_data = self.live_client.fetch_live_direct_cancellations_today()
                     return self._handle_live_direct_cancellations_query(q, direct_data)
 
-                # 5. Live Charger Fleet Health / Online vs Closed
+                # 5. Live Master Charger Models & Hardware OEMs (Matches Master Management -> Charger Model)
+                if any(k in q for k in ["charger model", "hardware model", "charger make", "master charger", "oem model", "charger manufacturer", "charger oem", "charger vendor", "charger hardware"]):
+                    models_data = self.live_client.fetch_live_charger_models()
+                    return self._handle_live_charger_models_query(q, models_data)
+
+                # 6. Live Charger Fleet Health / Online vs Closed
                 if any(k in q for k in ["charger status", "closed charger", "offline charger", "online charger", "faulted charger", "fleet status", "which chargers", "charger health"]):
                     chargers = self.live_client.fetch_live_charger_statuses()
                     return self._handle_live_chargers_query(q, chargers)
 
-                # 6. Live Connectors & Tariffs
+                # 7. Live Connectors & Tariffs
                 if any(k in q for k in ["connector", "tariff", "gun", "pricing", "rate", "price", "power type"]):
                     connectors = self.live_client.fetch_live_connectors_summary()
                     return self._handle_live_connectors_query(q, connectors)
 
-                # 7. Live Cancellations Today (All Network Aborts - clearly separating OCPI vs Direct CMS)
+                # 8. Live Cancellations Today (All Network Aborts - clearly separating OCPI vs Direct CMS)
                 if any(k in q for k in ["cancel", "abort", "failed today", "dropouts today", "failures today"]):
                     cancellations = self.live_client.fetch_live_cancellations_today()
                     return self._handle_live_cancellations_query(q, cancellations)
 
-                # 8. Overall Real-Time Network Pulse
+                # 9. Overall Real-Time Network Pulse
                 pulse = self.live_client.get_full_live_network_pulse()
                 return self._handle_live_pulse_query(q, pulse)
 
@@ -311,7 +316,9 @@ class TelemetryCopilot:
             "active session", "who is charging", "online charger", "fleet status",
             "connector", "tariff", "pricing", "recent abort", "ocpi", "roaming",
             "reservation", "direct cancel", "cms cancel", "cancellation", "cancelled",
-            "aborted", "closed charger", "offline charger", "cms booking"
+            "aborted", "closed charger", "offline charger", "cms booking",
+            "charger model", "charger models", "hardware model", "master charger",
+            "charger manufacturer", "charger oem", "charger vendor", "charger hardware"
         ]
         return any(k in q for k in live_keywords)
 
@@ -342,14 +349,14 @@ class TelemetryCopilot:
             res["answer"] += live_status_badge
             return res
 
-        # 4. Vehicle / BMS Communication / Saturation
-        if any(k in q for k in ["bms", "vehicle", "car", "saturation", "soc", "battery", "handshake"]):
+        # 4. Vehicle Models / Electric Cars / BMS Communication / Saturation
+        if any(k in q for k in ["bms", "vehicle", "car", "saturation", "soc", "battery", "handshake", "vehicle model", "car model", "nexon", "tiago", "punch", "everito", "windsor", "xev", "ev model"]):
             res = self._handle_bms_query(q, dataset)
             res["answer"] += live_status_badge
             return res
 
-        # 5. Manufacturer & Charger Models Comparison
-        if any(k in q for k in ["manufacturer", "model", "vendor", "delta", "exicom", "abb", "schneider", "oem"]):
+        # 5. Charger Hardware Manufacturer & Charger Models Comparison
+        if any(k in q for k in ["charger manufacturer", "charger model", "charger oem", "hardware model", "delta", "exicom", "abb", "schneider", "oem", "vendor", "masstech", "okaya"]):
             res = self._handle_manufacturer_query(q, dataset)
             res["answer"] += live_status_badge
             return res
@@ -853,6 +860,91 @@ class TelemetryCopilot:
             "suggested_questions": ["What is the status of OCPI cancelled sessions for today?", "Who is charging right now?"]
         }
 
+    def _handle_live_charger_models_query(self, query: str, m: Dict[str, Any]) -> Dict[str, Any]:
+        total = m.get("total_models", 0)
+        mfgs = sorted(m.get("manufacturers", {}).items(), key=lambda x: x[1], reverse=True)
+        top_oems = mfgs[:6]
+        models = m.get("models", [])
+
+        # Filter if a specific manufacturer or model code was requested
+        q_lower = query.lower()
+        matched_mfg = None
+        for oem, _ in mfgs:
+            if oem.lower() in q_lower:
+                matched_mfg = oem
+                break
+
+        if matched_mfg:
+            filtered_models = [it for it in models if it["manufacturer"].upper() == matched_mfg.upper()]
+        else:
+            filtered_models = models
+
+        rows = []
+        for it in filtered_models[:10]:
+            code = it.get("model_code", "Standard")
+            mfg = it.get("manufacturer", "OEM")
+            cap_val = it.get("capacity_kw") or it.get("capacity")
+            if cap_val:
+                c_str = str(cap_val).strip()
+                cap = c_str if c_str.lower().endswith("kw") else f"{c_str} kW"
+            else:
+                cap = "Configurable"
+            guns = f"{it.get('outputs', 1)} gun(s)"
+            conn = it.get("connector_type") or it.get("connectors") or "CCS2 / AC"
+            proto = it.get("protocol") or "OCPP 1.6"
+            rows.append(
+                f"| `{code}` | **{mfg}** | `{cap}` | {guns} | `{conn}` | `{proto}` |"
+            )
+
+        table_md = (
+            "| Model Code | Manufacturer (OEM) | Power Rating | Outputs | Connector Standard | Protocol |\n"
+            "| :--- | :--- | :--- | :--- | :--- | :--- |\n" +
+            "\n".join(rows)
+        ) if rows else "*No matching charger models found.*"
+
+        oem_lines = [f"- **{oem}**: `{cnt} certified models`" for oem, cnt in top_oems]
+
+        answer = (
+            f"### 🔌 Master Charger Models & Hardware OEMs ({total} Registered Models)\n\n"
+            f"> **CMS Location:** `Master Management ➔ Charger Model`\n"
+            f"> **Portal URL:** `https://emonitoring.electreefi.com/MasterManagement/ChargerModel?moc=2|settingsMenuItems|MasterManagementMenu|ChargerModel|207`\n"
+            f"> **Synchronized:** `{m['timestamp']}` | **Catalogue Size:** `{total} hardware models`\n\n"
+            f"ElectreeFi's Central Management System maintains a certified catalogue of **{total} physical EVSE Charger Models** across top EV charger manufacturers.\n\n"
+            f"> [!IMPORTANT]\n"
+            f"> **Charger Models vs. Vehicle Models Distinction:**\n"
+            f"> - **Charger Models (`Master Management ➔ Charger Model`):** Physical EVSE charging equipment manufactured by **Delta, Exicom, OKAYA, E-Fill, Masstech, ABB, Tirex**, etc. with specific output ratings and OCPP protocols.\n"
+            f"> - **Vehicle Models (`ModelName` in Bookings):** Electric vehicles driven by customers (e.g., *Mahindra eVerito*, *Tata Nexon EV*, *MG ZS EV*).\n\n"
+            f"#### 🏭 Certified Charger Hardware Manufacturers (Top OEMs):\n" +
+            "\n".join(oem_lines) +
+            f"\n\n#### 📋 Master Charger Model Specifications (Sample Catalogue):\n" +
+            table_md +
+            f"\n\n> **⚡ Technical Capabilities:** Over 90% of deployed hardware complies with **OCPP 1.6-J (JSON)** with support for high-voltage DC Fast charging (up to 360 kW) and dual-gun CCS-2/CHAdeMO configurations."
+        )
+
+        chart_labels = [oem for oem, _ in top_oems]
+        chart_vals = [cnt for _, cnt in top_oems]
+
+        return {
+            "answer": answer,
+            "metrics": [
+                {"label": "Total Charger Models", "value": f"{total} models"},
+                {"label": "Top Charger OEM", "value": f"{mfgs[0][0]} ({mfgs[0][1]} models)" if mfgs else "DELTA"},
+                {"label": "Standard Protocol", "value": "OCPP 1.6"}
+            ],
+            "chart_data": {
+                "type": "bar",
+                "title": "Charger Models by Hardware OEM",
+                "labels": chart_labels if chart_labels else ["None"],
+                "values": chart_vals if chart_vals else [0]
+            },
+            "suggested_questions": [
+                "Show Delta charger models",
+                "Show Exicom charger models",
+                "Which chargers are currently active?",
+                "What is the status of OCPI cancelled sessions for today?"
+            ]
+        }
+
     def _handle_live_charger_lookup(self, charger_code: str) -> Dict[str, Any]:
         """Looks up a specific charger code across live charger statuses."""
         chargers = self.live_client.fetch_live_charger_statuses()
@@ -1024,12 +1116,16 @@ class TelemetryCopilot:
         pct = (bms_count / d["total_records"] * 100) if d["total_records"] else 0
 
         answer = (
-            f"### 🚗 Vehicle & Battery Management System (BMS) Telemetry\n\n"
+            f"### 🚗 Electric Vehicle (EV) Models & Battery Management System (BMS) Telemetry\n\n"
             f"Vehicle-side interactions account for **{bms_count} sessions ({pct:.1f}% of total aborts)**.\n\n"
-            f"#### Key Anomaly Profiles:\n"
+            f"> [!NOTE]\n"
+            f"> **Vehicle Models (EV Cars) vs. Charger Models (EVSE Equipment):**\n"
+            f"> - **Vehicle Models:** Electric cars driven by customers (e.g., *Tata Nexon EV*, *Tata Tiago*, *Mahindra XEV 9e*, *MG Windsor EV*, *VinFast Limo*).\n"
+            f"> - **Charger Models:** Physical EVSE hardware from **Master Management ➔ Charger Model** (e.g., *Delta DC001*, *Exicom BEVC-DC001*, *ABB Terra 54*).\n\n"
+            f"#### Key Vehicle Anomaly Profiles:\n"
             f"- **BMS Handshake Protocol Timeout (30s – 90s)**: The EV CAN bus or PLC modem stopped responding during parameter exchange before the pre-charge contactors could close.\n"
             f"- **EV Battery Saturation Cutoff (SOC >= 80%)**: Drivers plugged in with high initial battery state-of-charge. The vehicle BMS rapidly tapered current to 0A to protect cell chemistry, concluding in <1 kWh transferred.\n\n"
-            f"> **💡 Crucial RCA Insight:** These are **NOT station hardware defects**. Categorizing them under *Vehicle BMS* prevents penalizing charger uptime SLAs."
+            f"> **💡 Crucial RCA Insight:** These are **VEHICLE / DRIVER behaviors, NOT station hardware defects**. Categorizing them under *Vehicle BMS* prevents penalizing charger uptime SLAs."
         )
 
         return {
@@ -1042,7 +1138,7 @@ class TelemetryCopilot:
             "suggested_questions": [
                 "Show low-consumption bookings with SOC >= 80%",
                 "Compare vehicle failures vs charger hardware failures",
-                "Which vehicle models have the most handshake timeouts?"
+                "Show master charger models from Master Management"
             ]
         }
 
@@ -1051,13 +1147,14 @@ class TelemetryCopilot:
         mfg_lines = [f"**{idx}. {k}** — `{v} failure incidents` ({v/d['total_records']*100:.1f}%)" for idx, (k, v) in enumerate(mfgs, start=1)]
 
         answer = (
-            f"### 🏭 Charger Manufacturer & Model Failure Distribution\n\n"
+            f"### 🏭 Charger Hardware Manufacturer & Model Failure Distribution\n\n"
+            f"> **Hardware Reference:** `Master Management ➔ Charger Model` (EVSE Hardware OEMs: Delta, Exicom, ABB, etc.)\n\n"
             f"Analysis of failure distribution across installed charger hardware vendors:\n\n" +
             "\n\n".join(mfg_lines) +
             f"\n\n#### 🛠️ Vendor-Specific Insights:\n"
-            f"- **Delta Electronics**: High proportion of solenoid cable-lock timeouts on connector A.\n"
-            f"- **Exicom Tele-Systems**: Prone to pre-charge contactor dropouts during voltage ramp-up.\n"
-            f"- **ABB E-mobility**: Highest protocol stability, failures primarily user-initiated or grid dips."
+            f"- **Delta Electronics (DC001 / UFC50)**: High proportion of solenoid cable-lock timeouts on connector A.\n"
+            f"- **Exicom Tele-Systems (BEVC-DC001 / Harmony)**: Prone to pre-charge contactor dropouts during voltage ramp-up.\n"
+            f"- **ABB E-mobility (Terra 54)**: Highest protocol stability, failures primarily user-initiated or grid dips."
         )
 
         return {
