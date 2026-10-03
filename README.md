@@ -280,5 +280,14 @@ tests/test_rca_mapper.py::test_map_to_cs_rca_text_without_rejected_remote_start 
 ============================= 21 passed in 1.97s ==============================
 ```
 
+## 👨‍💻 Author & Contributions
+
+**Paritosh Mukherjee**  
+*B.Tech – Computer Science (Artificial Intelligence & Machine Learning)*  
+- GitHub: [@Paritosh8-AI](https://github.com/Paritosh8-AI)
+- Repository: [AgenticEV_RCA](https://github.com/Paritosh8-AI/AgenticEV_RCA)
+
+Contributions, feature proposals, and security reviews are welcome. Feel free to open an issue or submit a pull request!
+
 ## 📄 License
 This project is licensed under the [MIT License](LICENSE).
