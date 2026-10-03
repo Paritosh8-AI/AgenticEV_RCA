@@ -27,7 +27,7 @@ def get_cookie_header() -> str:
         with open(cookie_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         cookies = data.get("cookies", [])
-        return "; ".join([f"{c['name']}={c['value']}" for c in cookies if "ev-charge-network.com" in c.get("domain", "")])
+        return "; ".join([f"{c['name']}={c['value']}" for c in cookies if "electreefi.com" in c.get("domain", "")])
     except Exception:
         return ""
 
@@ -59,7 +59,7 @@ def parse_flexible_dt(t_str: str | None) -> datetime | None:
 
 def fetch_cancelled_booking(booking_id: str, start_date: str, end_date: str, cookie_header: str) -> tuple[dict | None, int]:
     """Queries the Cancelled bookings endpoint for a specific booking ID with exact server filtering."""
-    url = f"https://cms.ev-charge-network.com/ChargingStationManagement/AdminBookingDetails/CancelledBookingDataThroughAjax?StationId=&StartDate={start_date}&Enddate={end_date}&stateId=&cityId=&transactionTypeId=-1&Id=0&vin=&chargerCode=&user=&vehicleNumber="
+    url = f"https://emonitoring.electreefi.com/ChargingStationManagement/AdminBookingDetails/CancelledBookingDataThroughAjax?StationId=&StartDate={start_date}&Enddate={end_date}&stateId=&cityId=&transactionTypeId=-1&Id=0&vin=&chargerCode=&user=&vehicleNumber="
     headers = {
         "X-Requested-With": "XMLHttpRequest",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -90,7 +90,7 @@ def fetch_cancelled_booking(booking_id: str, start_date: str, end_date: str, coo
 
 def fetch_completed_booking(booking_id: str, start_date: str, end_date: str, cookie_header: str) -> tuple[dict | None, int]:
     """Queries the Past/Completed bookings endpoint for a specific booking ID with exact server filtering."""
-    url = f"https://cms.ev-charge-network.com/ChargingStationManagement/AdminBookingDetails/PastBookingDataThroughAjax?StartDate={start_date}&Enddate={end_date}&transactionTypeId=-1&Id=0&StationId=&stateId=&cityId=&vin=&chargerCode=&user=&vehicleNumber=&i="
+    url = f"https://emonitoring.electreefi.com/ChargingStationManagement/AdminBookingDetails/PastBookingDataThroughAjax?StartDate={start_date}&Enddate={end_date}&transactionTypeId=-1&Id=0&StationId=&stateId=&cityId=&vin=&chargerCode=&user=&vehicleNumber=&i="
     headers = {
         "X-Requested-With": "XMLHttpRequest",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -121,7 +121,7 @@ def fetch_completed_booking(booking_id: str, start_date: str, end_date: str, coo
 
 def fetch_roaming_booking(booking_id: str, cookie_header: str) -> tuple[dict | None, int]:
     """Queries Roaming OCPI reservation endpoint for bookings that originate via roaming protocols."""
-    url = f"https://cms.ev-charge-network.com/Roaming/OCPIReservation/GetChargingStatusdetail?BookingId={booking_id}"
+    url = f"https://emonitoring.electreefi.com/Roaming/OCPIReservation/GetChargingStatusdetail?BookingId={booking_id}"
     headers = {
         "X-Requested-With": "XMLHttpRequest",
         "Cookie": cookie_header
@@ -205,6 +205,48 @@ def fetch_roaming_booking(booking_id: str, cookie_header: str) -> tuple[dict | N
     return None, 1
 
 
+def fetch_ocpi_cancelled_reservation(booking_id: str, cookie_header: str) -> tuple[dict | None, int]:
+    """Queries OCPI Cancelled Reservations grid for a specific booking ID."""
+    url = "https://emonitoring.electreefi.com/Roaming/OCPIReservation/LoadOcpiCancelledReservationGridViewThroughAjax"
+    headers = {
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Cookie": cookie_header
+    }
+    try:
+        payload = urllib.parse.urlencode({
+            "page": "1",
+            "pageSize": "10",
+            "sort": "",
+            "group": "",
+            "filter": f"BookingId~eq~{booking_id}"
+        }).encode("utf-8")
+        req = urllib.request.Request(f"{url}?StartDate=&Enddate=&transactionTypeId=-1", data=payload, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            items = data.get("Data", [])
+            for it in items:
+                if str(it.get("BookingId")) == str(booking_id):
+                    it["_SessionType"] = "Cancelled (OCPI Roaming)"
+                    it["_IsRoaming"] = True
+                    it["ChargingStationBookingId"] = it.get("BookingId")
+                    it["StationName"] = it.get("StationName") or f"Roaming Station ({it.get('PartyId')})"
+                    it["BookingInTime"] = it.get("BookingDate") or ""
+                    it["SchedularAction"] = it.get("SchedularAction") or "Cancelled"
+                    it["StopReason"] = it.get("SchedularAction") or "Cancelled"
+                    it["ChargerCode"] = it.get("Connector") or it.get("ChargerId") or "N/A"
+                    it["ConnectorId"] = it.get("ConnectorName") or 1
+                    it["EnergyConsumed_indecimal"] = float(it.get("KWh") or 0.0)
+                    it["Name"] = it.get("UserName") or "Roaming Driver"
+                    it["PaymentRecieved"] = float(it.get("PaidAmount") or it.get("TotalAmount") or 0.0)
+                    it["RefundedAmount"] = float(it.get("RefundAmount") or 0.0)
+                    it["VehicleRegistrationNumber"] = it.get("VehicleNumber") or "-"
+                    return it, 1
+    except Exception:
+        pass
+    return None, 1
+
+
 def fetch_ocpp_transaction(booking_id: str, start_date: str, end_date: str, cookie_header: str) -> tuple[dict | None, int]:
     """
     Queries the central OCPP Transactions table in a single targeted hit.
@@ -215,7 +257,7 @@ def fetch_ocpp_transaction(booking_id: str, start_date: str, end_date: str, cook
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         "Cookie": cookie_header
     }
-    tx_url = f"https://cms.ev-charge-network.com/OCPPManagement/TransactionDetail/LoadTransactionViewThroughAjaxForData/2?StartDate={start_date}&Enddate={end_date}"
+    tx_url = f"https://emonitoring.electreefi.com/OCPPManagement/TransactionDetail/LoadTransactionViewThroughAjaxForData/2?StartDate={start_date}&Enddate={end_date}"
 
     # Single targeted attempt: ReservationId filter (1 hit)
     try:
@@ -275,7 +317,7 @@ def fetch_ocpp_logs_for_booking(
     from_enc = w_start.replace(" ", "%20")
     to_enc = w_end.replace(" ", "%20")
 
-    url = f"https://cms.ev-charge-network.com/GetOcppLogs?entityId={ch_id}&fromDate={from_enc}&toDate={to_enc}"
+    url = f"https://emonitoring.electreefi.com/GetOcppLogs?entityId={ch_id}&fromDate={from_enc}&toDate={to_enc}"
     payload = urllib.parse.urlencode({
         "page": "1",
         "pageSize": "100",
@@ -1007,6 +1049,13 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
         total_hits += roam_hits
         if booking_record:
             session_type = booking_record.get("_SessionType", "Roaming Session")
+
+    # 4b. If still not found, search in Roaming OCPI Cancelled Reservations (Hit 4)
+    if not booking_record:
+        booking_record, ocpi_c_hits = fetch_ocpi_cancelled_reservation(clean_id, cookie_header)
+        total_hits += ocpi_c_hits
+        if booking_record:
+            session_type = booking_record.get("_SessionType", "Cancelled (OCPI Roaming)")
 
     if not booking_record:
         return {

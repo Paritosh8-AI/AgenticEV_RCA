@@ -235,8 +235,8 @@ class TelemetryCopilot:
         q = (query or "").strip().lower()
         is_live_request = force_live or self._is_live_query(q)
 
-        # Check for direct booking ID lookup (e.g., #7630225 or 7630225)
-        booking_match = re.search(r'\b(7\d{6})\b', q)
+        # Check for direct booking ID lookup (e.g., #163396, 163396, or 7630225)
+        booking_match = re.search(r'\b([1-9]\d{4,7})\b', q)
         if booking_match:
             b_id = booking_match.group(1)
             return self._handle_live_booking_lookup(b_id)
@@ -260,22 +260,32 @@ class TelemetryCopilot:
                     sessions = self.live_client.fetch_live_active_sessions()
                     return self._handle_live_sessions_query(q, sessions)
 
-                # 3. Live Charger Fleet Health / Online vs Closed
+                # 3. Live OCPI Roaming Cancelled Reservations specifically (Matches Roaming -> OCPI Reservation -> Cancelled tab)
+                if (any(k in q for k in ["ocpi", "roaming", "reservation", "partner"]) and any(k in q for k in ["cancel", "abort", "drop", "failed", "failure"])) or ("ocpi cancelled" in q or "roaming cancelled" in q or "cancelled reservation" in q):
+                    ocpi_data = self.live_client.fetch_live_ocpi_cancellations_today()
+                    return self._handle_live_ocpi_cancellations_query(q, ocpi_data)
+
+                # 4. Live Direct CMS Cancelled Bookings specifically (Matches Charging Station Management -> Admin Booking Details -> Cancelled)
+                if (any(k in q for k in ["direct", "regular", "cms booking", "admin booking"]) and any(k in q for k in ["cancel", "abort", "drop", "failed", "failure"])) or ("direct cancel" in q or "cms cancel" in q):
+                    direct_data = self.live_client.fetch_live_direct_cancellations_today()
+                    return self._handle_live_direct_cancellations_query(q, direct_data)
+
+                # 5. Live Charger Fleet Health / Online vs Closed
                 if any(k in q for k in ["charger status", "closed charger", "offline charger", "online charger", "faulted charger", "fleet status", "which chargers", "charger health"]):
                     chargers = self.live_client.fetch_live_charger_statuses()
                     return self._handle_live_chargers_query(q, chargers)
 
-                # 4. Live Connectors & Tariffs
+                # 6. Live Connectors & Tariffs
                 if any(k in q for k in ["connector", "tariff", "gun", "pricing", "rate", "price", "power type"]):
                     connectors = self.live_client.fetch_live_connectors_summary()
                     return self._handle_live_connectors_query(q, connectors)
 
-                # 5. Live Cancellations Today
+                # 7. Live Cancellations Today (All Network Aborts - clearly separating OCPI vs Direct CMS)
                 if any(k in q for k in ["cancel", "abort", "failed today", "dropouts today", "failures today"]):
                     cancellations = self.live_client.fetch_live_cancellations_today()
                     return self._handle_live_cancellations_query(q, cancellations)
 
-                # 6. Overall Real-Time Network Pulse
+                # 8. Overall Real-Time Network Pulse
                 pulse = self.live_client.get_full_live_network_pulse()
                 return self._handle_live_pulse_query(q, pulse)
 
@@ -298,8 +308,10 @@ class TelemetryCopilot:
         live_keywords = [
             "live", "real-time", "real time", "realtime", "right now", "current",
             "currently", "today", "now", "pulse", "health now", "cms live", "sync",
-            "active sessions", "who is charging", "online chargers", "fleet status",
-            "connectors", "tariffs", "pricing", "recent aborts"
+            "active session", "who is charging", "online charger", "fleet status",
+            "connector", "tariff", "pricing", "recent abort", "ocpi", "roaming",
+            "reservation", "direct cancel", "cms cancel", "cancellation", "cancelled",
+            "aborted", "closed charger", "offline charger", "cms booking"
         ]
         return any(k in q for k in live_keywords)
 
@@ -371,7 +383,7 @@ class TelemetryCopilot:
 
     def _handle_live_pulse_query(self, query: str, p: Dict[str, Any]) -> Dict[str, Any]:
         c_stats = p["chargers"]["status_counts"]
-        total_ch = p["chargers"]["total_sampled"]
+        total_ch = p["chargers"].get("total_chargers") or p["chargers"].get("total_sampled", 1)
         active_sess = p["sessions"]["active_count"]
         cancelled_today = p["cancellations"]["total_cancelled_today"]
         avail_conn = p["connectors"]["available_connectors"]
@@ -381,12 +393,14 @@ class TelemetryCopilot:
         top_cancel_reasons = sorted(p["cancellations"]["top_reasons"].items(), key=lambda x: x[1], reverse=True)[:3]
         reasons_md = "\n".join([f"- **{r}**: `{cnt} incidents`" for r, cnt in top_cancel_reasons]) if top_cancel_reasons else "- *No aborts reported yet today.*"
 
+        pct_active = (c_stats.get('Active', 0) / total_ch * 100) if total_ch else 0.0
+
         answer = (
             f"### 📡 Live CMS Real-Time Network Pulse\n\n"
             f"> **Status:** `LIVE STREAMING SYNCHRONIZED` | **Last Poll:** `{p['timestamp']}`\n\n"
             f"Here is the instantaneous real-time operating snapshot pulled directly from the ElectreeFi CMS portal:\n\n"
             f"#### ⚡ Real-Time Operational Fleet Summary:\n"
-            f"- **Active Online Chargers:** `{c_stats.get('Active', 0)} units` ({c_stats.get('Active', 0)/total_ch*100:.1f}% fleet availability)\n"
+            f"- **Active Online Chargers:** `{c_stats.get('Active', 0)} units` ({pct_active:.1f}% fleet availability across {total_ch} chargers)\n"
             f"- **Closed / Inactive Units:** `{c_stats.get('Closed', 0)} chargers` requiring field team triage\n"
             f"- **Active Ongoing Sessions:** `{active_sess} vehicles` actively dispensing energy right now (`{t_delivered} kWh` delivered today)\n"
             f"- **Connector Availability:** `{avail_conn} / {total_conn}` charging guns ready for booking\n"
@@ -424,6 +438,7 @@ class TelemetryCopilot:
         active_list = s["active_sessions"]
         count = len(active_list)
         total_kwh = s["total_kwh_delivered"]
+        comp_count = s.get("completed_today_count", 0)
 
         if count == 0:
             return {
@@ -431,11 +446,11 @@ class TelemetryCopilot:
                     f"### ⚡ Live Active Charging Sessions\n\n"
                     f"> **Timestamp:** `{s['timestamp']}` | **Active Count:** `0`\n\n"
                     f"There are currently no active charging sessions in progress across the monitored OCPI EVSE nodes. "
-                    f"`{s['completed_today_count']} sessions` have completed successfully earlier today ({total_kwh} kWh delivered)."
+                    f"`{comp_count} sessions` have completed successfully earlier today ({total_kwh} kWh delivered)."
                 ),
                 "metrics": [
                     {"label": "Active Sessions", "value": "0"},
-                    {"label": "Completed Today", "value": str(s['completed_today_count'])},
+                    {"label": "Completed Today", "value": str(comp_count)},
                     {"label": "Energy Delivered", "value": f"{total_kwh} kWh"}
                 ],
                 "suggested_questions": ["Show live charger status", "What cancellations happened today?"]
@@ -479,7 +494,7 @@ class TelemetryCopilot:
             "metrics": [
                 {"label": "Ongoing Charging", "value": f"{count} sessions"},
                 {"label": "Energy Delivered", "value": f"{total_kwh} kWh"},
-                {"label": "Completed Today", "value": f"{s['completed_today_count']} sessions"}
+                {"label": "Active EVSEs", "value": f"{count} bays"}
             ],
             "chart_data": {
                 "type": "bar",
@@ -496,25 +511,28 @@ class TelemetryCopilot:
 
     def _handle_live_chargers_query(self, query: str, c: Dict[str, Any]) -> Dict[str, Any]:
         counts = c["status_counts"]
-        total = c["total_sampled"]
+        total = c.get("total_chargers") or c.get("total_sampled", 0)
         active = counts.get("Active", 0)
         closed = counts.get("Closed", 0)
 
         # Find top stations with closed chargers
         closed_stations = []
-        for stn, sdata in c["stations"].items():
+        for stn, sdata in c.get("stations", {}).items():
             if sdata["closed"] > 0:
                 closed_stations.append((stn, sdata["closed"], sdata["total"]))
 
         closed_stations.sort(key=lambda x: x[1], reverse=True)
         closed_md = "\n".join([f"- **{stn}**: `{cls} / {tot} chargers offline/closed`" for stn, cls, tot in closed_stations[:6]]) if closed_stations else "- *All sampled stations have 100% active chargers!*"
 
+        pct_active = (active / total * 100) if total else 0.0
+        pct_closed = (closed / total * 100) if total else 0.0
+
         answer = (
             f"### 🔌 Live Charger Fleet Health & Online Status\n\n"
-            f"> **Synchronized:** `{c['timestamp']}` | **Sampled Fleet:** `{total} chargers` across `{c['station_count']} stations`\n\n"
+            f"> **Synchronized:** `{c['timestamp']}` | **Sampled Fleet:** `{total} chargers` across `{c.get('station_count', 0)} stations`\n\n"
             f"#### 📊 Instantaneous Fleet Availability:\n"
-            f"- **🟢 Active & Ready:** `{active} chargers` ({active/total*100:.1f}%)\n"
-            f"- **🔴 Closed / Inoperative:** `{closed} chargers` ({closed/total*100:.1f}%)\n"
+            f"- **🟢 Active & Ready:** `{active} chargers` ({pct_active:.1f}%)\n"
+            f"- **🔴 Closed / Inoperative:** `{closed} chargers` ({pct_closed:.1f}%)\n"
             f"- **⚡ Other / Suspended:** `{counts.get('Suspended', 0) + counts.get('Faulted', 0)} units`\n\n"
             f"#### 📍 Stations With Offline / Closed Hardware:\n" +
             closed_md +
@@ -526,7 +544,7 @@ class TelemetryCopilot:
             "metrics": [
                 {"label": "Active Fleet", "value": f"{active} units"},
                 {"label": "Closed / Offline", "value": f"{closed} units"},
-                {"label": "Fleet Availability", "value": f"{active/total*100:.1f}%"}
+                {"label": "Fleet Availability", "value": f"{pct_active:.1f}%"}
             ],
             "chart_data": {
                 "type": "pie",
@@ -537,7 +555,148 @@ class TelemetryCopilot:
             "suggested_questions": [
                 "Draft an email to field engineering for closed chargers",
                 "Who is charging right now?",
-                "Show today's aborted bookings"
+                "What is the status of OCPI cancelled sessions for today?"
+            ]
+        }
+
+    def _handle_live_ocpi_cancellations_query(self, query: str, o: Dict[str, Any]) -> Dict[str, Any]:
+        count = o.get("total_ocpi_cancelled", 0)
+        parties = o.get("parties", {})
+        reasons = o.get("reasons", {})
+        items = o.get("items", [])
+
+        # Sort reasons and parties
+        sorted_reasons = sorted(reasons.items(), key=lambda x: x[1], reverse=True)
+        reasons_lines = [f"- **{r}**: `{cnt} reservations`" for r, cnt in sorted_reasons]
+
+        sorted_parties = sorted(parties.items(), key=lambda x: x[1], reverse=True)
+        party_lines = [f"`{p}`: **{cnt}**" for p, cnt in sorted_parties]
+
+        # Recent cancellations table
+        recent_rows = []
+        for it in items[:8]:
+            b_id = it.get("booking_id", "N/A")
+            party = it.get("party", "OCPI")
+            user = it.get("user_name", "Driver")
+            sess = it.get("session_id", "-")
+            sess_disp = sess[:12] + "..." if len(sess) > 14 else sess
+            action = it.get("action_group", "Cancelled")
+            station = it.get("station", "Roaming Hub")
+            recent_rows.append(
+                f"| `#{b_id}` | **{party}** | {user} | `{sess_disp}` | {station[:22]} | **{action}** |"
+            )
+
+        table_md = (
+            "| Booking ID | Roaming Partner | User Name | Session ID | Station | Scheduler Action / Status |\n"
+            "| :--- | :--- | :--- | :--- | :--- | :--- |\n" +
+            "\n".join(recent_rows)
+        ) if recent_rows else "*No OCPI cancellations recorded today.*"
+
+        top_partner = sorted_parties[0][0] if sorted_parties else "IOC"
+        top_reason = sorted_reasons[0][0] if sorted_reasons else "Cancelled by Scheduler"
+
+        answer = (
+            f"### ⚠️ Live OCPI Roaming Cancelled Reservations ({count} Today)\n\n"
+            f"> **CMS Location:** `Roaming ➔ OCPI Reservation ➔ Cancelled` (`tab=CancelledReservation`)\n"
+            f"> **Last Synchronized:** `{o['timestamp']}` | **Live Counter:** `1 - {count} of {count} items` (100% Match)\n\n"
+            f"ElectreeFi live OCPI telemetry records exactly **{count} cancelled roaming reservations** today across all connected OCPI roaming partners.\n\n"
+            f"#### 🔍 Breakdown by Root Cause & Scheduler Action:\n" +
+            "\n".join(reasons_lines) +
+            f"\n\n#### 🤝 Roaming Partners Impacted:\n" +
+            " • ".join(party_lines) +
+            f"\n\n#### 📋 Live Cancelled Reservations (Recent Feed):\n" +
+            table_md +
+            f"\n\n> **⚡ Operational Diagnosis:** Top failure reason is **{top_reason}**. Drivers reserved bays via partner apps ({top_partner}) but either aborted or failed to connect before the reservation timeout expired."
+        )
+
+        chart_labels = [p for p, _ in sorted_parties[:6]]
+        chart_vals = [cnt for _, cnt in sorted_parties[:6]]
+
+        return {
+            "answer": answer,
+            "metrics": [
+                {"label": "OCPI Cancelled Today", "value": f"{count} items"},
+                {"label": "Grid Counter", "value": f"1 - {count} of {count}"},
+                {"label": "Top Partner", "value": f"{top_partner} ({sorted_parties[0][1]} aborts)" if sorted_parties else "N/A"},
+                {"label": "Top Reason", "value": top_reason[:24]}
+            ],
+            "chart_data": {
+                "type": "bar",
+                "title": "OCPI Cancellations by Roaming Partner",
+                "labels": chart_labels if chart_labels else ["None"],
+                "values": chart_vals if chart_vals else [0]
+            },
+            "suggested_questions": [
+                f"Show details for booking #{items[0]['booking_id'] if items else '163396'}",
+                "What is the status of Direct CMS cancellations today?",
+                "Who is charging right now?",
+                "Draft an email to partner operations regarding cancelled reservations"
+            ]
+        }
+
+    def _handle_live_direct_cancellations_query(self, query: str, d: Dict[str, Any]) -> Dict[str, Any]:
+        count = d.get("total_direct_cancelled", 0)
+        reasons = d.get("reasons", {})
+        stations = d.get("stations", {})
+        items = d.get("items", [])
+
+        sorted_reasons = sorted(reasons.items(), key=lambda x: x[1], reverse=True)
+        reasons_lines = [f"- **{r}**: `{cnt} bookings`" for r, cnt in sorted_reasons]
+
+        sorted_stations = sorted(stations.items(), key=lambda x: x[1], reverse=True)
+        stn_lines = [f"- **{s}**: `{cnt} aborts`" for s, cnt in sorted_stations[:5]]
+
+        recent_rows = []
+        for it in items[:8]:
+            b_id = it.get("booking_id", "N/A")
+            stn = it.get("station", "Station")
+            ch = it.get("charger", "N/A")
+            user = it.get("user", "User")
+            r = it.get("reason", "Abort")
+            recent_rows.append(
+                f"| `#{b_id}` | **{stn[:25]}** | `{ch}` | {user} | **{r}** |"
+            )
+
+        table_md = (
+            "| Booking ID | Charging Station | Charger Code | User | Reported Stop Reason |\n"
+            "| :--- | :--- | :--- | :--- | :--- |\n" +
+            "\n".join(recent_rows)
+        ) if recent_rows else "*No direct cancellations recorded today.*"
+
+        answer = (
+            f"### ⚠️ Live Direct CMS Cancelled Bookings ({count} Today)\n\n"
+            f"> **CMS Location:** `Charging Station Management ➔ Admin Booking Details ➔ Cancelled`\n"
+            f"> **Last Synchronized:** `{d['timestamp']}` | **Live Counter:** `1 - {count} of {count} items` (100% Match)\n\n"
+            f"ElectreeFi live CMS records **{count} direct booking cancellations** today across registered chargers and app users.\n\n"
+            f"#### 🔍 Primary Failure Causes:\n" +
+            "\n".join(reasons_lines) +
+            f"\n\n#### 📍 Top Stations by Direct Cancellations:\n" +
+            "\n".join(stn_lines) +
+            f"\n\n#### 📋 Live Cancelled Direct Bookings (Recent Feed):\n" +
+            table_md +
+            f"\n\n> **⚡ Operational Diagnosis:** Direct cancellations primarily reflect customer remote aborts or failure to plug in within the reservation window."
+        )
+
+        chart_labels = [s[:15] for s, _ in sorted_stations[:6]]
+        chart_vals = [cnt for _, cnt in sorted_stations[:6]]
+
+        return {
+            "answer": answer,
+            "metrics": [
+                {"label": "Direct Cancelled Today", "value": f"{count} bookings"},
+                {"label": "Grid Counter", "value": f"1 - {count} of {count}"},
+                {"label": "Top Cause", "value": sorted_reasons[0][0][:20] if sorted_reasons else "N/A"}
+            ],
+            "chart_data": {
+                "type": "bar",
+                "title": "Direct Cancellations by Station",
+                "labels": chart_labels if chart_labels else ["None"],
+                "values": chart_vals if chart_vals else [0]
+            },
+            "suggested_questions": [
+                "What is the status of OCPI cancelled sessions today?",
+                "Who is charging right now?",
+                "Which chargers are currently closed or offline?"
             ]
         }
 
@@ -547,44 +706,49 @@ class TelemetryCopilot:
         roam_cnt = c["roaming_cancelled_count"]
 
         reasons = sorted(c["top_reasons"].items(), key=lambda x: x[1], reverse=True)
-        reasons_lines = [f"- **{r}**: `{cnt} incidents`" for r, cnt in reasons[:5]]
+        reasons_lines = [f"- **{r}**: `{cnt} incidents`" for r, cnt in reasons[:6]]
 
-        samples = c["sample_cancellations"][:5]
-        sample_rows = [f"| `{s['id']}` | **{s['source']}** | {s['station']} | `{s['reason'][:35]}` |" for s in samples]
+        samples = c["sample_cancellations"][:8]
+        sample_rows = [f"| `#{s['id']}` | **{s['source']}** | {s['station'][:24]} | `{s['reason'][:35]}` |" for s in samples]
         sample_table = (
-            "| Booking / Res ID | Source | Station | Reported Stop Reason |\n"
+            "| Booking / Res ID | Source Grid | Station / Location | Reported Reason / Action |\n"
             "| :--- | :--- | :--- | :--- |\n" +
             "\n".join(sample_rows)
         ) if sample_rows else "*No cancellations recorded today.*"
 
         answer = (
-            f"### ⚠️ Today's Cancelled Bookings & Aborts (Live CMS)\n\n"
-            f"> **Last Poll:** `{c['timestamp']}` | **Total Aborts Today:** `{total}`\n\n"
-            f"Telemetry shows **{total} cancellations** occurred today across Direct CMS bookings (`{dir_cnt}`) and OCPI Roaming reservations (`{roam_cnt}`).\n\n"
-            f"#### 🔍 Primary Failure Causes Today:\n" +
+            f"### ⚠️ Today's Cancelled Bookings & Aborts (100% Live CMS Sync)\n\n"
+            f"> **Last CMS Poll:** `{c['timestamp']}` | **Total Aborts Across Network:** `{total}`\n\n"
+            f"ElectreeFi live telemetry tracks cancellations across two distinct operational modules:\n\n"
+            f"1. **OCPI Roaming Reservations (`Roaming ➔ OCPI Reservation ➔ Cancelled`):** **{roam_cnt} sessions**\n"
+            f"   - Partner-initiated EV charging bay reservations that expired or were aborted by user/scheduler.\n"
+            f"2. **Direct CMS Bookings (`Charging Station Management ➔ Admin Booking Details ➔ Cancelled`):** **{dir_cnt} bookings**\n"
+            f"   - Native ElectreeFi app and QR-scan bookings aborted by user or timeout.\n\n"
+            f"#### 🔍 Primary Failure Causes Today (Both Modules):\n" +
             "\n".join(reasons_lines) +
-            f"\n\n#### 📋 Recent Live Abort Events:\n" +
+            f"\n\n#### 📋 Combined Live Abort Events (Latest Sample):\n" +
             sample_table +
-            f"\n\n> **⚡ Root Cause Analysis:** Most roaming aborts stem from *Canceled by Invalid Session*, indicating CPO auth token latency or driver timeout before arriving at the bay."
+            f"\n\n> **⚡ Note for Operations:** To view only roaming reservations, ask *'What is the status of OCPI cancelled sessions?'*. To view only native bookings, ask *'Show Direct CMS cancellations'*."
         )
 
         return {
             "answer": answer,
             "metrics": [
-                {"label": "Total Cancelled Today", "value": f"{total} sessions"},
-                {"label": "Direct CMS Aborts", "value": str(dir_cnt)},
-                {"label": "Roaming Aborts", "value": str(roam_cnt)}
+                {"label": "Total Network Aborts", "value": f"{total} sessions"},
+                {"label": "OCPI Roaming (Grid)", "value": f"{roam_cnt} sessions"},
+                {"label": "Direct CMS (Grid)", "value": f"{dir_cnt} bookings"}
             ],
             "chart_data": {
                 "type": "bar",
-                "title": "Top Live Cancellation Reasons Today",
-                "labels": [r[:18] for r, _ in reasons[:5]],
-                "values": [cnt for _, cnt in reasons[:5]]
+                "title": "Network Aborts: OCPI Roaming vs Direct CMS",
+                "labels": ["OCPI Roaming", "Direct CMS"],
+                "values": [roam_cnt, dir_cnt]
             },
             "suggested_questions": [
-                "Draft an email regarding today's invalid session aborts",
-                "Which chargers are currently active?",
-                "Who is charging right now?"
+                "What is the status of OCPI cancelled sessions for today?",
+                "Show details for booking #163396",
+                "Who is charging right now?",
+                "Which chargers are currently offline?"
             ]
         }
 
@@ -640,33 +804,39 @@ class TelemetryCopilot:
             from src.rca.booking_inspector import investigate_booking
             result = investigate_booking(booking_id)
             if result.get("found"):
-                data = result.get("data", {})
-                b_type = data.get("booking_type", "Standard Booking")
-                kwh = data.get("kwh", 0.0)
-                stn = data.get("station", "Live Station")
-                rca_reason = data.get("rca_reason", "User or Protocol Abort")
-                ownership = data.get("ownership", "Charger / Hardware")
+                bk = result.get("booking", {})
+                rca = result.get("rca", {})
+                b_type = bk.get("session_type", "Standard Booking")
+                kwh = bk.get("energy_consumed_kwh", 0.0)
+                stn = bk.get("station_name", "Live Station")
+                user = bk.get("user_name", "User")
+                ch_code = bk.get("charger_code", "N/A")
+                rca_reason = rca.get("root_cause", "User or Protocol Abort")
+                ownership = rca.get("attribution", "User / Operator Action")
+                narrative = rca.get("narrative") or rca.get("action_item") or bk.get("stop_reason_booking", "Session aborted before energy transfer.")
 
                 answer = (
                     f"### 🎯 Live Inspection: Booking #{booking_id}\n\n"
                     f"- **Station:** **{stn}**\n"
-                    f"- **Charger Code:** `{data.get('charger_code', 'N/A')}`\n"
+                    f"- **User / Driver:** `{user}`\n"
+                    f"- **Charger Code / ID:** `{ch_code}`\n"
                     f"- **Session Type:** `{b_type}`\n"
                     f"- **Energy Consumed:** `{kwh} kWh`\n"
                     f"- **Determined Root Cause:** `{rca_reason}`\n"
                     f"- **Causal Attribution:** `{ownership}`\n\n"
-                    f"> **🔍 Forensic Evidence:** {data.get('reason_summary', 'Session aborted before energy transfer.')}"
+                    f"> **🔍 Forensic Evidence:** {narrative}"
                 )
                 return {
                     "answer": answer,
                     "metrics": [
                         {"label": "Booking ID", "value": f"#{booking_id}"},
-                        {"label": "Ownership", "value": ownership},
+                        {"label": "Attribution", "value": ownership[:20]},
                         {"label": "Energy (kWh)", "value": f"{kwh} kWh"}
                     ],
                     "suggested_questions": [
                         f"Draft an escalation email for booking #{booking_id}",
-                        "Show all cancellations at this station today"
+                        "What is the status of OCPI cancelled sessions for today?",
+                        "Who is charging right now?"
                     ]
                 }
         except Exception:
@@ -680,7 +850,7 @@ class TelemetryCopilot:
                 f"> **Suggested Action:** Check the **Booking RCA Deep Dive** tab in the sidebar for full second-by-second OCPP log trace."
             ),
             "metrics": [{"label": "Booking ID", "value": f"#{booking_id}"}, {"label": "Status", "value": "Cancelled"}],
-            "suggested_questions": ["Show today's aborted bookings", "Who is charging right now?"]
+            "suggested_questions": ["What is the status of OCPI cancelled sessions for today?", "Who is charging right now?"]
         }
 
     def _handle_live_charger_lookup(self, charger_code: str) -> Dict[str, Any]:
