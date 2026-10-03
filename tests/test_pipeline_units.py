@@ -214,3 +214,121 @@ def test_resolve_charger_hardware_lookup():
     assert res_delta["charger_manufacturer"] == "DELTA"
 
 
+def test_charger_model_and_oem_analysis_and_reports(tmp_path):
+    import os
+    from src.rca.roaming_upload_analyzer import RoamingUploadAnalyzer
+    from docx import Document
+    import openpyxl
+
+    analyzer = RoamingUploadAnalyzer()
+    instances = [
+        {
+            "booking_id": "2001",
+            "resolved_evse_id": "EVSE-ZET-60",
+            "roaming_uid": "IOC-ZET-01",
+            "party_id": "IOC",
+            "station_name": "IOCL Zetwerk Hub 60kW",
+            "vehicle": "Nexon EV",
+            "vehicle_make": "Tata Motors",
+            "vehicle_model": "Nexon EV",
+            "charger_manufacturer": "Zetwerk",
+            "charger_model": "Zetwerk 60kW CCS2",
+            "charger_capacity": 60.0,
+            "root_cause": "Charger Controller Initiation Timeout",
+            "fault_side": "CHARGER SIDE",
+            "kwh": 0.0,
+            "duration": 125,
+            "in_time": "2026-10-01 10:00:00",
+            "out_time": "2026-10-01 10:02:05",
+            "connector_display": "Gun 1 (A)",
+            "session_category": "Cancelled"
+        },
+        {
+            "booking_id": "2002",
+            "resolved_evse_id": "EVSE-QCH-180",
+            "roaming_uid": "MPC-QCH-01",
+            "party_id": "MPC",
+            "station_name": "MPC Quench Speedway 180kW",
+            "vehicle": "XEV 9e",
+            "vehicle_make": "Mahindra",
+            "vehicle_model": "XEV 9e",
+            "charger_manufacturer": "Quench",
+            "charger_model": "Quench 180kW Ultra-Fast",
+            "charger_capacity": 180.0,
+            "root_cause": "RemoteStart Rejected by Station",
+            "fault_side": "CHARGER SIDE",
+            "kwh": 0.0,
+            "duration": 45,
+            "in_time": "2026-10-01 11:00:00",
+            "out_time": "2026-10-01 11:00:45",
+            "connector_display": "Gun 2 (B)",
+            "session_category": "Cancelled"
+        },
+        {
+            "booking_id": "2003",
+            "resolved_evse_id": "EVSE-CC-30",
+            "roaming_uid": "VIN-CC-01",
+            "party_id": "VIN",
+            "station_name": "VinFast Chargecore Plaza",
+            "vehicle": "VF8",
+            "vehicle_make": "VinFast",
+            "vehicle_model": "VF8",
+            "charger_manufacturer": "Chargecore",
+            "charger_model": "Chargecore 30kW DC Fast",
+            "charger_capacity": 30.0,
+            "root_cause": "Reservation Expired by CMS Scheduler",
+            "fault_side": "USER / OPERATOR SIDE",
+            "kwh": 0.0,
+            "duration": 900,
+            "in_time": "2026-10-01 12:00:00",
+            "out_time": "2026-10-01 12:15:00",
+            "connector_display": "Gun 1 (A)",
+            "session_category": "Cancelled"
+        }
+    ]
+
+    aggs = analyzer.compute_aggregations(instances)
+    
+    # 1. Verify aggregations
+    assert "charger_mfg_stats" in aggs
+    assert "charger_model_type_stats" in aggs
+    assert "charger_power_class_stats" in aggs
+
+    mfg_names = [m["mfg"] for m in aggs["charger_mfg_stats"]]
+    assert "Zetwerk" in mfg_names
+    assert "Quench" in mfg_names
+    assert "Chargecore" in mfg_names
+
+    models = [m["model"] for m in aggs["charger_model_type_stats"]]
+    assert "Zetwerk 60kW CCS2" in models
+    assert "Quench 180kW Ultra-Fast" in models
+
+    pwr_classes = [p["power_class"] for p in aggs["charger_power_class_stats"]]
+    assert "DC Ultra-Fast (150-360 kW)" in pwr_classes
+    assert "DC Fast (50-120 kW)" in pwr_classes
+    assert "DC Mid-Power (20-30 kW)" in pwr_classes
+
+    # 2. Verify Word Report generation
+    out_docx = str(tmp_path / "test_report.docx")
+    analyzer.generate_word_report(instances, out_docx)
+    assert os.path.exists(out_docx)
+    doc = Document(out_docx)
+    doc_text = " ".join([p.text for p in doc.paragraphs])
+    assert "Charger Model Type, OEM & Hardware Reliability Analysis" in doc_text
+    assert "5.1 Top Problematic Charger Manufacturers (OEMs)" in doc_text
+    assert "5.2 Charger Hardware Model Types & Vulnerability Matrix" in doc_text
+    assert "5.3 Power Rating & Charger Type Vulnerability Breakdown" in doc_text
+
+    # 3. Verify Excel Report generation
+    out_xlsx = str(tmp_path / "test_report.xlsx")
+    analyzer.generate_excel_report(instances, out_xlsx)
+    assert os.path.exists(out_xlsx)
+    wb = openpyxl.load_workbook(out_xlsx)
+    assert "Charger Model & OEM Analysis" in wb.sheetnames
+    ws_hw = wb["Charger Model & OEM Analysis"]
+    cell_values = [str(row[0]) for row in ws_hw.iter_rows(values_only=True) if row[0] is not None]
+    assert any("1. CHARGER MANUFACTURERS" in v for v in cell_values)
+    assert any("2. CHARGER HARDWARE MODEL TYPES" in v for v in cell_values)
+    assert any("3. POWER RATING & CHARGER TYPE" in v for v in cell_values)
+
+

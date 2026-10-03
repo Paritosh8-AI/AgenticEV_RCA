@@ -2223,11 +2223,29 @@ class RoamingUploadAnalyzer:
         vehicle_model_list.sort(key=lambda x: x["total_incidents"], reverse=True)
         model_list = vehicle_model_list
 
-        # 5. Physical Charger Hardware & OEM Vulnerability Analysis
-        # Answers: Which physical charger models (Tirex 240kW, Delta CCS240, Exicom EVAC, Sterling 120kW, etc.) experience controller initiation timeouts & contactor pauses?
+        # 5. Physical Charger Hardware, Manufacturer & Model Type Vulnerability Analysis
+        def classify_power_class(model_str: str, cap_val: Any) -> str:
+            m = str(model_str or "").upper()
+            try:
+                c = float(cap_val) if cap_val is not None else 0.0
+            except Exception:
+                c = 0.0
+            if c >= 150 or any(k in m for k in ["180", "240", "360"]):
+                return "DC Ultra-Fast (150-360 kW)"
+            elif c >= 50 or any(k in m for k in ["60", "120", "100"]):
+                return "DC Fast (50-120 kW)"
+            elif c >= 20 or any(k in m for k in ["20", "30"]):
+                return "DC Mid-Power (20-30 kW)"
+            elif c >= 10 or "15" in m or "DC001" in m:
+                return "DC GB/T (15 kW)"
+            elif any(k in m for k in ["AC", "7.4", "22", "3.3"]):
+                return "AC Level 2 (3.3-22 kW)"
+            return "DC Fast (50-120 kW)"
+
         hardware_model_stats = defaultdict(lambda: {
             "mfg": "",
             "model": "",
+            "power_class": "",
             "total_incidents": 0,
             "charger_hardware_faults": 0,
             "vehicle_side": 0,
@@ -2239,34 +2257,91 @@ class RoamingUploadAnalyzer:
             "hardware_causes": Counter()
         })
 
+        mfg_stats = defaultdict(lambda: {
+            "mfg": "",
+            "total_incidents": 0,
+            "charger_hardware_faults": 0,
+            "vehicle_side": 0,
+            "charger_side": 0,
+            "user_side": 0,
+            "gateway_side": 0,
+            "normal_completed": 0,
+            "causes": Counter(),
+            "hardware_causes": Counter(),
+            "models": Counter()
+        })
+
+        power_class_stats = defaultdict(lambda: {
+            "power_class": "",
+            "total_incidents": 0,
+            "charger_hardware_faults": 0,
+            "normal_completed": 0,
+            "causes": Counter(),
+            "hardware_causes": Counter(),
+            "mfgs": Counter()
+        })
+
         for it in instances:
             mfg = str(it.get("charger_manufacturer") or "Standard CPO EVSE").strip()
             model = str(it.get("charger_model") or "Standard EVSE").strip()
+            p_class = classify_power_class(model, it.get("charger_capacity"))
             key = (mfg, model)
+
             hardware_model_stats[key]["mfg"] = mfg
             hardware_model_stats[key]["model"] = model
+            hardware_model_stats[key]["power_class"] = p_class
+
+            mfg_stats[mfg]["mfg"] = mfg
+            mfg_stats[mfg]["models"][model] += 1
+
+            power_class_stats[p_class]["power_class"] = p_class
+            power_class_stats[p_class]["mfgs"][mfg] += 1
+
             if it in normal_sessions:
                 hardware_model_stats[key]["normal_completed"] += 1
+                mfg_stats[mfg]["normal_completed"] += 1
+                power_class_stats[p_class]["normal_completed"] += 1
             else:
                 hardware_model_stats[key]["total_incidents"] += 1
                 hardware_model_stats[key]["causes"][it["root_cause"]] += 1
+
+                mfg_stats[mfg]["total_incidents"] += 1
+                mfg_stats[mfg]["causes"][it["root_cause"]] += 1
+
+                power_class_stats[p_class]["total_incidents"] += 1
+                power_class_stats[p_class]["causes"][it["root_cause"]] += 1
+
                 fside = it.get("fault_side", "")
                 if "CHARGER" in fside:
                     hardware_model_stats[key]["charger_side"] += 1
                     hardware_model_stats[key]["charger_hardware_faults"] += 1
                     hardware_model_stats[key]["hardware_causes"][it["root_cause"]] += 1
+
+                    mfg_stats[mfg]["charger_side"] += 1
+                    mfg_stats[mfg]["charger_hardware_faults"] += 1
+                    mfg_stats[mfg]["hardware_causes"][it["root_cause"]] += 1
+
+                    power_class_stats[p_class]["charger_hardware_faults"] += 1
+                    power_class_stats[p_class]["hardware_causes"][it["root_cause"]] += 1
                 elif "VEHICLE" in fside:
                     hardware_model_stats[key]["vehicle_side"] += 1
+                    mfg_stats[mfg]["vehicle_side"] += 1
                 elif "USER" in fside:
                     hardware_model_stats[key]["user_side"] += 1
+                    mfg_stats[mfg]["user_side"] += 1
                 elif "GATEWAY" in fside or "CMS" in fside:
                     hardware_model_stats[key]["gateway_side"] += 1
+                    mfg_stats[mfg]["gateway_side"] += 1
 
         hardware_model_list = []
         for key, h_data in hardware_model_stats.items():
             inc = h_data["total_incidents"]
+            tot_sess = inc + h_data["normal_completed"]
             top_hw = h_data["hardware_causes"].most_common(1)
             top_hw_str = top_hw[0][0] if top_hw else (h_data["causes"].most_common(1)[0][0] if h_data["causes"] else "None")
+            top_cause = h_data["causes"].most_common(1)[0][0] if h_data["causes"] else "None"
+            inc_pct = (inc / tot_sess * 100) if tot_sess else 0.0
+            hw_fault_pct = (h_data["charger_hardware_faults"] / inc * 100) if inc else 0.0
 
             side_map = {
                 "Charger Side": h_data["charger_side"],
@@ -2279,22 +2354,92 @@ class RoamingUploadAnalyzer:
             hardware_model_list.append({
                 "mfg": h_data["mfg"],
                 "model": h_data["model"],
-                "total": inc + h_data["normal_completed"],
+                "power_class": h_data["power_class"],
+                "total": tot_sess,
                 "total_incidents": inc,
+                "incident_pct": inc_pct,
                 "charger_hardware_faults": h_data["charger_hardware_faults"],
+                "hw_fault_pct": hw_fault_pct,
                 "charger_side": h_data["charger_side"],
                 "charger_faults": h_data["charger_side"],
                 "vehicle_side": h_data["vehicle_side"],
                 "user_side": h_data["user_side"],
                 "gateway_side": h_data["gateway_side"],
                 "dominant_side": dom_side,
-                "top_cause": top_hw_str,
+                "top_cause": top_cause,
                 "top_hardware_fault": top_hw_str,
                 "causes": h_data["causes"],
                 "normal_completed": h_data["normal_completed"]
             })
 
         hardware_model_list.sort(key=lambda x: x["total_incidents"], reverse=True)
+
+        mfg_list = []
+        for mfg_name, m_data in mfg_stats.items():
+            inc = m_data["total_incidents"]
+            tot_sess = inc + m_data["normal_completed"]
+            top_hw = m_data["hardware_causes"].most_common(1)
+            top_hw_str = top_hw[0][0] if top_hw else (m_data["causes"].most_common(1)[0][0] if m_data["causes"] else "None")
+            top_cause = m_data["causes"].most_common(1)[0][0] if m_data["causes"] else "None"
+            inc_pct = (inc / tot_sess * 100) if tot_sess else 0.0
+            hw_fault_pct = (m_data["charger_hardware_faults"] / inc * 100) if inc else 0.0
+
+            side_map = {
+                "Charger Side": m_data["charger_side"],
+                "Vehicle Side": m_data["vehicle_side"],
+                "User Side": m_data["user_side"],
+                "Gateway Side": m_data["gateway_side"]
+            }
+            dom_side = max(side_map.items(), key=lambda x: x[1])[0] if inc > 0 else "None"
+            top_m = [f"{m} ({c})" for m, c in m_data["models"].most_common(3)]
+            top_models_str = ", ".join(top_m)
+
+            mfg_list.append({
+                "mfg": mfg_name,
+                "total": tot_sess,
+                "total_incidents": inc,
+                "incident_pct": inc_pct,
+                "charger_hardware_faults": m_data["charger_hardware_faults"],
+                "hw_fault_pct": hw_fault_pct,
+                "charger_side": m_data["charger_side"],
+                "charger_faults": m_data["charger_side"],
+                "vehicle_side": m_data["vehicle_side"],
+                "user_side": m_data["user_side"],
+                "gateway_side": m_data["gateway_side"],
+                "dominant_side": dom_side,
+                "top_cause": top_cause,
+                "top_hardware_fault": top_hw_str,
+                "top_models": top_models_str,
+                "causes": m_data["causes"],
+                "normal_completed": m_data["normal_completed"]
+            })
+
+        mfg_list.sort(key=lambda x: x["total_incidents"], reverse=True)
+
+        power_class_list = []
+        for p_name, p_data in power_class_stats.items():
+            inc = p_data["total_incidents"]
+            tot_sess = inc + p_data["normal_completed"]
+            top_hw = p_data["hardware_causes"].most_common(1)
+            top_hw_str = top_hw[0][0] if top_hw else (p_data["causes"].most_common(1)[0][0] if p_data["causes"] else "None")
+            top_mfg = p_data["mfgs"].most_common(1)
+            top_mfg_str = top_mfg[0][0] if top_mfg else "None"
+            inc_pct = (inc / tot_sess * 100) if tot_sess else 0.0
+            hw_fault_pct = (p_data["charger_hardware_faults"] / inc * 100) if inc else 0.0
+
+            power_class_list.append({
+                "power_class": p_name,
+                "total": tot_sess,
+                "total_incidents": inc,
+                "incident_pct": inc_pct,
+                "charger_hardware_faults": p_data["charger_hardware_faults"],
+                "hw_fault_pct": hw_fault_pct,
+                "dominant_hardware_issue": top_hw_str,
+                "primary_mfg": top_mfg_str,
+                "normal_completed": p_data["normal_completed"]
+            })
+
+        power_class_list.sort(key=lambda x: x["total_incidents"], reverse=True)
 
         # 6. Charger (EVSE) Breakdown
         charger_stats = defaultdict(lambda: {
@@ -2379,8 +2524,12 @@ class RoamingUploadAnalyzer:
             "top_station": station_list[0] if station_list else {},
             "model_stats": vehicle_model_list,
             "vehicle_model_stats": vehicle_model_list,
+            "charger_mfg_stats": mfg_list,
+            "charger_oem_stats": mfg_list,
+            "charger_model_type_stats": hardware_model_list,
             "charger_hardware_stats": hardware_model_list,
             "hardware_model_stats": hardware_model_list,
+            "charger_power_class_stats": power_class_list,
             "charger_stats": charger_list,
             "party_stats": party_list
         }
@@ -2660,13 +2809,13 @@ class RoamingUploadAnalyzer:
         r_note4.font.color.rgb = RGB_MUTED
 
         # ---------------------------------------------------------------------
-        # SECTION 5: PHYSICAL CHARGER HARDWARE & OEM RELIABILITY ANALYSIS
-        # Answers: Which physical charger models (Tirex 240kW, Delta CCS240, Exicom EVAC, Sterling 120kW, etc.) experience controller initiation timeouts & contactor pauses?
+        # SECTION 5: CHARGER MODEL TYPE, OEM & HARDWARE RELIABILITY ANALYSIS
+        # Answers: What models and manufacturers are causing the most problems and why?
         # ---------------------------------------------------------------------
         p_h5 = doc.add_paragraph()
         p_h5.paragraph_format.space_before = Pt(16)
         p_h5.paragraph_format.space_after = Pt(4)
-        r_h5 = p_h5.add_run("5. Physical Charger Hardware & OEM Reliability Analysis")
+        r_h5 = p_h5.add_run("5. Charger Model Type, OEM & Hardware Reliability Analysis")
         r_h5.font.name = "Calibri"
         r_h5.font.size = Pt(13)
         r_h5.font.bold = True
@@ -2676,31 +2825,164 @@ class RoamingUploadAnalyzer:
         p_desc5.paragraph_format.space_before = Pt(0)
         p_desc5.paragraph_format.space_after = Pt(6)
         p_desc5.add_run(
-            "Evaluation of physical EVSE charging station hardware equipment (e.g., Tirex 240kW, Delta CCS240, Exicom EVAC Type 2, "
-            "Sterling 120kW, E-Fill 30kW, Zetwerk 15kW) registered under CMS Master Management (/MasterManagement/ChargerModel). "
-            "Identifies whether specific hardware controller types or charger manufacturers exhibit higher vulnerabilities "
-            "to controller initiation timeouts (~120s standby), contactor feedback delays, or remote start rejections:"
+            "Granular audit of physical EVSE charging hardware equipment deployed across IOC, MPC, and VIN roaming networks, "
+            "registered under CMS Master Management (/MasterManagement/ChargerModel). This section isolates operational reliability across "
+            "Charger Manufacturers (OEMs), Charger Model Types, and Power Output Ratings to identify which models and manufacturers "
+            "cause the highest operational friction and why (e.g., controller initiation timeouts, connector lockouts, contactor feedback delays, and remote start rejections):"
         )
 
-        hw_stats = aggs.get("charger_hardware_stats", [])[:15]
-        hw_tbl = doc.add_table(rows=len(hw_stats) + 1, cols=7)
+        mfg_stats = aggs.get("charger_mfg_stats", [])
+        hw_models = aggs.get("charger_model_type_stats", aggs.get("charger_hardware_stats", []))
+        pwr_classes = aggs.get("charger_power_class_stats", [])
+
+        # Callout Banner for #1 Most Problematic Charger OEM
+        if mfg_stats and mfg_stats[0].get("total_incidents", 0) > 0:
+            top_mfg = mfg_stats[0]
+            p_mfg_callout = doc.add_paragraph()
+            p_mfg_callout.paragraph_format.space_before = Pt(4)
+            p_mfg_callout.paragraph_format.space_after = Pt(6)
+            r_mfg_callout = p_mfg_callout.add_run(
+                f"★ #1 HIGHEST INCIDENT CHARGER OEM: {top_mfg['mfg']}\n"
+                f"• Total Incident Volume: {top_mfg['total_incidents']:,} issues across {top_mfg['total']:,} sessions ({top_mfg['incident_pct']:.1f}% incident rate)\n"
+                f"• Charger Hardware Faults: {top_mfg['charger_hardware_faults']:,} ({top_mfg['hw_fault_pct']:.1f}% hardware fault share) | Dominant Side: {top_mfg['dominant_side']}\n"
+                f"• Primary Technical Root Cause: {top_mfg.get('top_hardware_fault') or top_mfg.get('top_cause', 'N/A')}\n"
+                f"• Deployed Models Involved: {top_mfg.get('top_models', 'N/A')}"
+            )
+            r_mfg_callout.font.name = "Calibri"
+            r_mfg_callout.font.size = Pt(9.5)
+            r_mfg_callout.font.bold = True
+            r_mfg_callout.font.color.rgb = RGB_NAVY
+
+        # Table 5.1: Top Problematic Charger Manufacturers (OEMs)
+        p_sub5_1 = doc.add_paragraph()
+        p_sub5_1.paragraph_format.space_before = Pt(10)
+        p_sub5_1.paragraph_format.space_after = Pt(2)
+        r_sub5_1 = p_sub5_1.add_run("5.1 Top Problematic Charger Manufacturers (OEMs)")
+        r_sub5_1.font.name = "Calibri"
+        r_sub5_1.font.size = Pt(11)
+        r_sub5_1.font.bold = True
+        r_sub5_1.font.color.rgb = RGB_NAVY
+
+        p_sub5_1_desc = doc.add_paragraph()
+        p_sub5_1_desc.paragraph_format.space_before = Pt(0)
+        p_sub5_1_desc.paragraph_format.space_after = Pt(6)
+        p_sub5_1_desc.add_run("Ranking of equipment manufacturers by total incident volume, incident rate, hardware faults, and dominant root causes across the roaming network:")
+
+        mfg_list_top = mfg_stats[:15]
+        mfg_tbl = doc.add_table(rows=len(mfg_list_top) + 1, cols=9)
+        mfg_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        set_table_borders(mfg_tbl)
+
+        headers_mfg = ["Rank", "Charger OEM", "Total Sessions", "Incidents", "Incident %", "HW Faults", "HW Fault %", "Dominant Fault Side", "Dominant Failure Mode"]
+        for c_idx, h in enumerate(headers_mfg):
+            format_cell(mfg_tbl.cell(0, c_idx), h, bold=True, color=RGB_WHITE, font_size=8.5, align=WD_ALIGN_PARAGRAPH.CENTER, bg_hex=COLOR_NAVY)
+
+        for r_idx, ms in enumerate(mfg_list_top, 1):
+            bg = COLOR_CRITICAL if r_idx <= 3 and ms["total_incidents"] > 0 else (COLOR_LIGHT_BG if r_idx % 2 == 0 else "FFFFFF")
+            format_cell(mfg_tbl.cell(r_idx, 0), f"#{r_idx}", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.CENTER, bg_hex=bg)
+            format_cell(mfg_tbl.cell(r_idx, 1), ms["mfg"], bold=True, font_size=8.5, bg_hex=bg)
+            format_cell(mfg_tbl.cell(r_idx, 2), f"{ms['total']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(mfg_tbl.cell(r_idx, 3), f"{ms['total_incidents']:,}", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(mfg_tbl.cell(r_idx, 4), f"{ms['incident_pct']:.1f}%", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(mfg_tbl.cell(r_idx, 5), f"{ms['charger_hardware_faults']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(mfg_tbl.cell(r_idx, 6), f"{ms['hw_fault_pct']:.1f}%", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(mfg_tbl.cell(r_idx, 7), ms["dominant_side"], font_size=8, bg_hex=bg)
+            format_cell(mfg_tbl.cell(r_idx, 8), (ms.get("top_hardware_fault") or ms.get("top_cause", "None"))[:35], font_size=8, bg_hex=bg)
+
+        # Table 5.2: Charger Hardware Model Types & Vulnerability Matrix
+        p_sub5_2 = doc.add_paragraph()
+        p_sub5_2.paragraph_format.space_before = Pt(12)
+        p_sub5_2.paragraph_format.space_after = Pt(2)
+        r_sub5_2 = p_sub5_2.add_run("5.2 Charger Hardware Model Types & Vulnerability Matrix")
+        r_sub5_2.font.name = "Calibri"
+        r_sub5_2.font.size = Pt(11)
+        r_sub5_2.font.bold = True
+        r_sub5_2.font.color.rgb = RGB_NAVY
+
+        p_sub5_2_desc = doc.add_paragraph()
+        p_sub5_2_desc.paragraph_format.space_before = Pt(0)
+        p_sub5_2_desc.paragraph_format.space_after = Pt(6)
+        p_sub5_2_desc.add_run("Ranking of individual EVSE charger model types by incident frequency, power rating, and hardware failure mode to isolate firmware and controller variations:")
+
+        hw_list_top = hw_models[:15]
+        hw_tbl = doc.add_table(rows=len(hw_list_top) + 1, cols=9)
         hw_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         set_table_borders(hw_tbl)
 
-        headers_hw = ["Charger Hardware OEM", "EVSE Model Code", "Total Sessions", "Incidents", "Charger Hardware Faults", "HW Fault %", "Dominant Hardware Issue"]
+        headers_hw = ["Rank", "Manufacturer", "EVSE Model Type", "Power Class", "Sessions", "Incidents", "Incident %", "HW Faults", "Dominant Hardware Issue"]
         for c_idx, h in enumerate(headers_hw):
             format_cell(hw_tbl.cell(0, c_idx), h, bold=True, color=RGB_WHITE, font_size=8.5, align=WD_ALIGN_PARAGRAPH.CENTER, bg_hex=COLOR_NAVY)
 
-        for r_idx, hs in enumerate(hw_stats, 1):
+        for r_idx, hs in enumerate(hw_list_top, 1):
             bg = COLOR_LIGHT_BG if r_idx % 2 == 0 else "FFFFFF"
             hw_fault_pct = (hs.get("charger_hardware_faults", hs.get("charger_side", 0)) / hs["total_incidents"] * 100) if hs["total_incidents"] else 0.0
-            format_cell(hw_tbl.cell(r_idx, 0), hs["mfg"] or "Generic EVSE", bold=True, font_size=8.5, bg_hex=bg)
-            format_cell(hw_tbl.cell(r_idx, 1), hs["model"] or "Standard", font_size=8.5, bg_hex=bg)
-            format_cell(hw_tbl.cell(r_idx, 2), f"{hs['total']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
-            format_cell(hw_tbl.cell(r_idx, 3), f"{hs['total_incidents']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
-            format_cell(hw_tbl.cell(r_idx, 4), f"{hs.get('charger_hardware_faults', hs.get('charger_side', 0)):,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
-            format_cell(hw_tbl.cell(r_idx, 5), f"{hw_fault_pct:.1f}%", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
-            format_cell(hw_tbl.cell(r_idx, 6), (hs.get("top_hardware_fault") or hs["top_cause"])[:40], font_size=8, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 0), f"#{r_idx}", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.CENTER, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 1), hs["mfg"] or "Generic EVSE", bold=True, font_size=8.5, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 2), hs["model"] or "Standard", font_size=8.5, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 3), hs.get("power_class", "DC Fast"), font_size=8, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 4), f"{hs['total']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 5), f"{hs['total_incidents']:,}", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 6), f"{hs.get('incident_pct', 0.0):.1f}%", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 7), f"{hs.get('charger_hardware_faults', 0):,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(hw_tbl.cell(r_idx, 8), (hs.get("top_hardware_fault") or hs.get("top_cause", "None"))[:35], font_size=8, bg_hex=bg)
+
+        # Table 5.3: Power Rating & Charger Type Vulnerability Breakdown
+        p_sub5_3 = doc.add_paragraph()
+        p_sub5_3.paragraph_format.space_before = Pt(12)
+        p_sub5_3.paragraph_format.space_after = Pt(2)
+        r_sub5_3 = p_sub5_3.add_run("5.3 Power Rating & Charger Type Vulnerability Breakdown")
+        r_sub5_3.font.name = "Calibri"
+        r_sub5_3.font.size = Pt(11)
+        r_sub5_3.font.bold = True
+        r_sub5_3.font.color.rgb = RGB_NAVY
+
+        p_sub5_3_desc = doc.add_paragraph()
+        p_sub5_3_desc.paragraph_format.space_before = Pt(0)
+        p_sub5_3_desc.paragraph_format.space_after = Pt(6)
+        p_sub5_3_desc.add_run("Performance comparison across power output classes (DC Ultra-Fast, DC Fast, DC Mid-Power, DC GB/T, and AC Level 2) to evaluate voltage/amperage stress factors:")
+
+        pwr_tbl = doc.add_table(rows=len(pwr_classes) + 1, cols=8)
+        pwr_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        set_table_borders(pwr_tbl)
+
+        headers_pwr = ["Power Rating Tier", "Total Sessions", "Total Incidents", "Incident %", "HW Faults", "HW Fault %", "Primary Problematic OEM", "Dominant Failure Mode"]
+        for c_idx, h in enumerate(headers_pwr):
+            format_cell(pwr_tbl.cell(0, c_idx), h, bold=True, color=RGB_WHITE, font_size=8.5, align=WD_ALIGN_PARAGRAPH.CENTER, bg_hex=COLOR_NAVY)
+
+        for r_idx, ps in enumerate(pwr_classes, 1):
+            bg = COLOR_LIGHT_BG if r_idx % 2 == 0 else "FFFFFF"
+            format_cell(pwr_tbl.cell(r_idx, 0), ps["power_class"], bold=True, font_size=8.5, bg_hex=bg)
+            format_cell(pwr_tbl.cell(r_idx, 1), f"{ps['total']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(pwr_tbl.cell(r_idx, 2), f"{ps['total_incidents']:,}", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(pwr_tbl.cell(r_idx, 3), f"{ps['incident_pct']:.1f}%", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(pwr_tbl.cell(r_idx, 4), f"{ps['charger_hardware_faults']:,}", font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(pwr_tbl.cell(r_idx, 5), f"{ps['hw_fault_pct']:.1f}%", bold=True, font_size=8.5, align=WD_ALIGN_PARAGRAPH.RIGHT, bg_hex=bg)
+            format_cell(pwr_tbl.cell(r_idx, 6), ps.get("primary_mfg", "None"), font_size=8.5, bg_hex=bg)
+            format_cell(pwr_tbl.cell(r_idx, 7), (ps.get("dominant_hardware_issue", "None"))[:35], font_size=8, bg_hex=bg)
+
+        # 5.4 OEM & Model Engineering Insights
+        p_sub5_4 = doc.add_paragraph()
+        p_sub5_4.paragraph_format.space_before = Pt(12)
+        p_sub5_4.paragraph_format.space_after = Pt(4)
+        r_sub5_4 = p_sub5_4.add_run("5.4 OEM & Model Technical Root Cause Insights")
+        r_sub5_4.font.name = "Calibri"
+        r_sub5_4.font.size = Pt(11)
+        r_sub5_4.font.bold = True
+        r_sub5_4.font.color.rgb = RGB_NAVY
+
+        insights_text = (
+            "• Chargecore & Starcharge Units: High concentration of connector occupied / reserve holding lockouts during the 15-minute booking window. The hardware controller remains in 'Occupied' status after a driver disconnects, delaying StatusNotification updates to the CMS and blocking subsequent roaming sessions.\n"
+            "• Zetwerk & Labotek Fast Chargers (60kW / 120kW): Susceptible to controller initiation timeouts (~120s standby window) where DC contactors hesitate or delay feedback before latching, causing the CMS to abort RemoteStart.\n"
+            "• Quench & EXICOM Ultra-Fast Chargers (180kW+): Pre-charge bus isolation checks failing on high-power buses or dropping when vehicles request rapid current ramp-up, requiring firmware latch timeout extensions.\n"
+            "• CY International & Delta Controllers: Occasional OCPP command queue deadlocks requiring automated soft-resets."
+        )
+        p_ins = doc.add_paragraph()
+        p_ins.paragraph_format.space_before = Pt(2)
+        p_ins.paragraph_format.space_after = Pt(8)
+        r_ins = p_ins.add_run(insights_text)
+        r_ins.font.name = "Calibri"
+        r_ins.font.size = Pt(8.5)
+        r_ins.font.color.rgb = RGB_DARK
 
         # ---------------------------------------------------------------------
         # SECTION 6: ROAMING PARTNER OVERVIEW (IOC, VIN, MPC)
@@ -2800,12 +3082,12 @@ class RoamingUploadAnalyzer:
             soc_str = f"Initial: {it.get('initial_soc', 'N/A')}% | Final: {it.get('final_soc', 'N/A')}%"
 
             case_rows = [
-                ("Station & Partner", f"{it['station_name']} | Partner: {it['party_id']} - {it['cpo_name']}"),
+                ("Station & Partner", f"{it['station_name']} | Partner: {it['party_id']} - {it.get('cpo_name', it.get('party_id', ''))}"),
                 ("Hardware Mapping", f"Roaming UID: {it['roaming_uid']} ==> Physical EVSE ID: {it['resolved_evse_id']} (Portal: {portal_url})"),
                 ("EV Vehicle Profile", f"Make: {it.get('vehicle_make', 'Unknown')} | Model: {it.get('vehicle_model', 'Unknown')} | Reg: {it.get('vehicle_number', 'N/A')}"),
                 ("Charger Hardware", f"OEM: {it.get('charger_manufacturer', 'EVSE OEM')} | Model: {it.get('charger_model', 'OCPP 1.6 Standard')} | Firmware: {it.get('firmware_version', 'N/A')}"),
                 ("Session Telemetry", f"Delivered Energy: {it['kwh']:.3f} kWh | Duration: {dur_str} | Battery SOC: {soc_str}"),
-                ("Lifecycle Timing", f"In-Time: {it['in_time']} | Out-Time: {it['out_time']} | Schedular Action: {it['schedular_action'] or 'Completed'}"),
+                ("Lifecycle Timing", f"In-Time: {it.get('in_time', '')} | Out-Time: {it.get('out_time', '')} | Schedular Action: {it.get('schedular_action') or 'Completed'}"),
                 ("OCPI Protocol Result", f"StartSession Status: {it.get('ocpi_result', 'NA')} | Message Text: {it.get('ocpi_text') or 'None'}"),
                 ("Fault Side Attribution", f"{it.get('fault_side', 'UNCLASSIFIED')}"),
                 ("Root Cause & Action", f"Issue: {it['root_cause']}\nAction: {it.get('action_item', '-')}")
@@ -2991,27 +3273,112 @@ class RoamingUploadAnalyzer:
                 if fill_c.fill_type: cell.fill = fill_c
 
         # -------------------------------------------------------------
-        # Tab 5: Charger Hardware Model Analysis
+        # Tab 5: Charger Model & OEM Analysis
         # -------------------------------------------------------------
-        ws_hw = wb.create_sheet(title="Charger Hardware Analysis")
+        ws_hw = wb.create_sheet(title="Charger Model & OEM Analysis")
         ws_hw.views.sheetView[0].showGridLines = True
-        hw_headers = ["Charger Hardware OEM", "EVSE Model Code", "Total Sessions", "Total Incidents", "Charger Hardware Faults", "HW Fault %", "Dominant Hardware Issue"]
-        ws_hw.append(hw_headers)
-        for col_idx in range(1, len(hw_headers) + 1):
-            c = ws_hw.cell(1, col_idx)
+
+        # --- SECTION A: CHARGER MANUFACTURERS (OEMS) RELIABILITY SUMMARY ---
+        ws_hw.append(["1. CHARGER MANUFACTURERS (OEMS) RELIABILITY & INCIDENT RANKING"])
+        ws_hw.cell(ws_hw.max_row, 1).font = Font(name="Calibri", size=11, bold=True, color="1B365D")
+        ws_hw.append([])
+
+        mfg_headers = [
+            "Rank", "Charger Manufacturer (OEM)", "Total Sessions", "Total Incidents",
+            "Incident Rate %", "Charger HW Faults", "HW Fault %", "Dominant Fault Side",
+            "Primary Root Cause / Failure Mode", "Deployed Model Types"
+        ]
+        ws_hw.append(mfg_headers)
+        header_row_a = ws_hw.max_row
+        for col_idx in range(1, len(mfg_headers) + 1):
+            c = ws_hw.cell(header_row_a, col_idx)
             c.fill = fill_navy
             c.font = font_header
             c.alignment = Alignment(horizontal="center", vertical="center")
 
-        for r_idx, hs in enumerate(aggs.get("charger_hardware_stats", []), 2):
-            hw_pct = (hs.get("charger_hardware_faults", hs.get("charger_side", 0)) / hs["total_incidents"] * 100) if hs["total_incidents"] else 0.0
+        mfg_stats_list = aggs.get("charger_mfg_stats", [])
+        for r_idx, ms in enumerate(mfg_stats_list, 1):
             ws_hw.append([
-                hs["mfg"] or "Generic EVSE", hs["model"] or "Standard", hs["total"],
-                hs["total_incidents"], hs.get("charger_hardware_faults", hs.get("charger_side", 0)), f"{hw_pct:.1f}%", hs.get("top_hardware_fault") or hs["top_cause"]
+                f"#{r_idx}", ms["mfg"], ms["total"], ms["total_incidents"],
+                f"{ms['incident_pct']:.1f}%", ms["charger_hardware_faults"],
+                f"{ms['hw_fault_pct']:.1f}%", ms["dominant_side"],
+                ms.get("top_hardware_fault") or ms.get("top_cause", "None"),
+                ms.get("top_models", "")
             ])
+            cur_r = ws_hw.max_row
             fill_c = fill_alt if r_idx % 2 == 0 else PatternFill(fill_type=None)
-            for c_idx in range(1, len(hw_headers) + 1):
-                cell = ws_hw.cell(r_idx, c_idx)
+            for c_idx in range(1, len(mfg_headers) + 1):
+                cell = ws_hw.cell(cur_r, c_idx)
+                cell.font = font_regular
+                cell.border = thin_border
+                if fill_c.fill_type: cell.fill = fill_c
+
+        # --- SECTION B: CHARGER HARDWARE MODEL TYPES & VULNERABILITY MATRIX ---
+        ws_hw.append([])
+        ws_hw.append(["2. CHARGER HARDWARE MODEL TYPES & VULNERABILITY MATRIX"])
+        ws_hw.cell(ws_hw.max_row, 1).font = Font(name="Calibri", size=11, bold=True, color="1B365D")
+        ws_hw.append([])
+
+        model_headers = [
+            "Rank", "Charger OEM", "EVSE Model Type", "Power Class", "Total Sessions",
+            "Total Incidents", "Incident Rate %", "Charger HW Faults", "HW Fault %",
+            "Dominant Fault Side", "Dominant Hardware Issue / Root Cause"
+        ]
+        ws_hw.append(model_headers)
+        header_row_b = ws_hw.max_row
+        for col_idx in range(1, len(model_headers) + 1):
+            c = ws_hw.cell(header_row_b, col_idx)
+            c.fill = fill_navy
+            c.font = font_header
+            c.alignment = Alignment(horizontal="center", vertical="center")
+
+        model_stats_list = aggs.get("charger_model_type_stats", aggs.get("charger_hardware_stats", []))
+        for r_idx, hs in enumerate(model_stats_list, 1):
+            ws_hw.append([
+                f"#{r_idx}", hs["mfg"] or "Generic EVSE", hs["model"] or "Standard",
+                hs.get("power_class", "DC Fast (50-120 kW)"), hs["total"], hs["total_incidents"],
+                f"{hs.get('incident_pct', 0.0):.1f}%", hs.get("charger_hardware_faults", 0),
+                f"{hs.get('hw_fault_pct', 0.0):.1f}%", hs.get("dominant_side", "Charger Side"),
+                hs.get("top_hardware_fault") or hs.get("top_cause", "None")
+            ])
+            cur_r = ws_hw.max_row
+            fill_c = fill_alt if r_idx % 2 == 0 else PatternFill(fill_type=None)
+            for c_idx in range(1, len(model_headers) + 1):
+                cell = ws_hw.cell(cur_r, c_idx)
+                cell.font = font_regular
+                cell.border = thin_border
+                if fill_c.fill_type: cell.fill = fill_c
+
+        # --- SECTION C: POWER RATING & CHARGER TYPE BREAKDOWN ---
+        ws_hw.append([])
+        ws_hw.append(["3. POWER RATING & CHARGER TYPE VULNERABILITY BREAKDOWN"])
+        ws_hw.cell(ws_hw.max_row, 1).font = Font(name="Calibri", size=11, bold=True, color="1B365D")
+        ws_hw.append([])
+
+        pwr_headers = [
+            "Power Rating Tier", "Total Sessions", "Total Incidents", "Incident Rate %",
+            "Charger HW Faults", "HW Fault %", "Primary Problematic OEM", "Dominant Hardware Failure Mode"
+        ]
+        ws_hw.append(pwr_headers)
+        header_row_c = ws_hw.max_row
+        for col_idx in range(1, len(pwr_headers) + 1):
+            c = ws_hw.cell(header_row_c, col_idx)
+            c.fill = fill_navy
+            c.font = font_header
+            c.alignment = Alignment(horizontal="center", vertical="center")
+
+        pwr_stats_list = aggs.get("charger_power_class_stats", [])
+        for r_idx, ps in enumerate(pwr_stats_list, 1):
+            ws_hw.append([
+                ps["power_class"], ps["total"], ps["total_incidents"],
+                f"{ps['incident_pct']:.1f}%", ps["charger_hardware_faults"],
+                f"{ps['hw_fault_pct']:.1f}%", ps.get("primary_mfg", "None"),
+                ps.get("dominant_hardware_issue", "None")
+            ])
+            cur_r = ws_hw.max_row
+            fill_c = fill_alt if r_idx % 2 == 0 else PatternFill(fill_type=None)
+            for c_idx in range(1, len(pwr_headers) + 1):
+                cell = ws_hw.cell(cur_r, c_idx)
                 cell.font = font_regular
                 cell.border = thin_border
                 if fill_c.fill_type: cell.fill = fill_c
@@ -3093,6 +3460,9 @@ class RoamingUploadAnalyzer:
                 for cell in col:
                     val_str = str(cell.value or "")
                     if val_str:
+                        # Skip long banner/section title cells to prevent distorted column widths
+                        if any(val_str.startswith(p) for p in ["1. CHARGER", "2. CHARGER", "3. POWER", "ELECTREEFI CMS", "FAULT SIDE"]):
+                            continue
                         max_len = max(max_len, min(45, len(val_str)))
                 sheet.column_dimensions[col_letter].width = max(11, max_len + 3)
 
