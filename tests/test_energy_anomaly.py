@@ -153,7 +153,8 @@ def test_battery_capacity_overrun():
         start_time="2026-11-02 10:00:00",
         stop_time="2026-11-02 10:45:00",
         vehicle_model_hint="Tata Tiago EV",
-        meter_records=records
+        meter_records=records,
+        tariff_per_unit=14.0
     )
 
     summary = analysis["summary"]

@@ -373,7 +373,8 @@ def analyze_transaction_energy(
     vehicle_model_hint: Optional[str] = None,
     custom_battery_kwh: Optional[float] = None,
     meter_records: Optional[List[Dict[str, Any]]] = None,
-    tx_meta: Optional[Dict[str, Any]] = None
+    tx_meta: Optional[Dict[str, Any]] = None,
+    tariff_per_unit: Optional[float] = None
 ) -> Dict[str, Any]:
     """
     Comprehensive physical anomaly detection & RCA analysis for an OCPP charging transaction.
@@ -630,7 +631,16 @@ def analyze_transaction_energy(
         except Exception:
             pass
 
-    # 7. Generate Comprehensive RCA Panel
+    # 7. Extract Per Unit Price from Charging Details / tx_meta if not provided
+    active_tariff = tariff_per_unit
+    if (active_tariff is None or active_tariff <= 0) and tx_meta:
+        if tx_meta.get("PerUnitPrice") is not None:
+            try:
+                active_tariff = float(tx_meta["PerUnitPrice"])
+            except (ValueError, TypeError):
+                pass
+
+    # Generate Comprehensive RCA Panel with exact Charging Details Per Unit Price
     rca_panel = build_energy_rca_report(
         party_id=party_id,
         transaction_id=trans_id_str,
@@ -640,7 +650,8 @@ def analyze_transaction_energy(
         peak_power_kw=peak_power_kw,
         total_duration_sec=total_duration_sec,
         anomalies=anomalies,
-        intervals_count=len(intervals)
+        intervals_count=len(intervals),
+        tariff_inr_per_kwh=active_tariff
     )
 
     res_dict = {
@@ -688,13 +699,15 @@ def build_energy_rca_report(
     peak_power_kw: float,
     total_duration_sec: float,
     anomalies: List[Dict[str, Any]],
-    intervals_count: int
+    intervals_count: int,
+    tariff_inr_per_kwh: Optional[float] = None
 ) -> Dict[str, Any]:
     """
     Constructs an intelligent Root Cause Analysis diagnostic report with fault attribution,
     physical telemetry proof, and actionable corrective recommendations.
+    Tariff is strictly taken from the Charging Details endpoint under the Per Unit Price section.
     """
-    tariff_inr_per_kwh = 21.00  # Default Indian CPO DC fast charging tariff
+    tariff_inr_per_kwh = float(tariff_inr_per_kwh or 0.0)
     
     if not anomalies:
         return {
@@ -762,9 +775,14 @@ def build_energy_rca_report(
             f"Billed {total_energy_kwh:.2f} kWh into {vehicle_specs['name']} "
             f"with physical pack capacity of {vehicle_specs['capacity_kwh']:.1f} kWh ({overrun_item.get('overrun_pct')} % pack size)."
         )
-        recommendations.append(
-            f"Credit customer account for {phantom_kwh:.2f} phantom kWh (approx ₹{phantom_kwh * tariff_inr_per_kwh:.2f})."
-        )
+        if tariff_inr_per_kwh > 0:
+            recommendations.append(
+                f"Credit customer account for {phantom_kwh:.2f} phantom kWh (approx ₹{phantom_kwh * tariff_inr_per_kwh:.2f} at Per Unit Price ₹{tariff_inr_per_kwh:.2f}/kWh from Charging Details endpoint)."
+            )
+        else:
+            recommendations.append(
+                f"Credit customer account for {phantom_kwh:.2f} phantom kWh based on the Per Unit Price from Charging Details endpoint."
+            )
         recommendations.append(
             "Check meter start/stop transaction register clearing logic; verify prior session energy was flushed before start."
         )
@@ -833,16 +851,39 @@ def compute_billing_tax_audit(
     
     booking = booking_record or {}
     
-    # 1. Determine Tariff Rate (Rs/kWh)
+    # 1. Extract Per Unit Price strictly from Charging Details endpoint
     per_unit_price = 0.0
+    tariff_source = "Charging Details Endpoint (Per Unit Price section)"
+    
     if booking.get("PerUnitPrice") is not None:
         try:
-            per_unit_price = float(booking.get("PerUnitPrice"))
+            val = float(booking.get("PerUnitPrice"))
+            if val > 0:
+                per_unit_price = val
         except (ValueError, TypeError):
-            per_unit_price = 0.0
-            
-    if per_unit_price <= 0.0:
-        per_unit_price = 14.0 if party_id.upper() == "IOC" else 18.0
+            pass
+
+    if per_unit_price <= 0 and booking.get("UnitPrice") is not None:
+        try:
+            val = float(booking.get("UnitPrice"))
+            if val > 0:
+                per_unit_price = val
+        except (ValueError, TypeError):
+            pass
+
+    # If PerUnitPrice not explicitly keyed, derive directly from Charging Details (ActualChargingAmount / EnergyConsumed)
+    if per_unit_price <= 0:
+        try:
+            act_base = float(booking.get("ActualChargingAmount") or 0.0)
+            act_kwh = float(booking.get("EnergyConsumed_indecimal") or booking.get("EnergyConsumed") or 0.0)
+            if act_base > 0 and act_kwh > 0:
+                per_unit_price = round(act_base / act_kwh, 2)
+                tariff_source = "Charging Details Endpoint (Derived from ActualChargingAmount / EnergyConsumed)"
+        except (ValueError, TypeError):
+            pass
+
+    if per_unit_price <= 0:
+        tariff_source = "Charging Details Endpoint (Per Unit Price not specified / 0.00)" 
 
     tax_rate_pct = 18.0  # Statutory GST on EV charging services (9% CGST + 9% SGST)
     
@@ -980,6 +1021,7 @@ def compute_billing_tax_audit(
     return {
         "has_billing_data": True,
         "tariff_rate_inr_per_kwh": per_unit_price,
+        "tariff_source": tariff_source,
         "tax_rate_pct": tax_rate_pct,
         "real_should_charge": {
             "legitimate_energy_kwh": round(legitimate_kwh, 3),
@@ -1197,7 +1239,29 @@ def investigate_booking_energy(
 
     vehicle_str = f"{vehicle_make} {vehicle_model}".strip()
 
-    # 3. Perform energy anomaly detection with auto-resolved parameters
+    # 3. Extract Per Unit Price from Charging Details endpoint
+    tariff_from_charging_details = None
+    if booking_record:
+        if booking_record.get("PerUnitPrice") is not None:
+            try:
+                tariff_from_charging_details = float(booking_record.get("PerUnitPrice"))
+            except (ValueError, TypeError):
+                pass
+        if (tariff_from_charging_details is None or tariff_from_charging_details <= 0) and booking_record.get("UnitPrice") is not None:
+            try:
+                tariff_from_charging_details = float(booking_record.get("UnitPrice"))
+            except (ValueError, TypeError):
+                pass
+        if (tariff_from_charging_details is None or tariff_from_charging_details <= 0) and booking_record.get("ActualChargingAmount") and (booking_record.get("EnergyConsumed_indecimal") or booking_record.get("EnergyConsumed")):
+            try:
+                c_amt = float(booking_record.get("ActualChargingAmount"))
+                c_kwh = float(booking_record.get("EnergyConsumed_indecimal") or booking_record.get("EnergyConsumed"))
+                if c_amt > 0 and c_kwh > 0:
+                    tariff_from_charging_details = round(c_amt / c_kwh, 2)
+            except (ValueError, TypeError):
+                pass
+
+    # Perform energy anomaly detection with exact Charging Details Per Unit Price
     analysis = analyze_transaction_energy(
         party_id=party_id,
         transaction_id=tx_id,
@@ -1207,7 +1271,8 @@ def investigate_booking_energy(
         stop_time=stop_time,
         vehicle_model_hint=vehicle_str,
         custom_battery_kwh=battery_kwh,
-        tx_meta=tx_record
+        tx_meta=tx_record,
+        tariff_per_unit=tariff_from_charging_details
     )
 
     # 4. Attach CMS vehicle and booking metadata to response

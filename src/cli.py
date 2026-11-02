@@ -258,7 +258,7 @@ def cmd_energy_rca(args) -> None:
         print("COMMERCIAL & TAX BILLING RECONCILIATION:")
         print(f"  * Real Amount (After All Taxes)  : Rs. {real_c.get('total_amount_after_taxes_inr', 0.0):.2f}  [Base: Rs. {real_c.get('base_amount_inr', 0.0):.2f} + 18% GST: Rs. {real_c.get('tax_amount_inr', 0.0):.2f}]")
         print(f"  * Actual Amount User Ended Paying: Rs. {act_c.get('total_amount_after_taxes_inr', 0.0):.2f}  [Base: Rs. {act_c.get('base_amount_inr', 0.0):.2f} + Billed GST: Rs. {act_c.get('tax_amount_inr', 0.0):.2f}]")
-        print(f"  * Applied Tariff Rate            : Rs. {b_audit.get('tariff_rate_inr_per_kwh', 0.0):.2f} / kWh")
+        print(f"  * Per Unit Price (Charging Dtls) : Rs. {b_audit.get('tariff_rate_inr_per_kwh', 0.0):.2f} / kWh ({b_audit.get('tariff_source', 'Charging Details Endpoint')})")
         st_label = str(cmp_c.get('status_label', 'ACCURATELY BILLED')).replace('\u20b9', 'Rs. ')
         act_summary = str(cmp_c.get('action_summary', '')).replace('\u20b9', 'Rs. ')
         print(f"  * Reconciliation Status          : {st_label}")

@@ -6034,23 +6034,24 @@ ${rca.action_item}
       const intervals = data.intervals || [];
 
       const bAudit = data.billing_audit || {
-        tariff_rate_inr_per_kwh: 14.0,
+        tariff_rate_inr_per_kwh: 0.0,
+        tariff_source: 'Charging Details Endpoint',
         tax_rate_pct: 18.0,
         real_should_charge: {
           legitimate_energy_kwh: summary.total_energy_kwh,
-          base_amount_inr: (summary.total_energy_kwh * 14.0),
-          tax_amount_inr: (summary.total_energy_kwh * 14.0 * 0.18),
-          cgst_inr: (summary.total_energy_kwh * 14.0 * 0.09),
-          sgst_inr: (summary.total_energy_kwh * 14.0 * 0.09),
-          total_amount_after_taxes_inr: (summary.total_energy_kwh * 14.0 * 1.18)
+          base_amount_inr: 0.0,
+          tax_amount_inr: 0.0,
+          cgst_inr: 0.0,
+          sgst_inr: 0.0,
+          total_amount_after_taxes_inr: 0.0
         },
         actual_user_paid: {
           billed_energy_kwh: summary.total_energy_kwh,
-          base_amount_inr: (summary.total_energy_kwh * 14.0),
-          tax_amount_inr: (summary.total_energy_kwh * 14.0 * 0.18),
-          cgst_inr: (summary.total_energy_kwh * 14.0 * 0.09),
-          sgst_inr: (summary.total_energy_kwh * 14.0 * 0.09),
-          total_amount_after_taxes_inr: (summary.total_energy_kwh * 14.0 * 1.18),
+          base_amount_inr: 0.0,
+          tax_amount_inr: 0.0,
+          cgst_inr: 0.0,
+          sgst_inr: 0.0,
+          total_amount_after_taxes_inr: 0.0,
           payment_received_inr: 0,
           refunded_inr: 0,
           payment_status: 'Settled'
@@ -6217,8 +6218,9 @@ ${rca.action_item}
                   </strong>
                 </div>
               </div>
-              <div style="font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 8px;">
-                Tariff: ₹${bAudit.tariff_rate_inr_per_kwh.toFixed(2)}/kWh &bull; Statutory GST: 18%.
+              <div style="font-size: 11px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 8px;">
+                <strong>Per Unit Price:</strong> ₹${bAudit.tariff_rate_inr_per_kwh.toFixed(2)}/kWh &bull; <strong>GST:</strong> ${bAudit.tax_rate_pct}%<br>
+                <span style="font-size: 10px; color: #059669; font-weight: 600;">Source: ${bAudit.tariff_source || 'Charging Details Endpoint (Per Unit Price)'}</span>
               </div>
             </div>
           </div>
@@ -6259,8 +6261,11 @@ ${rca.action_item}
                   <strong>${bAudit.real_should_charge.legitimate_energy_kwh.toFixed(3)} kWh</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                  <span style="color: #64748b;">Applied Tariff Rate:</span>
+                  <span style="color: #64748b;">Per Unit Price (Charging Details):</span>
                   <strong>₹${bAudit.tariff_rate_inr_per_kwh.toFixed(2)} / kWh</strong>
+                </div>
+                <div style="font-size: 10.5px; color: #15803d; margin-top: -2px; margin-bottom: 6px; font-weight: 600;">
+                  Source: ${bAudit.tariff_source || 'Charging Details Endpoint'}
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                   <span style="color: #64748b;">Base Energy Charge:</span>
@@ -6295,7 +6300,7 @@ ${rca.action_item}
                   <strong>${bAudit.actual_user_paid.billed_energy_kwh.toFixed(3)} kWh</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                  <span style="color: #64748b;">CMS Tariff Rate:</span>
+                  <span style="color: #64748b;">CMS Per Unit Price:</span>
                   <strong>₹${bAudit.tariff_rate_inr_per_kwh.toFixed(2)} / kWh</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
