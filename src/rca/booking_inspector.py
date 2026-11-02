@@ -502,7 +502,8 @@ def fetch_completed_booking(booking_id: str, start_date: str, end_date: str, coo
             items = data.get("Data") or []
             for it in items:
                 if str(it.get("ChargingStationBookingId")) == str(booking_id):
-                    it["_SessionType"] = "Completed (<1kWh)"
+                    kwh_val = float(it.get("EnergyConsumed_indecimal") or it.get("EnergyConsumed") or 0.0)
+                    it["_SessionType"] = "Completed (<1kWh)" if kwh_val < 1.0 else "Completed (Normal Delivery)"
                     return it, 1
     except Exception:
         pass
@@ -528,8 +529,22 @@ def fetch_roaming_booking(booking_id: str, cookie_header: str, base_url: str = "
                 ss_sec = data.get("startSession") or {}
                 sess_sec = data.get("session") or {}
 
-                evse_uid = res_sec.get("evse_uid") or res_sec.get("evseid") or ""
-                b_id = res_sec.get("booking_id") or booking_id
+                evse_uid = res_sec.get("evse_uid") or res_sec.get("evseid") or res_sec.get("EvseUid") or ""
+                b_id = res_sec.get("booking_id") or res_sec.get("BookingId") or booking_id
+
+                # Real reservation validation - reject dummy empty responses
+                has_real_res = bool(
+                    (res_sec.get("ReservationId") and int(res_sec.get("ReservationId")) > 0) or
+                    (res_sec.get("reservation_id") and int(res_sec.get("reservation_id")) > 0) or
+                    (res_sec.get("booking_id") and str(res_sec.get("booking_id")).strip() == str(booking_id)) or
+                    evse_uid or
+                    (sess_sec.get("Kwh") is not None and str(sess_sec.get("Kwh")).strip() != "") or
+                    (sess_sec.get("kwh") is not None and str(sess_sec.get("kwh")).strip() != "") or
+                    ss_sec.get("SessionId") or
+                    ss_sec.get("Guid")
+                )
+                if not has_real_res:
+                    return None, 1
 
                 # Parse OCPI start session
                 res_str = ss_sec.get("response") or ""
@@ -1002,9 +1017,17 @@ def generate_descriptive_rca(
             error_location = "StartSession Response"
             error_value = ocpi_res
             action_item = "Review CPO roaming gateway connectivity and OCPI token authorization."
+        elif kwh == 0.0 or kwh < 0.05:
+            attribution = "ZERO ENERGY ABORT / INITIATION TIMEOUT"
+            root_cause = f"Zero Energy Delivered (0.00 kWh Delivered in {dur_s}s)"
+            confidence = "High (90%)"
+            detected_field = "session.kwh"
+            error_location = "OCPI Session Telemetry"
+            error_value = "0.0 kWh"
+            action_item = "Session aborted before power delivery commenced; inspect EV inlet lock and communication handshake."
         else:
             attribution = "SUCCESSFUL DELIVERY"
-            root_cause = f"Normal Charging Session ({kwh:.2f} kWh Delivered)"
+            root_cause = f"Successful Charging Session ({kwh:.2f} kWh Delivered)"
             confidence = "High (95%)"
             action_item = "No action required."
 
@@ -1316,14 +1339,28 @@ def generate_descriptive_rca(
                 action_item = "Ensure E-stop button is unlocked on the charging unit."
 
             elif tx_stop_reason.lower() in ("remote", "remote stop"):
-                attribution = "USER / APP ACTION"
-                root_cause = f'Remotely Stopped via Mobile App / CMS (reason: "{tx_stop_reason}")'
-                confidence = "High (90%)"
-                narrative = (
-                    f"The session transferred {energy_consumed:.3f} kWh before receiving a RemoteStopTransaction command. "
-                    f"The driver manually pressed 'Stop Charging' in their mobile application shortly after starting."
-                )
-                action_item = "User-initiated termination; verify with customer if session was cancelled intentionally."
+                if energy_consumed >= 1.0:
+                    attribution = "SUCCESSFUL DELIVERY"
+                    root_cause = f'Session Completed Nominally ({energy_consumed:.2f} kWh Delivered, Stopped via App)'
+                    confidence = "High (95%)"
+                    init_soc = booking_data.get("InitialSOC") or booking_data.get("InitialSoc") or (tx_data.get("initial_soc") if tx_data else None)
+                    fin_soc = booking_data.get("FinalSOC") or booking_data.get("FinalSoc") or (tx_data.get("soc") if tx_data else None)
+                    soc_txt = f" (Battery SoC: {init_soc}% -> {fin_soc}%)" if (init_soc and fin_soc) else ""
+                    narrative = (
+                        f"The session delivered {energy_consumed:.3f} kWh{soc_txt} successfully. "
+                        f"Charging concluded nominally upon receiving the user's remote stop command from the mobile application (StopReason: '{tx_stop_reason}'). "
+                        f"Energy transfer was complete and normal."
+                    )
+                    action_item = "Normal successful charging session; no operational or maintenance action required."
+                else:
+                    attribution = "USER / APP ACTION"
+                    root_cause = f'Remotely Stopped via Mobile App / CMS (reason: "{tx_stop_reason}")'
+                    confidence = "High (90%)"
+                    narrative = (
+                        f"The session transferred {energy_consumed:.3f} kWh before receiving a RemoteStopTransaction command. "
+                        f"The driver manually pressed 'Stop Charging' in their mobile application shortly after starting."
+                    )
+                    action_item = "User-initiated termination; verify with customer if session was cancelled intentionally."
 
             elif tx_stop_reason.lower() in ("deauthorized", "de-authorized"):
                 attribution = "AUTHENTICATION / WALLET FAULT"
@@ -1498,7 +1535,8 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
         booking_record, comp_hits = fetch_completed_booking(clean_id, s_date, e_date, cookie_header, base_url=portal_url)
         total_hits += comp_hits
         if booking_record:
-            session_type = "Completed (<1kWh)"
+            kwh_val = float(booking_record.get("EnergyConsumed_indecimal") or booking_record.get("EnergyConsumed") or 0.0)
+            session_type = "Completed (<1kWh)" if kwh_val < 1.0 else "Completed (Normal Delivery)"
             # Extract actual booking date for targeted transaction query
             t_str = booking_record.get("BookingInTime") or booking_record.get("DateForBooking")
             b_in_dt_temp = parse_flexible_dt(t_str)
