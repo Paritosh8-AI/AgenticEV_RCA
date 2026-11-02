@@ -249,6 +249,23 @@ def cmd_energy_rca(args) -> None:
     if rca.get("financial_impact", {}).get("phantom_kwh", 0) > 0:
         print(f"FINANCIAL IMPACT : {rca['financial_impact']['phantom_kwh']:.2f} Phantom kWh (Disputed: Rs. {rca['financial_impact']['disputed_amount_inr']:.2f})")
 
+    ocpp_tel = res.get("ocpp_telemetry")
+    if ocpp_tel and ocpp_tel.get("discrepancies"):
+        print("-" * 70)
+        print(f"OCPP LOG TELEMETRY & PAYLOAD DISCREPANCIES ({len(ocpp_tel['discrepancies'])} Found):")
+        s_ev = ocpp_tel.get("start_event")
+        e_ev = ocpp_tel.get("stop_event")
+        if s_ev:
+            print(f"  * StartTransaction Payload: meterStart={s_ev.get('meter_start_wh')} Wh, tag={s_ev.get('id_tag')}, time={s_ev.get('timestamp')}")
+        if e_ev:
+            print(f"  * StopTransaction Payload : meterStop={e_ev.get('meter_stop_wh')} Wh, reason={e_ev.get('reason')}, time={e_ev.get('timestamp')}")
+        print(f"  * MeterValues Stream      : {ocpp_tel.get('meter_values_count', 0)} periodic payload(s) captured")
+        for d in ocpp_tel.get("discrepancies", []):
+            d_title = str(d.get("title", "")).replace("\u20b9", "Rs. ")
+            d_detail = str(d.get("detail", "")).replace("\u20b9", "Rs. ")
+            print(f"  [{d.get('severity')}] {d_title}")
+            print(f"     -> {d_detail}")
+
     b_audit = res.get("billing_audit")
     if b_audit:
         real_c = b_audit.get("real_should_charge", {})
@@ -346,7 +363,7 @@ def main():
     # energy-rca (Booking / Transaction Energy Anomaly & Meter Spike RCA)
     p_energy = sub.add_parser("energy-rca", help="Investigate unusual energy consumption & meter spikes for a booking or transaction")
     p_energy.add_argument("--id", required=True, help="IOCL/ElectreeFi Booking ID or OCPP Transaction ID (e.g. 965475, 743629)")
-    p_energy.add_argument("--party", default="IOC", choices=["IOC", "ELC", "ioc", "elc"], help="Portal: IOC (IndianOil) or ELC (ElectreeFi)")
+    p_energy.add_argument("--party", default="IOC", choices=["IOC", "ELC", "ioc", "elc", "ELECTREEFI", "electreefi"], help="Portal: IOC (IndianOil) or ELC (ElectreeFi)")
     p_energy.add_argument("--start", default="", help="Optional start date (YYYY-MM-DD or DD/MM/YYYY)")
     p_energy.add_argument("--end", default="", help="Optional end date (YYYY-MM-DD or DD/MM/YYYY)")
 

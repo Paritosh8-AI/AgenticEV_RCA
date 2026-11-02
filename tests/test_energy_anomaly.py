@@ -252,3 +252,71 @@ def test_billing_tax_audit_overcharge():
     assert audit["comparison"]["tax_discrepancy_inr"] == 46.80
     assert audit["comparison"]["status"] == "OVERCHARGED"
     assert "OVERCHARGED BY" in audit["comparison"]["status_label"]
+
+
+def test_zero_energy_delivered_anomaly():
+    from src.rca.energy_anomaly_detector import analyze_transaction_energy
+    # 1 meter reading with 0 kWh delivered
+    records = [
+        {"Value_Timestamp": "2026-10-11T16:32:20+05:30", "Value": "430590", "EnergyInkWh": 430.59, "Location": "Outlet"}
+    ]
+    analysis = analyze_transaction_energy(
+        party_id="ELC",
+        transaction_id="11037320",
+        charger_code="EESL-JP-NP-DC-014",
+        start_time="2026-10-11 16:32:18",
+        stop_time="2026-10-11 16:33:00",
+        vehicle_model_hint="Bajaj RE E-TEC 9.0",
+        meter_records=records
+    )
+    assert analysis["summary"]["is_anomaly"] is True
+    assert any(a["type"] == "ZERO_ENERGY_DELIVERY" for a in analysis["anomalies"])
+    verdict_lower = analysis["rca_report"]["verdict"].lower()
+    assert "zero-energy" in verdict_lower or "abort" in verdict_lower
+
+
+def test_discrepancy_billed_vs_metered_zombie():
+    from src.rca.energy_anomaly_detector import analyze_transaction_energy, compute_billing_tax_audit
+    # Physical meter had 0 kWh delivered, but CMS records billed 169.34 kWh
+    records = [
+        {"Value_Timestamp": "2026-10-11T16:32:20+05:30", "Value": "430590", "EnergyInkWh": 430.59, "Location": "Outlet"}
+    ]
+    tx_meta = {
+        "start_value": 430590,
+        "stop_value": 599930,
+        "TotalMeterReading": 169340.0,
+        "EnergyConsumedDouble": 169.34
+    }
+    booking = {
+        "PerUnitPrice": 18.0,
+        "ActualChargingAmount": 3048.12,
+        "ActualTax": 548.66,
+        "ActualTotalAmount": 3596.78,
+        "PaymentRecieved": 11.68,
+        "PendingAmount": 3585.10,
+        "EnergyConsumed_indecimal": 169.34
+    }
+    analysis = analyze_transaction_energy(
+        party_id="ELC",
+        transaction_id="11037320",
+        charger_code="EESL-JP-NP-DC-014",
+        start_time="2026-10-11 16:32:18",
+        stop_time="2026-11-01 14:42:00",
+        vehicle_model_hint="Bajaj RE E-TEC 9.0",
+        meter_records=records,
+        tx_meta=tx_meta,
+        booking_record=booking,
+        tariff_per_unit=18.0
+    )
+    assert analysis["summary"]["is_anomaly"] is True
+    assert any(a["type"] == "DISCREPANCY_BILLED_VS_METERED" for a in analysis["anomalies"])
+    assert any(a["type"] == "BATTERY_CAPACITY_OVERRUN" for a in analysis["anomalies"])
+    assert any(a["type"] == "ORPHANED_ZOMBIE_TRANSACTION" for a in analysis["anomalies"])
+
+    # Audit check: legitimate energy must be 0.00 kWh and real charge must be 0.00
+    audit = compute_billing_tax_audit(analysis, booking, party_id="ELC")
+    assert audit["real_should_charge"]["legitimate_energy_kwh"] == 0.0
+    assert audit["real_should_charge"]["total_amount_after_taxes_inr"] == 0.0
+    assert audit["comparison"]["status"] == "OVERCHARGED"
+    assert audit["comparison"]["variance_inr"] == 3596.78
+    assert "CRITICAL OVERCHARGE" in audit["comparison"]["status_label"]

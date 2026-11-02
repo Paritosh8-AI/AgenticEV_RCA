@@ -22,7 +22,7 @@ import json
 import math
 import urllib.request
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
@@ -363,6 +363,245 @@ def parse_timestamp_iso(ts_str: str) -> Optional[datetime]:
         return None
 
 
+
+def fetch_and_correlate_ocpp_telemetry(
+    party_id: str,
+    charger_id: str,
+    charger_code: str,
+    tx_id: str,
+    start_time: str,
+    stop_time: str,
+    booking_record: Optional[Dict[str, Any]] = None,
+    tx_record: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Fetches raw OCPP event logs for the charger around session start and stop windows.
+    Parses full OCPP message payloads:
+      - StartTransaction (meterStart, connectorId, idTag)
+      - StatusNotification transitions (e.g. Charging -> Available abort)
+      - MeterValues (sampledValue arrays, measurands, units, timestamps)
+      - StopTransaction (meterStop, stop_reason)
+    Cross-checks against transaction records and CMS billing to detect discrepancies.
+    """
+    from src.rca.booking_inspector import get_party_cookie_header
+    
+    party_id = (party_id or "IOC").upper()
+    portal_base = get_portal_base_url(party_id)
+    cookie_hdr = get_party_cookie_header(party_id)
+    headers = {
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "User-Agent": DEFAULT_BROWSER_UA,
+        "Cookie": cookie_hdr
+    }
+    
+    def parse_dt(s: str) -> Optional[datetime]:
+        if not s or s.startswith("0001"):
+            return None
+        clean = s.split(".")[0].replace("T", " ")
+        try:
+            return datetime.strptime(clean, "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            return None
+
+    dt_start = parse_dt(start_time)
+    dt_stop = parse_dt(stop_time)
+
+    def fetch_logs(f_date: str, t_date: str) -> List[Dict[str, Any]]:
+        url = (
+            f"{portal_base}/GetOcppLogs"
+            f"?entityId={charger_id}"
+            f"&fromDate={urllib.parse.quote(f_date)}"
+            f"&toDate={urllib.parse.quote(t_date)}"
+        )
+        payload = urllib.parse.urlencode({
+            "page": "1",
+            "pageSize": "100",
+            "sort": "Date-desc",
+            "filter": ""
+        }).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=12) as res:
+                return json.loads(res.read().decode("utf-8")).get("Data", [])
+        except Exception:
+            return []
+
+    start_events = []
+    if dt_start:
+        w_start_from = (dt_start - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        w_start_to = (dt_start + timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        start_events = fetch_logs(w_start_from, w_start_to)
+
+    stop_events = []
+    if dt_stop and dt_start and (dt_stop - dt_start).total_seconds() > 900:
+        w_stop_from = (dt_stop - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        w_stop_to = (dt_stop + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        stop_events = fetch_logs(w_stop_from, w_stop_to)
+
+    all_raw_events = list(reversed(start_events)) + list(reversed(stop_events))
+    
+    start_tx_info = None
+    stop_tx_info = None
+    meter_values_list = []
+    status_transitions = []
+    other_tx_ids = set()
+
+    for it in all_raw_events:
+        d = it.get("Date")
+        msg = str(it.get("Message") or it.get("LogMessage") or "")
+        try:
+            arr = json.loads(msg)
+            if isinstance(arr, list) and len(arr) >= 3 and arr[0] == 2:
+                action = arr[2]
+                payload = arr[3] if len(arr) > 3 else {}
+                
+                if action == "StartTransaction":
+                    s_meter = payload.get("meterStart")
+                    tag = payload.get("idTag")
+                    conn = payload.get("connectorId")
+                    if str(payload.get("reservationId")) == str(tx_id) or not start_tx_info:
+                        start_tx_info = {
+                            "timestamp": d,
+                            "meter_start_wh": s_meter,
+                            "meter_start_kwh": (float(s_meter) / 1000.0) if s_meter is not None else None,
+                            "id_tag": tag,
+                            "connector_id": conn,
+                            "raw": payload
+                        }
+                elif action == "StopTransaction":
+                    t_id = str(payload.get("transactionId"))
+                    if t_id == str(tx_id):
+                        stop_tx_info = {
+                            "timestamp": d,
+                            "transaction_id": t_id,
+                            "meter_stop_wh": payload.get("meterStop"),
+                            "meter_stop_kwh": (float(payload.get("meterStop")) / 1000.0) if payload.get("meterStop") is not None else None,
+                            "reason": payload.get("reason"),
+                            "raw": payload
+                        }
+                    else:
+                        other_tx_ids.add(t_id)
+                elif action == "MeterValues":
+                    t_id = str(payload.get("transactionId"))
+                    if t_id == str(tx_id):
+                        m_vals = payload.get("meterValue", [])
+                        samples_parsed = []
+                        for mv in m_vals:
+                            mv_ts = mv.get("timestamp")
+                            for s in mv.get("sampledValue", []):
+                                samples_parsed.append({
+                                    "timestamp": mv_ts or d,
+                                    "value": s.get("value"),
+                                    "measurand": s.get("measurand", "Energy.Active.Import.Register"),
+                                    "unit": s.get("unit", "Wh"),
+                                    "context": s.get("context", "")
+                                })
+                        meter_values_list.append({
+                            "timestamp": d,
+                            "transaction_id": t_id,
+                            "samples": samples_parsed,
+                            "raw": payload
+                        })
+                    else:
+                        other_tx_ids.add(t_id)
+                elif action == "StatusNotification":
+                    status_transitions.append({
+                        "timestamp": d,
+                        "connector_id": payload.get("connectorId"),
+                        "status": payload.get("status"),
+                        "error_code": payload.get("errorCode")
+                    })
+        except Exception:
+            pass
+
+    # Discrepancy analysis
+    discrepancies = []
+    
+    # 1. Immediate connector status abort
+    if status_transitions:
+        chg_idx = next((i for i, s in enumerate(status_transitions) if s["status"] == "Charging"), None)
+        if chg_idx is not None and chg_idx + 1 < len(status_transitions):
+            next_st = status_transitions[chg_idx + 1]
+            if next_st["status"] in ("Available", "Faulted", "SuspendedEV"):
+                discrepancies.append({
+                    "severity": "CRITICAL",
+                    "category": "CONNECTOR_STATE_ABORT",
+                    "title": "Connector Abruptly Released to Available at Session Start",
+                    "detail": f"Connector entered 'Charging' at {status_transitions[chg_idx]['timestamp']}, but immediately reverted to '{next_st['status']}' at {next_st['timestamp']}. No actual energy transfer occurred."
+                })
+
+    # 2. MeterValues stream missing / silent
+    if len(meter_values_list) <= 1:
+        discrepancies.append({
+            "severity": "HIGH",
+            "category": "METER_VALUES_STREAM_DROPPED",
+            "title": f"Telemetry Stream Dropped ({len(meter_values_list)} MeterValues Payload Captured)",
+            "detail": f"Only {len(meter_values_list)} MeterValues payload was received from the charger. Periodic telemetry was not transmitted for the session duration."
+        })
+
+    # 3. Orphaned / Zombie transaction with subsequent interleaved sessions
+    if dt_start and dt_stop:
+        dur_hours = (dt_stop - dt_start).total_seconds() / 3600.0
+        if dur_hours > 4:
+            other_tx_str = ", ".join(list(other_tx_ids)[:5]) if other_tx_ids else "None"
+            discrepancies.append({
+                "severity": "CRITICAL",
+                "category": "ZOMBIE_ORPHANED_TRANSACTION",
+                "title": f"Orphaned Zombie Session (Duration: {dur_hours:.1f} Hours / {dur_hours/24:.1f} Days)",
+                "detail": (
+                    f"Transaction was initiated at {start_time} but StopTransaction was not sent until {stop_time} ({dur_hours:.1f} hours later). "
+                    f"Other independent transactions ({other_tx_str}) were initiated and closed on this charger while this transaction remained stuck in CMS."
+                )
+            })
+
+    # 4. Start vs Stop vs CMS Billed delta discrepancy
+    s_val = start_tx_info.get("meter_start_wh") if start_tx_info else (tx_record.get("start_value") if tx_record else None)
+    e_val = stop_tx_info.get("meter_stop_wh") if stop_tx_info else (tx_record.get("stop_value") if tx_record else None)
+    
+    first_mv = None
+    last_mv = None
+    if meter_values_list:
+        try:
+            first_mv = float(meter_values_list[0]["samples"][0]["value"])
+            last_mv = float(meter_values_list[-1]["samples"][0]["value"])
+        except Exception:
+            pass
+    actual_mv_delivered = ((last_mv - first_mv) / 1000.0) if (first_mv is not None and last_mv is not None) else 0.0
+
+    if s_val is not None and e_val is not None:
+        try:
+            raw_delta_kwh = (float(e_val) - float(s_val)) / 1000.0
+            if raw_delta_kwh > actual_mv_delivered + 0.1:
+                discrepancies.append({
+                    "severity": "CRITICAL",
+                    "category": "STOP_METER_LEAK_DISCREPANCY",
+                    "title": f"CMS Billed {raw_delta_kwh:.2f} kWh vs {actual_mv_delivered:.3f} kWh Actually Metered",
+                    "detail": (
+                        f"StopTransaction recorded meterStop: {e_val} Wh vs meterStart: {s_val} Wh (Delta: {raw_delta_kwh:.2f} kWh). "
+                        f"However, actual MeterValues payloads transmitted during this session only delivered {actual_mv_delivered:.3f} kWh. "
+                        f"The difference ({raw_delta_kwh - actual_mv_delivered:.2f} kWh) represents phantom accumulation from other vehicles."
+                    )
+                })
+        except Exception:
+            pass
+
+    return {
+        "charger_code": charger_code,
+        "charger_id": charger_id,
+        "transaction_id": tx_id,
+        "start_event": start_tx_info,
+        "stop_event": stop_tx_info,
+        "meter_values_count": len(meter_values_list),
+        "meter_values_payloads": meter_values_list,
+        "status_transitions": status_transitions,
+        "other_transactions_detected": list(other_tx_ids),
+        "discrepancies": discrepancies,
+        "is_zombie_session": any(d["category"] == "ZOMBIE_ORPHANED_TRANSACTION" for d in discrepancies),
+        "is_zero_energy_abort": any(d["category"] == "CONNECTOR_STATE_ABORT" for d in discrepancies) or (len(meter_values_list) <= 1 and actual_mv_delivered < 0.05)
+    }
+
+
 def analyze_transaction_energy(
     party_id: str,
     transaction_id: str,
@@ -374,7 +613,9 @@ def analyze_transaction_energy(
     custom_battery_kwh: Optional[float] = None,
     meter_records: Optional[List[Dict[str, Any]]] = None,
     tx_meta: Optional[Dict[str, Any]] = None,
-    tariff_per_unit: Optional[float] = None
+    tariff_per_unit: Optional[float] = None,
+    booking_record: Optional[Dict[str, Any]] = None,
+    ocpp_telemetry: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
     Comprehensive physical anomaly detection & RCA analysis for an OCPP charging transaction.
@@ -565,40 +806,126 @@ def analyze_transaction_energy(
     elif tx_meta and tx_meta.get("EnergyConsumedDouble"):
         total_energy_kwh = float(tx_meta["EnergyConsumedDouble"])
 
+    # Extract CMS recorded energy for cross-check
+    cms_tx_kwh = 0.0
+    if booking_record:
+        if booking_record.get("EnergyConsumed_indecimal") is not None:
+            try:
+                cms_tx_kwh = float(booking_record["EnergyConsumed_indecimal"])
+            except (ValueError, TypeError):
+                pass
+        elif booking_record.get("EnergyConsumed") is not None:
+            try:
+                cms_tx_kwh = float(booking_record["EnergyConsumed"])
+            except (ValueError, TypeError):
+                pass
+    if cms_tx_kwh <= 0 and tx_meta:
+        if tx_meta.get("EnergyConsumedDouble") is not None:
+            try:
+                cms_tx_kwh = float(tx_meta["EnergyConsumedDouble"])
+            except (ValueError, TypeError):
+                pass
+        elif tx_meta.get("TotalMeterReading") is not None:
+            try:
+                cms_tx_kwh = float(tx_meta["TotalMeterReading"]) / 1000.0
+            except (ValueError, TypeError):
+                pass
+        elif tx_meta.get("stop_value") and tx_meta.get("start_value"):
+            try:
+                s_val = float(tx_meta["start_value"])
+                e_val = float(tx_meta["stop_value"])
+                if e_val > s_val:
+                    cms_tx_kwh = (e_val - s_val) / 1000.0
+            except (ValueError, TypeError):
+                pass
+
+    dt_s = parse_timestamp_iso(start_time)
+    dt_e = parse_timestamp_iso(stop_time)
+    session_duration_sec = total_duration_sec
+    if dt_s and dt_e and dt_e > dt_s:
+        session_duration_sec = (dt_e - dt_s).total_seconds()
+
     # 6. Session-level Checks
-    # --- Check 4: Battery Pack Capacity Overrun ---
+    # --- Check 4: Discrepancy between CMS Billed Energy vs Physical Meter Readings ---
+    if cms_tx_kwh > total_energy_kwh + 0.1:
+        phantom_diff = round(cms_tx_kwh - total_energy_kwh, 3)
+        anomalies.append({
+            "type": "DISCREPANCY_BILLED_VS_METERED",
+            "severity": "CRITICAL",
+            "timestamp": stop_time,
+            "metered_kwh": total_energy_kwh,
+            "billed_kwh": cms_tx_kwh,
+            "phantom_kwh": phantom_diff,
+            "explanation": (
+                f"Physical meter logs show {total_energy_kwh:.3f} kWh delivered to the vehicle, "
+                f"yet CMS recorded and billed {cms_tx_kwh:.2f} kWh (Difference: +{phantom_diff:.2f} kWh phantom energy). "
+                f"Indicates unclosed orphaned session accumulating meter advancement from subsequent sessions."
+            )
+        })
+
+    # --- Check 5: Battery Pack Capacity Overrun (on either physical metered or CMS billed energy) ---
+    effective_overrun_energy = max(total_energy_kwh, cms_tx_kwh)
     overrun_margin = battery_kwh * 1.08  # 8% thermal & conversion allowance
-    if total_energy_kwh > overrun_margin:
-        overrun_pct = round((total_energy_kwh / battery_kwh) * 100.0, 1)
-        phantom_kwh = round(total_energy_kwh - overrun_margin, 2)
+    if effective_overrun_energy > overrun_margin:
+        overrun_pct = round((effective_overrun_energy / battery_kwh) * 100.0, 1)
+        phantom_kwh = round(effective_overrun_energy - battery_kwh, 2)
         anomalies.append({
             "type": "BATTERY_CAPACITY_OVERRUN",
             "severity": "CRITICAL",
             "timestamp": stop_time,
-            "total_delivered_kwh": total_energy_kwh,
+            "total_delivered_kwh": effective_overrun_energy,
             "battery_capacity_kwh": battery_kwh,
             "vehicle_name": vehicle_specs["name"],
             "overrun_pct": overrun_pct,
             "phantom_kwh": phantom_kwh,
             "explanation": (
-                f"Total energy delivered ({total_energy_kwh:.2f} kWh) exceeds the physical battery pack capacity "
+                f"Energy recorded ({effective_overrun_energy:.2f} kWh) exceeds physical battery pack capacity "
                 f"of {vehicle_specs['name']} ({battery_kwh:.1f} kWh) by {overrun_pct}%. "
-                f"Detected {phantom_kwh:.2f} kWh of phantom billing accumulation."
+                f"Detected {phantom_kwh:.2f} kWh of physically impossible phantom billing accumulation."
             )
         })
 
-    # --- Check 5: Zero Energy Session with Duration ---
-    if total_duration_sec > 300 and total_energy_kwh < 0.05:
+    # --- Check 6: Zero Energy Delivered / Session Abort ---
+    if total_energy_kwh < 0.05:
         anomalies.append({
-            "type": "ZERO_ENERGY_SESSION",
-            "severity": "HIGH",
+            "type": "ZERO_ENERGY_DELIVERY",
+            "severity": "CRITICAL" if cms_tx_kwh > 0.1 else "HIGH",
             "timestamp": start_time,
-            "duration_sec": total_duration_sec,
+            "duration_sec": session_duration_sec,
+            "metered_kwh": total_energy_kwh,
+            "billed_kwh": cms_tx_kwh,
             "explanation": (
-                f"Transaction remained active for {total_duration_sec/60.0:.1f} minutes, but delivered negligible energy "
-                f"({total_energy_kwh:.3f} kWh). Indicates contactor trip, isolation error, or Modbus disconnect."
+                f"Zero energy was delivered to the vehicle ({total_energy_kwh:.3f} kWh metered). "
+                f"Connector disconnected immediately, contactor failed to close, or session aborted during initialization."
             )
         })
+
+    # --- Check 7: Orphaned / Zombie Session ---
+    if session_duration_sec > 14400 and (len(valid_readings) <= 3 or (ocpp_telemetry and ocpp_telemetry.get("is_zombie_session"))):
+        dur_h = round(session_duration_sec / 3600.0, 1)
+        anomalies.append({
+            "type": "ORPHANED_ZOMBIE_TRANSACTION",
+            "severity": "CRITICAL",
+            "timestamp": stop_time,
+            "duration_hours": dur_h,
+            "readings_count": len(valid_readings),
+            "explanation": (
+                f"Transaction remained hung open in CMS for {dur_h:.1f} hours ({dur_h/24:.1f} days) "
+                f"with only {len(valid_readings)} meter reading(s). Physical meter was advanced by other charging sessions."
+            )
+        })
+
+    # Merge OCPP Telemetry discrepancies if present
+    if ocpp_telemetry and ocpp_telemetry.get("discrepancies"):
+        for d in ocpp_telemetry["discrepancies"]:
+            if not any(a.get("type") == d["category"] for a in anomalies):
+                anomalies.append({
+                    "type": d["category"],
+                    "severity": d["severity"],
+                    "title": d["title"],
+                    "explanation": d["detail"],
+                    "timestamp": start_time
+                })
 
     # --- Check 6: Inlet vs Outlet Thermodynamic Efficiency ---
     if inlet_readings and outlet_readings:
@@ -648,10 +975,12 @@ def analyze_transaction_energy(
         vehicle_specs=vehicle_specs,
         total_energy_kwh=total_energy_kwh,
         peak_power_kw=peak_power_kw,
-        total_duration_sec=total_duration_sec,
+        total_duration_sec=session_duration_sec,
         anomalies=anomalies,
         intervals_count=len(intervals),
-        tariff_inr_per_kwh=active_tariff
+        tariff_inr_per_kwh=active_tariff,
+        ocpp_telemetry=ocpp_telemetry,
+        cms_billed_kwh=cms_tx_kwh
     )
 
     res_dict = {
@@ -700,7 +1029,9 @@ def build_energy_rca_report(
     total_duration_sec: float,
     anomalies: List[Dict[str, Any]],
     intervals_count: int,
-    tariff_inr_per_kwh: Optional[float] = None
+    tariff_inr_per_kwh: Optional[float] = None,
+    ocpp_telemetry: Optional[Dict[str, Any]] = None,
+    cms_billed_kwh: Optional[float] = None
 ) -> Dict[str, Any]:
     """
     Constructs an intelligent Root Cause Analysis diagnostic report with fault attribution,
@@ -708,8 +1039,17 @@ def build_energy_rca_report(
     Tariff is strictly taken from the Charging Details endpoint under the Per Unit Price section.
     """
     tariff_inr_per_kwh = float(tariff_inr_per_kwh or 0.0)
+    b_kwh = float(cms_billed_kwh or total_energy_kwh)
     
-    if not anomalies:
+    # Identify primary anomalies
+    has_spike = any(a["type"] == "SPIKE_POWER_EXCEEDED" for a in anomalies)
+    has_overrun = any(a["type"] == "BATTERY_CAPACITY_OVERRUN" for a in anomalies)
+    has_rollback = any(a["type"] == "METER_ROLLBACK" for a in anomalies)
+    has_inversion = any(a["type"] == "THERMODYNAMIC_INVERSION" for a in anomalies)
+    has_zombie = any(a["type"] in ("ORPHANED_ZOMBIE_TRANSACTION", "ZOMBIE_SESSION_PHANTOM_OVERRUN", "DISCREPANCY_BILLED_VS_METERED", "STOP_METER_LEAK_DISCREPANCY") for a in anomalies)
+    has_zero = any(a["type"] in ("ZERO_ENERGY_DELIVERY", "ZERO_ENERGY_SESSION", "CONNECTOR_STATE_ABORT") for a in anomalies) or (total_energy_kwh < 0.05)
+
+    if not anomalies and total_energy_kwh >= 0.05 and b_kwh >= 0.05:
         return {
             "status": "HEALTHY",
             "verdict": "NOMINAL: Verified Physical Parameters & Energy Curves",
@@ -736,13 +1076,6 @@ def build_energy_rca_report(
                 "No action required; session data conforms to physical charging standards."
             ]
         }
-
-    # Identify primary anomaly
-    has_spike = any(a["type"] == "SPIKE_POWER_EXCEEDED" for a in anomalies)
-    has_overrun = any(a["type"] == "BATTERY_CAPACITY_OVERRUN" for a in anomalies)
-    has_rollback = any(a["type"] == "METER_ROLLBACK" for a in anomalies)
-    has_inversion = any(a["type"] == "THERMODYNAMIC_INVERSION" for a in anomalies)
-    has_zero = any(a["type"] == "ZERO_ENERGY_SESSION" for a in anomalies)
 
     evidence = []
     recommendations = []
@@ -800,10 +1133,41 @@ def build_energy_rca_report(
         evidence.append("Outlet vehicle-side readings exceeded Inlet grid-side intake, violating energy conservation.")
         recommendations.append("Swap or recalibrate the CT leads between inlet grid and outlet connector meters.")
 
-    if has_zero:
-        primary_cause = "Contactor Failure or Modbus Drop in Active Session"
-        evidence.append(f"Zero energy delivered over {total_duration_sec/60:.1f} minutes of connected session.")
+    if has_zombie:
+        primary_cause = "Orphaned Zombie Transaction & Phantom Meter Advance Accumulation"
+        evidence.append(
+            f"Physical meter delivered {total_energy_kwh:.3f} kWh to the vehicle across {intervals_count} reading(s), "
+            f"yet CMS billed {b_kwh:.2f} kWh from Stop meter advancing during an orphaned session."
+        )
+        if total_duration_sec > 3600:
+            evidence.append(
+                f"Transaction hung open in CMS for {total_duration_sec/3600:.1f} hours ({total_duration_sec/86400:.1f} days) "
+                f"without periodic MeterValues, accumulating other vehicles' charging consumption."
+            )
+        if ocpp_telemetry and ocpp_telemetry.get("status_transitions"):
+            evidence.append("OCPP status telemetry indicates connector reverted to 'Available' within seconds of StartTransaction without power draw.")
+        if has_overrun:
+            overrun_item = next(a for a in anomalies if a["type"] == "BATTERY_CAPACITY_OVERRUN")
+            phantom_kwh = max(phantom_kwh, overrun_item.get("phantom_kwh", b_kwh))
+            evidence.append(
+                f"Vehicle is {vehicle_specs['name']} with an {vehicle_specs['capacity_kwh']:.1f} kWh battery pack. "
+                f"Billed {b_kwh:.2f} kWh represents a {((b_kwh/vehicle_specs['capacity_kwh'])-1)*100:.0f}% physical impossibility."
+            )
+        recommendations.append(
+            "Waive / cancel pending CMS charge and issue full refund for any pre-auth deposit deducted from driver wallet."
+        )
+        recommendations.append(
+            "Implement OCPP watchdog / auto-close rule to terminate active transactions if MeterValues telemetry ceases for > 15 minutes."
+        )
+        recommendations.append(
+            "Verify charger firmware to ensure StopTransaction is transmitted upon connector release."
+        )
+
+    elif has_zero:
+        primary_cause = "Zero-Energy Session Abort / Contactor Drop"
+        evidence.append(f"Zero energy delivered (0.000 kWh) over {total_duration_sec/60:.1f} minutes of connected session.")
         recommendations.append("Inspect DC contactor coil drive signals and BMS authorization handshake.")
+        recommendations.append("Ensure zero-energy aborted sessions are not billed to driver accounts.")
 
     disputed_inr = round(phantom_kwh * tariff_inr_per_kwh, 2)
     
@@ -967,9 +1331,24 @@ def compute_billing_tax_audit(
         except (ValueError, TypeError):
             pass
 
-    ref_kwh = cms_kwh if cms_kwh > 0.0 else total_energy_kwh
+    pending_amt = 0.0
+    if booking.get("PendingAmount") is not None:
+        try:
+            pending_amt = float(booking.get("PendingAmount") or 0.0)
+        except (ValueError, TypeError):
+            pass
 
-    if not is_anomaly and phantom_kwh <= 0.0:
+    ref_kwh = cms_kwh if cms_kwh > 0.0 else total_energy_kwh
+    has_zero_delivery = (total_energy_kwh < 0.05)
+    has_phantom_discrepancy = any(a.get("type") in ("DISCREPANCY_BILLED_VS_METERED", "ORPHANED_ZOMBIE_TRANSACTION", "ZERO_ENERGY_DELIVERY", "STOP_METER_LEAK_DISCREPANCY") for a in analysis.get("anomalies", []))
+
+    if has_zero_delivery or has_phantom_discrepancy:
+        # Zero physical energy delivered - real legitimate charge is strictly ₹0.00
+        legitimate_kwh = 0.0
+        real_base = 0.0
+        real_tax = 0.0
+        real_total_after_taxes = 0.0
+    elif not is_anomaly and phantom_kwh <= 0.0:
         # 100% nominal session - physical conforms to billed
         legitimate_kwh = ref_kwh
         real_base = actual_base if actual_base > 0.0 else round(legitimate_kwh * per_unit_price, 2)
@@ -992,14 +1371,23 @@ def compute_billing_tax_audit(
 
     if variance > 0.50:
         status_code = "OVERCHARGED"
-        status_label = f"OVERCHARGED BY ₹{variance:.2f}"
         badge_color = "red"
-        action_summary = (
-            f"User ended up paying ₹{actual_user_paid:.2f}, but the real physical charge should have been "
-            f"₹{real_total_after_taxes:.2f} after all taxes. The user was overbilled by ₹{variance:.2f} "
-            f"(Base Energy: ₹{base_discrepancy:.2f} + Excess GST: ₹{tax_discrepancy:.2f}) due to {phantom_kwh:.2f} "
-            f"phantom/unphysical kWh. Commercial adjustment / refund voucher of ₹{variance:.2f} is due to the user."
-        )
+        if legitimate_kwh <= 0.0:
+            status_label = f"CRITICAL OVERCHARGE (₹{variance:.2f} Discrepancy - 0.00 kWh Legitimate Energy)"
+            action_summary = (
+                f"Transaction delivered 0.000 kWh to the vehicle (Aborted / Zombie session). "
+                f"Real legitimate cost is ₹0.00 after all taxes. The user was billed ₹{actual_user_paid:.2f} "
+                f"(Pending: ₹{pending_amt:.2f}, Paid: ₹{payment_rec:.2f}) due to an unclosed orphaned session accumulating "
+                f"unmetered consumption. Immediate action: cancel/waive pending charge of ₹{pending_amt:.2f} and refund ₹{payment_rec:.2f} to user wallet."
+            )
+        else:
+            status_label = f"OVERCHARGED BY ₹{variance:.2f}"
+            action_summary = (
+                f"User ended up paying ₹{actual_user_paid:.2f}, but the real physical charge should have been "
+                f"₹{real_total_after_taxes:.2f} after all taxes. The user was overbilled by ₹{variance:.2f} "
+                f"(Base Energy: ₹{base_discrepancy:.2f} + Excess GST: ₹{tax_discrepancy:.2f}) due to {phantom_kwh:.2f} "
+                f"phantom/unphysical kWh. Commercial adjustment / refund voucher of ₹{variance:.2f} is due to the user."
+            )
     elif variance < -0.50:
         status_code = "UNDERCHARGED"
         status_label = f"UNDERCHARGED BY ₹{abs(variance):.2f}"
@@ -1040,6 +1428,7 @@ def compute_billing_tax_audit(
             "total_amount_after_taxes_inr": actual_user_paid,
             "payment_received_inr": payment_rec,
             "refunded_inr": refunded_amt,
+            "pending_amount_inr": round(pending_amt, 2),
             "payment_status": payment_status
         },
         "comparison": {
@@ -1261,7 +1650,19 @@ def investigate_booking_energy(
             except (ValueError, TypeError):
                 pass
 
-    # Perform energy anomaly detection with exact Charging Details Per Unit Price
+    # Fetch and correlate full OCPP telemetry & meter values payloads
+    ocpp_telemetry = fetch_and_correlate_ocpp_telemetry(
+        party_id=party_id,
+        charger_id=charger_id,
+        charger_code=charger_code,
+        tx_id=tx_id,
+        start_time=start_time,
+        stop_time=stop_time,
+        booking_record=booking_record,
+        tx_record=tx_record
+    )
+
+    # Perform energy anomaly detection with exact Charging Details Per Unit Price & OCPP correlation
     analysis = analyze_transaction_energy(
         party_id=party_id,
         transaction_id=tx_id,
@@ -1272,8 +1673,12 @@ def investigate_booking_energy(
         vehicle_model_hint=vehicle_str,
         custom_battery_kwh=battery_kwh,
         tx_meta=tx_record,
-        tariff_per_unit=tariff_from_charging_details
+        tariff_per_unit=tariff_from_charging_details,
+        booking_record=booking_record,
+        ocpp_telemetry=ocpp_telemetry
     )
+
+    analysis["ocpp_telemetry"] = ocpp_telemetry
 
     # 4. Attach CMS vehicle and booking metadata to response
     analysis["booking_id"] = booking_id

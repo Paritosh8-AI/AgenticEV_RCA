@@ -6119,10 +6119,10 @@ ${rca.action_item}
           <div class="card" style="padding: 16px; border-left: 4.5px solid ${statusColor}; background: ${statusBg};">
             <div style="font-size: 11px; font-weight: 700; color: ${statusColor}; text-transform: uppercase;">Telemetry Health Status</div>
             <div style="font-size: 20px; font-weight: 800; color: ${statusColor}; margin-top: 6px;">
-              ${isAnomaly ? summary.highest_severity + ' ANOMALY' : 'NOMINAL PHYSICALS'}
+              ${isAnomaly ? summary.highest_severity + ' ANOMALY' : (summary.total_energy_kwh < 0.05 ? 'ZERO ENERGY ABORT' : 'NOMINAL PHYSICALS')}
             </div>
             <div style="font-size: 11px; color: ${statusColor}; margin-top: 4px; font-weight: 600;">
-              ${isAnomaly ? `${summary.spike_count} Spikes | ${summary.rollback_count} Rollbacks` : 'All intervals compliant'}
+              ${isAnomaly ? `${summary.spike_count} Spikes | ${summary.rollback_count} Rollbacks | ${summary.highest_severity}` : (summary.total_energy_kwh < 0.05 ? 'Zero energy delivered to vehicle' : 'All intervals compliant')}
             </div>
           </div>
         </div>
@@ -6225,6 +6225,104 @@ ${rca.action_item}
             </div>
           </div>
         </div>
+
+        <!-- OCPP TELEMETRY & METER VALUE PAYLOAD CORRELATION CARD -->
+        ${(() => {
+          const tel = data.ocpp_telemetry;
+          if (!tel) return '';
+          const sEv = tel.start_event || {};
+          const eEv = tel.stop_event || {};
+          const disc = tel.discrepancies || [];
+
+          return `
+            <div style="background: #ffffff; border: 1.5px solid ${disc.length > 0 ? '#fca5a5' : '#cbd5e1'}; border-radius: 10px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                  <div style="font-size: 11px; font-weight: 800; color: ${disc.length > 0 ? '#dc2626' : '#64748b'}; text-transform: uppercase; letter-spacing: 0.5px;">OCPP Log Framework &amp; Meter Values Telemetry</div>
+                  <div style="font-size: 17px; font-weight: 800; color: #0f172a; margin-top: 2px;">
+                    Raw OCPP Payload Correlation &amp; Meter Value Discrepancies
+                  </div>
+                </div>
+                <div style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; background: ${disc.length > 0 ? '#fef2f2' : '#f0fdf4'}; color: ${disc.length > 0 ? '#dc2626' : '#16a34a'}; border: 1px solid ${disc.length > 0 ? '#fca5a5' : '#86efac'};">
+                  ${disc.length > 0 ? disc.length + ' Discrepancies Flagged' : 'Payloads Reconciled'}
+                </div>
+              </div>
+
+              <!-- Message Sequence Flow Bar -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 16px; font-size: 12px;">
+                <!-- StartTransaction -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+                  <div style="color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 10.5px;">1. StartTransaction</div>
+                  <div style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">
+                    meterStart: <strong>${sEv.meter_start_wh !== undefined && sEv.meter_start_wh !== null ? sEv.meter_start_wh + ' Wh' : 'N/A'}</strong>
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 3px;">
+                    Tag: <strong>${sEv.id_tag || '-'}</strong> &bull; Conn: <strong>${sEv.connector_id || '1'}</strong><br/>
+                    Time: <span style="font-family: monospace;">${sEv.timestamp ? sEv.timestamp.split('.')[0].replace('T', ' ') : '-'}</span>
+                  </div>
+                </div>
+
+                <!-- StatusNotification -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+                  <div style="color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 10.5px;">2. Connector State Progression</div>
+                  <div style="font-size: 15px; font-weight: 800; color: ${tel.is_zero_energy_abort ? '#dc2626' : '#16a34a'}; margin-top: 2px;">
+                    ${tel.status_transitions && tel.status_transitions.length > 0 ? tel.status_transitions.slice(-1)[0].status : 'Available'}
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 3px;">
+                    Transitions: <strong>${tel.status_transitions ? tel.status_transitions.length : 0} logged</strong><br/>
+                    Initial: <em>${tel.status_transitions && tel.status_transitions.length > 0 ? tel.status_transitions[0].status : '-'}</em>
+                  </div>
+                </div>
+
+                <!-- MeterValues Stream -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+                  <div style="color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 10.5px;">3. MeterValues Payloads</div>
+                  <div style="font-size: 15px; font-weight: 800; color: ${tel.meter_values_count <= 1 ? '#ea580c' : '#0f172a'}; margin-top: 2px;">
+                    ${tel.meter_values_count} Payload(s) Received
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 3px;">
+                    Measurand: <em>Energy.Active.Import</em><br/>
+                    Delta Delivered: <strong>${summary.total_energy_kwh.toFixed(3)} kWh</strong>
+                  </div>
+                </div>
+
+                <!-- StopTransaction -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+                  <div style="color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 10.5px;">4. StopTransaction</div>
+                  <div style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">
+                    meterStop: <strong>${eEv.meter_stop_wh !== undefined && eEv.meter_stop_wh !== null ? eEv.meter_stop_wh + ' Wh' : 'N/A'}</strong>
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 3px;">
+                    Reason: <strong>${eEv.reason || 'None'}</strong><br/>
+                    Time: <span style="font-family: monospace;">${eEv.timestamp ? eEv.timestamp.split('.')[0].replace('T', ' ') : '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Discrepancy List -->
+              ${disc.length > 0 ? `
+                <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 14px 16px; margin-top: 10px;">
+                  <div style="font-size: 12px; font-weight: 800; color: #9f1239; margin-bottom: 8px; text-transform: uppercase;">
+                    Identified Telemetry Violations &amp; Billing Discrepancies:
+                  </div>
+                  ${disc.map(d => `
+                    <div style="margin-bottom: 8px; font-size: 12.5px; line-height: 1.45; color: #881337;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="display: inline-block; padding: 1px 6px; font-size: 10px; font-weight: 800; border-radius: 4px; background: ${d.severity === 'CRITICAL' ? '#f43f5e' : '#fb923c'}; color: #ffffff;">${d.severity}</span>
+                        <strong>${d.title}</strong>
+                      </div>
+                      <div style="padding-left: 20px; font-size: 11.5px; color: #4c0519; margin-top: 2px;">${d.detail}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #166534;">
+                  &check; All OCPP payload parameters and continuous MeterValues streams reconciled without discrepancies.
+                </div>
+              `}
+            </div>
+          `;
+        })()}
 
         <!-- COMMERCIAL & TAX BILLING RECONCILIATION: REAL VS ACTUAL CHARGED -->
         <div style="background: #ffffff; border: 1.5px solid ${bAudit.comparison.status === 'OVERCHARGED' ? '#fca5a5' : (bAudit.comparison.status === 'UNDERCHARGED' ? '#fed7aa' : '#bbf7d0')}; border-radius: 10px; padding: 22px; margin-bottom: 24px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
