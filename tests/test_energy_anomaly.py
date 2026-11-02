@@ -186,3 +186,10 @@ def test_counter_rollback():
     assert analysis["summary"]["is_anomaly"] is True
     assert analysis["summary"]["rollback_count"] >= 1
     assert any(a["type"] == "METER_ROLLBACK" for a in analysis["anomalies"])
+
+
+def test_investigate_booking_energy_empty():
+    from src.rca.energy_anomaly_detector import investigate_booking_energy
+    res = investigate_booking_energy("IOC", "")
+    assert res["success"] is False
+    assert "No Booking ID provided" in res["error"]

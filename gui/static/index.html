@@ -2918,65 +2918,42 @@
         <div class="card" style="margin-bottom: 24px; border-color: #bae6fd; background: #f0f9ff;">
           <div style="display: flex; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid #e0f2fe; padding-bottom: 12px;">
             <button id="tabModeSingle" onclick="setEnergyMode('single')" style="padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer; border: none; background: #0284c7; color: #ffffff;">
-              🔍 Single Transaction Deep Dive
+              🔍 Single Booking Energy RCA
             </button>
             <button id="tabModeBatch" onclick="setEnergyMode('batch')" style="padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1px solid #cbd5e1; background: #ffffff; color: #475569;">
               ⚡ Scan Transactions for Spikes
             </button>
           </div>
 
-          <!-- Mode 1: Single Transaction Input -->
+          <!-- Mode 1: Single Booking Input -->
           <div id="sectionModeSingle">
-            <div style="display: grid; grid-template-columns: 1.5fr 2fr 1fr auto; gap: 12px; align-items: flex-end;">
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: flex-end;">
               <div>
                 <label style="display: block; font-size: 12px; font-weight: 700; color: #0369a1; margin-bottom: 4px;">
-                  OCPP Transaction ID
+                  IOCL / ElectreeFi Booking ID
                 </label>
-                <input type="text" id="energyTxIdInput" placeholder="e.g. 743629" style="width: 100%; padding: 8px 12px; font-size: 14px; font-weight: 600; border: 1.5px solid #0284c7; border-radius: 6px; outline: none; background: #ffffff;" value="743629" onkeydown="if(event.key==='Enter') runEnergyInvestigation()">
+                <input type="text" id="energyBookingIdInput" placeholder="e.g. 965475, 159850, 148831, 155331" style="width: 100%; padding: 9px 12px; font-size: 14px; font-weight: 600; border: 1.5px solid #0284c7; border-radius: 6px; outline: none; background: #ffffff;" value="965475" onkeydown="if(event.key==='Enter') runEnergyInvestigation()">
+                <div style="font-size: 11px; color: #64748b; margin-top: 5px;">
+                  ⚡ Auto-maps Booking ID to central OCPP Transaction ID and retrieves vehicle specs &amp; battery capacity directly from CMS records (no manual selection required).
+                </div>
               </div>
 
               <div>
-                <label style="display: block; font-size: 12px; font-weight: 700; color: #0369a1; margin-bottom: 4px;">
-                  Vehicle Model (Battery Grounding)
-                </label>
-                <select id="energyVehicleSelect" style="width: 100%; padding: 8px 10px; font-size: 13px; font-weight: 500; border: 1.5px solid #93c5fd; border-radius: 6px; outline: none; background: #ffffff;">
-                  <option value="tata nexon ev max">Tata Nexon EV Max (40.5 kWh / 50 kW Max DC)</option>
-                  <option value="tata tiago ev">Tata Tiago EV (24.0 kWh / 25 kW Max DC)</option>
-                  <option value="tata punch ev">Tata Punch EV LR (35.0 kWh / 35 kW Max DC)</option>
-                  <option value="tata curvv ev">Tata Curvv EV (55.0 kWh / 70 kW Max DC)</option>
-                  <option value="mg zs ev">MG ZS EV (50.3 kWh / 80 kW Max DC)</option>
-                  <option value="mg windsor ev">MG Windsor EV (38.0 kWh / 45 kW Max DC)</option>
-                  <option value="byd atto 3">BYD Atto 3 (60.5 kWh / 80 kW Max DC)</option>
-                  <option value="mahindra xev 9e">Mahindra XEV 9e (79.0 kWh / 175 kW Max DC)</option>
-                  <option value="mahindra xuv400">Mahindra XUV400 (39.4 kWh / 50 kW Max DC)</option>
-                  <option value="hyundai ioniq 5">Hyundai Ioniq 5 (72.6 kWh / 220 kW Max DC)</option>
-                  <option value="electric bus 300">Commercial Bus (300 kWh / 180 kW DC)</option>
-                  <option value="custom">Custom Pack Size...</option>
-                </select>
-              </div>
-
-              <div>
-                <label style="display: block; font-size: 12px; font-weight: 700; color: #0369a1; margin-bottom: 4px;">
-                  Custom Pack (kWh)
-                </label>
-                <input type="number" id="energyCustomKwhInput" placeholder="Auto" style="width: 100%; padding: 8px 10px; font-size: 13px; border: 1.5px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
-              </div>
-
-              <div>
-                <button class="btn-primary" id="btnRunEnergyAnalysis" onclick="runEnergyInvestigation()" style="background: #0284c7; border-color: #0284c7; padding: 9px 20px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;">
+                <button class="btn-primary" id="btnRunEnergyAnalysis" onclick="runEnergyInvestigation()" style="background: #0284c7; border-color: #0284c7; padding: 10px 22px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                   <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                  Investigate Consumption
+                  Investigate Energy &amp; Spikes
                 </button>
               </div>
             </div>
 
             <!-- Quick sample buttons -->
-            <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
-              <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Sample Transactions:</span>
-              <button onclick="setSampleTx('743629', 'IOC', 'Tata Nexon EV Max')" class="btn-secondary" style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #ffffff;">#743629 (IOCLPBDC7784 - 120kW)</button>
-              <button onclick="setSampleTx('743743', 'IOC', 'Tata Punch EV')" class="btn-secondary" style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #ffffff;">#743743 (IOCLUPDC8410)</button>
-              <button onclick="setSampleTx('743729', 'IOC', 'Tata Tiago EV')" class="btn-secondary" style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #ffffff;">#743729 (IOCLRJDC7877)</button>
-              <button onclick="setSampleTx('11536783', 'ELC', 'Tata Nexon EV Max')" class="btn-secondary" style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #ffffff;">#11536783 (ElectreeFi ELC)</button>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+              <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Sample Bookings:</span>
+              <button onclick="setSampleBooking('965475', 'IOC')" class="btn-secondary" style="font-size: 11px; padding: 4px 9px; border-radius: 4px; background: #ffffff;">#965475 (IOCL - Chaudhary Service Station)</button>
+              <button onclick="setSampleBooking('159850', 'IOC')" class="btn-secondary" style="font-size: 11px; padding: 4px 9px; border-radius: 4px; background: #ffffff;">#159850 (IOCL - Shaheed Bhim Singh)</button>
+              <button onclick="setSampleBooking('148831', 'IOC')" class="btn-secondary" style="font-size: 11px; padding: 4px 9px; border-radius: 4px; background: #ffffff;">#148831 (IOCL - A.S.T. Agencies)</button>
+              <button onclick="setSampleBooking('155331', 'IOC')" class="btn-secondary" style="font-size: 11px; padding: 4px 9px; border-radius: 4px; background: #ffffff;">#155331 (IOCL - Abhijit Filling)</button>
+              <button onclick="setSampleBooking('157512', 'ELC')" class="btn-secondary" style="font-size: 11px; padding: 4px 9px; border-radius: 4px; background: #ffffff;">#157512 (ElectreeFi - Tata Nexon EV)</button>
             </div>
           </div>
 
@@ -3021,7 +2998,7 @@
             <svg width="44" height="44" fill="none" stroke="#94a3b8" viewBox="0 0 24 24" style="margin: 0 auto 12px auto; display: block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             <div style="font-size: 16px; font-weight: 700; color: #334155; margin-bottom: 6px;">Ready to Analyze Unusual Energy Consumption</div>
             <div style="font-size: 13px; max-width: 580px; margin: 0 auto;">
-              Enter any OCPP Transaction ID or click <strong>"Scan Transactions for Spikes"</strong> to calculate consecutive meter reading differences under <code>Energy.Active.Import.Register</code>, compute interval kW vs rated charger capacity, check EV battery limits, and view root cause attributions.
+              Enter any Booking ID (or OCPP Transaction ID) or click <strong>"Scan Transactions for Spikes"</strong> to calculate consecutive meter reading differences under <code>Energy.Active.Import.Register</code>, compute interval kW vs rated charger capacity, ground against auto-resolved CMS vehicle battery specs, and view root cause attributions.
             </div>
           </div>
         </div>
@@ -5959,35 +5936,25 @@ ${rca.action_item}
       }
     }
 
-    function setSampleTx(txId, portal, vehicle) {
+    function setSampleBooking(bookingId, portal) {
       setEnergyPortal(portal);
       setEnergyMode('single');
-      const input = document.getElementById('energyTxIdInput');
-      const vSelect = document.getElementById('energyVehicleSelect');
-      if (input) input.value = txId;
-      if (vSelect && vehicle) {
-        for (let opt of vSelect.options) {
-          if (opt.text.toLowerCase().includes(vehicle.toLowerCase())) {
-            vSelect.value = opt.value;
-            break;
-          }
-        }
-      }
-      runEnergyInvestigation();
+      const input = document.getElementById('energyBookingIdInput');
+      if (input) input.value = bookingId;
+      runEnergyInvestigation(bookingId);
     }
 
-    async function runEnergyInvestigation(txIdOverride) {
-      const txInput = document.getElementById('energyTxIdInput');
-      const txId = txIdOverride || (txInput ? txInput.value.trim() : '');
-      if (!txId) {
-        alert('Please enter a valid OCPP Transaction ID.');
+    function setSampleTx(txOrBookingId, portal) {
+      setSampleBooking(txOrBookingId, portal);
+    }
+
+    async function runEnergyInvestigation(bookingIdOverride) {
+      const bInput = document.getElementById('energyBookingIdInput');
+      const bookingId = bookingIdOverride || (bInput ? bInput.value.trim() : '');
+      if (!bookingId) {
+        alert('Please enter a valid Booking ID (or OCPP Transaction ID).');
         return;
       }
-
-      const vSelect = document.getElementById('energyVehicleSelect');
-      const customKwhInput = document.getElementById('energyCustomKwhInput');
-      const vehicleModel = vSelect ? vSelect.value : 'tata nexon ev max';
-      const customKwh = customKwhInput && customKwhInput.value ? parseFloat(customKwhInput.value) : null;
 
       const btn = document.getElementById('btnRunEnergyAnalysis');
       if (btn) btn.disabled = true;
@@ -5998,10 +5965,10 @@ ${rca.action_item}
           <div style="background: #ffffff; border: 1.5px solid #bae6fd; border-radius: 10px; padding: 36px; text-align: center;">
             <div class="loading-spinner" style="margin: 0 auto 16px auto; width: 36px; height: 36px; border: 4px solid #e0f2fe; border-top: 4px solid #0284c7; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
             <div style="font-size: 15px; font-weight: 700; color: #0369a1; margin-bottom: 6px;">
-              Investigating Transaction #${txId} on ${currentEnergyPortal}...
+              Investigating Booking #${bookingId} on ${currentEnergyPortal}...
             </div>
-            <div style="font-size: 13px; color: #64748b; max-width: 500px; margin: 0 auto;">
-              Connecting to ${currentEnergyPortal === 'IOC' ? 'indianoilecharge.in' : 'emonitoring.electreefi.com'}, retrieving consecutive meter readings for Measurand <code>Energy.Active.Import.Register</code>, calculating interval power (kW) vs rated nameplate ceiling, and checking EV battery limits...
+            <div style="font-size: 13px; color: #64748b; max-width: 520px; margin: 0 auto;">
+              Connecting to ${currentEnergyPortal === 'IOC' ? 'indianoilecharge.in' : 'emonitoring.electreefi.com'}, mapping Booking to OCPP Transaction ID, retrieving CMS vehicle &amp; battery specs, analyzing consecutive meter readings (<code>Energy.Active.Import.Register</code>), and auditing power limits...
             </div>
           </div>
         `;
@@ -6013,9 +5980,7 @@ ${rca.action_item}
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             party_id: currentEnergyPortal,
-            transaction_id: txId,
-            vehicle_model: vehicleModel,
-            custom_battery_kwh: customKwh
+            booking_id: bookingId
           })
         });
 
@@ -6055,8 +6020,17 @@ ${rca.action_item}
 
       const summary = data.summary;
       const rca = data.rca_report;
-      const charger = data.charger_specs;
-      const vehicle = data.vehicle_specs;
+      const charger = data.charger_specs || {};
+      const vehicle = data.vehicle_specs || {};
+      const cmsVeh = data.vehicle_cms || {
+        vehicle_make: '',
+        vehicle_model: '',
+        vehicle_name: vehicle.name || 'EV',
+        vehicle_number: '-',
+        vin: '-',
+        battery_capacity_kwh: vehicle.capacity_kwh || 40.5,
+        source: 'Auto-Resolved'
+      };
       const intervals = data.intervals || [];
 
       const isAnomaly = summary.is_anomaly;
@@ -6119,12 +6093,40 @@ ${rca.action_item}
           </div>
         </div>
 
-        <!-- HARDWARE & VEHICLE SPECIFICATION BAR -->
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 12px;">
-          <div><span style="color: #64748b;">Charger Code:</span> <strong style="color: #0f172a;">${charger.charger_code}</strong> (${charger.station_name || 'Station'})</div>
-          <div><span style="color: #64748b;">Hardware Model:</span> <strong>${charger.manufacturer} ${charger.model}</strong> (${charger.connector_type})</div>
-          <div><span style="color: #64748b;">Guns / Capacity:</span> <strong>${charger.no_of_guns} Guns (${charger.gun_capacity_kw} kW / gun)</strong></div>
-          <div><span style="color: #64748b;">Target EV:</span> <strong style="color: #0284c7;">${vehicle.name}</strong> (${vehicle.capacity_kwh} kWh Pack)</div>
+        <!-- HARDWARE & VEHICLE SPECIFICATION BAR (AUTO-RESOLVED FROM CMS) -->
+        <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; font-size: 12px;">
+          <div>
+            <div style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">CMS Booking &amp; OCPP Tx</div>
+            <div style="margin-top: 3px;">
+              <strong style="color: #0f172a; font-size: 13px;">Booking #${data.booking_id || '-'}</strong>
+              <span style="color: #64748b; margin: 0 4px;">&rarr;</span>
+              <span style="color: #0284c7; font-weight: 700; font-size: 13px;">Tx #${data.transaction_id || '-'}</span>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Station: ${charger.station_name || 'Station'}</div>
+          </div>
+          <div>
+            <div style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">Charger Hardware</div>
+            <div style="margin-top: 3px;">
+              <strong style="color: #0f172a; font-size: 13px;">${charger.charger_code}</strong>
+              <span style="color: #64748b; font-size: 11px;">(${charger.gun_capacity_kw} kW / ${charger.connector_type || 'DC'})</span>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">OEM: ${charger.manufacturer || 'OEM'} ${charger.model || ''}</div>
+          </div>
+          <div>
+            <div style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">Auto-Fetched Vehicle (CMS)</div>
+            <div style="margin-top: 3px;">
+              <strong style="color: #0284c7; font-size: 13px;">${cmsVeh.vehicle_name}</strong>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Reg: <strong>${cmsVeh.vehicle_number}</strong> | VIN: <strong>${cmsVeh.vin}</strong></div>
+          </div>
+          <div>
+            <div style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">Battery Pack Grounding</div>
+            <div style="margin-top: 3px;">
+              <strong style="color: #7c3aed; font-size: 14px;">${cmsVeh.battery_capacity_kwh} kWh</strong>
+              <span style="font-size: 11px; color: #64748b;">(Max DC: ${vehicle.max_dc_kw || 50} kW)</span>
+            </div>
+            <div style="font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 2px;">Source: ${cmsVeh.source || 'CMS Auto-Resolved'}</div>
+          </div>
         </div>
 
         <!-- RCA DIAGNOSTIC PANEL -->
@@ -6461,7 +6463,7 @@ ${rca.action_item}
                     </td>
                     <td style="padding: 8px 10px; font-size: 11px; color: ${r.is_anomaly ? '#991b1b' : '#64748b'};">${r.primary_cause}</td>
                     <td style="padding: 8px 10px; text-align: right;">
-                      <button class="btn-secondary" onclick="setEnergyMode('single'); document.getElementById('energyTxIdInput').value='${r.transaction_id}'; runEnergyInvestigation('${r.transaction_id}');" style="font-size: 11px; padding: 4px 10px;">
+                      <button class="btn-secondary" onclick="setEnergyMode('single'); const inp = document.getElementById('energyBookingIdInput'); if(inp) inp.value='${r.transaction_id}'; runEnergyInvestigation('${r.transaction_id}');" style="font-size: 11px; padding: 4px 10px;">
                         Inspect Spikes
                       </button>
                     </td>

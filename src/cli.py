@@ -202,23 +202,18 @@ def cmd_iocl_rca(args) -> None:
 
 
 def cmd_energy_rca(args) -> None:
-    from src.rca.energy_anomaly_detector import analyze_transaction_energy
+    from src.rca.energy_anomaly_detector import investigate_booking_energy
     party = getattr(args, "party", "IOC").upper()
-    tx_id = getattr(args, "id", "")
-    vehicle = getattr(args, "vehicle", "")
-    custom_kwh = getattr(args, "kwh", None)
-    if custom_kwh:
-        try:
-            custom_kwh = float(custom_kwh)
-        except ValueError:
-            custom_kwh = None
+    booking_or_tx_id = getattr(args, "id", "")
+    start_date = getattr(args, "start", None)
+    end_date = getattr(args, "end", None)
 
-    print(f"\n[ENERGY ANOMALY RCA] Investigating Transaction #{tx_id} on {party}...")
-    res = analyze_transaction_energy(
+    print(f"\n[ENERGY ANOMALY RCA] Investigating Booking / Tx #{booking_or_tx_id} on {party}...")
+    res = investigate_booking_energy(
         party_id=party,
-        transaction_id=tx_id,
-        vehicle_model_hint=vehicle,
-        custom_battery_kwh=custom_kwh
+        booking_or_tx_id=booking_or_tx_id,
+        start_date=start_date,
+        end_date=end_date
     )
 
     if not res.get("success"):
@@ -227,15 +222,17 @@ def cmd_energy_rca(args) -> None:
 
     summary = res["summary"]
     rca = res["rca_report"]
-    charger = res["charger_specs"]
-    veh = res["vehicle_specs"]
+    charger = res.get("charger_specs", {})
+    veh = res.get("vehicle_specs", {})
+    cms_veh = res.get("vehicle_cms", {})
 
     print("=" * 70)
-    print(f"TRANSACTION #{tx_id} ({party}) - ENERGY ANOMALY AUDIT")
+    print(f"BOOKING #{res.get('booking_id', '-')} -> OCPP TX #{res.get('transaction_id', '-')} ({party})")
     print("=" * 70)
-    print(f"Charger Hardware : {charger['charger_code']} | {charger['manufacturer']} {charger['model']}")
-    print(f"Hardware Rating  : {charger['rated_capacity_kw']:.1f} kW Nameplate (Gun limit: {charger['gun_capacity_kw']:.1f} kW)")
-    print(f"Target Vehicle   : {veh['name']} ({veh['capacity_kwh']:.1f} kWh Battery Pack)")
+    print(f"CMS Vehicle      : {cms_veh.get('vehicle_name')} ({cms_veh.get('battery_capacity_kwh')} kWh Pack)")
+    print(f"Reg / VIN        : {cms_veh.get('vehicle_number')} / {cms_veh.get('vin')}")
+    print(f"Charger Hardware : {charger.get('charger_code')} | {charger.get('manufacturer')} {charger.get('model')}")
+    print(f"Hardware Rating  : {charger.get('rated_capacity_kw', 0):.1f} kW Nameplate (Gun limit: {charger.get('gun_capacity_kw', 0):.1f} kW)")
     print("-" * 70)
     print(f"Total Delivered  : {summary['total_energy_kwh']:.3f} kWh (Battery Utilization: {summary['battery_utilization_pct']:.1f}%)")
     print(f"Peak Power Calc  : {summary['peak_power_kw']:.1f} kW (Ceiling: {summary['power_ceiling_kw']:.1f} kW)")
@@ -249,7 +246,7 @@ def cmd_energy_rca(args) -> None:
     print("RECOMMENDED ACTIONS:")
     for r in rca["recommendations"]:
         print(f"  > {r}")
-    if rca["financial_impact"]["phantom_kwh"] > 0:
+    if rca.get("financial_impact", {}).get("phantom_kwh", 0) > 0:
         print(f"FINANCIAL IMPACT : {rca['financial_impact']['phantom_kwh']:.2f} Phantom kWh (Disputed: ₹{rca['financial_impact']['disputed_amount_inr']:.2f})")
     print("=" * 70)
 
@@ -331,12 +328,12 @@ def main():
     p_iocl.add_argument("--start", default="", help="Optional start date (YYYY-MM-DD or DD/MM/YYYY)")
     p_iocl.add_argument("--end", default="", help="Optional end date (YYYY-MM-DD or DD/MM/YYYY)")
 
-    # energy-rca (Single Transaction Energy Anomaly & Meter Spike RCA)
-    p_energy = sub.add_parser("energy-rca", help="Investigate unusual energy consumption & meter spikes for a transaction")
-    p_energy.add_argument("--id", required=True, help="OCPP Transaction ID (e.g. 743629)")
+    # energy-rca (Booking / Transaction Energy Anomaly & Meter Spike RCA)
+    p_energy = sub.add_parser("energy-rca", help="Investigate unusual energy consumption & meter spikes for a booking or transaction")
+    p_energy.add_argument("--id", required=True, help="IOCL/ElectreeFi Booking ID or OCPP Transaction ID (e.g. 965475, 743629)")
     p_energy.add_argument("--party", default="IOC", choices=["IOC", "ELC", "ioc", "elc"], help="Portal: IOC (IndianOil) or ELC (ElectreeFi)")
-    p_energy.add_argument("--vehicle", default="", help="EV model name (e.g. 'Tata Nexon EV Max', 'Tiago EV', 'MG ZS EV')")
-    p_energy.add_argument("--kwh", type=float, default=None, help="Custom battery pack size in kWh override")
+    p_energy.add_argument("--start", default="", help="Optional start date (YYYY-MM-DD or DD/MM/YYYY)")
+    p_energy.add_argument("--end", default="", help="Optional end date (YYYY-MM-DD or DD/MM/YYYY)")
 
     # energy-scan (Batch Scan Transactions for Unusual Spikes)
     p_escan = sub.add_parser("energy-scan", help="Batch scan transactions for energy spikes and physical anomalies")

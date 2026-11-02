@@ -1074,30 +1074,18 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
         elif path == "/api/energy/analyze":
             if str(BASE_DIR) not in sys.path:
                 sys.path.insert(0, str(BASE_DIR))
-            from src.rca.energy_anomaly_detector import analyze_transaction_energy
+            from src.rca.energy_anomaly_detector import investigate_booking_energy, analyze_transaction_energy
             party = payload.get("party_id", "IOC")
-            tx_id = str(payload.get("transaction_id", "")).strip()
-            charger_code = payload.get("charger_code")
-            charger_id = payload.get("charger_id")
-            s_time = payload.get("start_time")
-            stop_time = payload.get("stop_time")
-            v_model = payload.get("vehicle_model")
-            custom_kwh = payload.get("custom_battery_kwh")
-            if custom_kwh:
-                try:
-                    custom_kwh = float(custom_kwh)
-                except ValueError:
-                    custom_kwh = None
+            booking_id = payload.get("booking_id") or payload.get("id") or payload.get("transaction_id")
+            booking_id = str(booking_id or "").strip()
+            s_date = payload.get("start_date")
+            e_date = payload.get("end_date")
 
-            res = analyze_transaction_energy(
+            res = investigate_booking_energy(
                 party_id=party,
-                transaction_id=tx_id,
-                charger_code=charger_code,
-                charger_id=charger_id,
-                start_time=s_time,
-                stop_time=stop_time,
-                vehicle_model_hint=v_model,
-                custom_battery_kwh=custom_kwh
+                booking_or_tx_id=booking_id,
+                start_date=s_date,
+                end_date=e_date
             )
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "application/json; charset=utf-8")

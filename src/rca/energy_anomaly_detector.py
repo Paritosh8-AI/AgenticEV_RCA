@@ -881,3 +881,141 @@ def batch_scan_transactions(
         "results": scanned_results
     }
 
+
+
+def investigate_booking_energy(
+    party_id: str,
+    booking_or_tx_id: str,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Automated investigation from Booking ID:
+    1. Maps Booking ID -> central OCPP Transaction ID (transaction_pk).
+    2. Automatically fetches all vehicle specifications from the CMS (Model, Make, Battery Capacity, Reg Number, VIN).
+    3. Resolves physical battery pack capacity from CMS data (zero manual user input required).
+    4. Analyzes consecutive periodic meter readings (Energy.Active.Import.Register).
+    5. Audits for power spikes (kW vs rated), pack overruns, and rollbacks.
+    6. Returns complete diagnostic RCA breakdown.
+    """
+    from src.rca.booking_inspector import (
+        fetch_ocpp_transaction,
+        fetch_completed_booking,
+        fetch_cancelled_booking,
+        fetch_roaming_booking,
+        get_party_cookie_header,
+        get_party_config
+    )
+
+    party_id = (party_id or "IOC").upper()
+    clean_id = str(booking_or_tx_id).strip()
+    if not clean_id:
+        return {"success": False, "error": "No Booking ID provided."}
+
+    cookie_hdr = get_party_cookie_header(party_id)
+    portal_cfg = get_party_config(party_id)
+    portal_url = portal_cfg.get("portal_url", get_portal_base_url(party_id))
+
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    s_date = start_date.strip() if start_date and start_date.strip() else "2024-01-01"
+    e_date = end_date.strip() if end_date and end_date.strip() else today_str
+
+    # 1. Look up transaction by ReservationId (Booking ID)
+    tx_record, _ = fetch_ocpp_transaction(clean_id, s_date, e_date, cookie_hdr, base_url=portal_url)
+
+    # If not found by ReservationId, check if user provided a direct Transaction ID
+    if not tx_record:
+        res_tx = fetch_ocpp_transactions(
+            party_id=party_id,
+            filter_query=f"transaction_pk~eq~{clean_id}",
+            page_size=5
+        )
+        txs = res_tx.get("transactions", [])
+        if txs:
+            tx_record = txs[0]
+
+    # If still not found, search in completed/cancelled bookings to see if we can extract TxnId
+    booking_record = None
+    if not tx_record:
+        booking_record, _ = fetch_completed_booking(clean_id, s_date, e_date, cookie_hdr, base_url=portal_url)
+        if not booking_record:
+            booking_record, _ = fetch_cancelled_booking(clean_id, s_date, e_date, cookie_hdr, base_url=portal_url)
+        if not booking_record:
+            booking_record, _ = fetch_roaming_booking(clean_id, cookie_hdr, base_url=portal_url)
+
+        if booking_record:
+            tx_cand = booking_record.get("TransactionId") or booking_record.get("TranscationId") or booking_record.get("TxnId")
+            if tx_cand and str(tx_cand).strip().isdigit() and int(str(tx_cand).strip()) > 0:
+                cand_id = str(tx_cand).strip()
+                res_cand = fetch_ocpp_transactions(party_id=party_id, filter_query=f"transaction_pk~eq~{cand_id}", page_size=5)
+                if res_cand.get("transactions"):
+                    tx_record = res_cand["transactions"][0]
+
+    if not tx_record:
+        party_label = portal_cfg.get("name", party_id)
+        return {
+            "success": False,
+            "error": f"No OCPP transaction found for Booking ID #{clean_id} on {party_label} between {s_date} and {e_date}."
+        }
+
+    # Extract transaction parameters
+    tx_id = str(tx_record.get("transaction_pk") or "")
+    booking_id = str(tx_record.get("ReservationId") or clean_id)
+    charger_code = tx_record.get("charge_box_id") or ""
+    charger_id = str(tx_record.get("charger_id") or "")
+    start_time = tx_record.get("start_timestamp_string") or ""
+    stop_time = tx_record.get("stop_timestamp_string") or ""
+    vin = tx_record.get("Vin") or ""
+
+    # 2. Fetch vehicle details from CMS booking records
+    if not booking_record:
+        booking_record, _ = fetch_completed_booking(booking_id, s_date, e_date, cookie_hdr, base_url=portal_url)
+        if not booking_record:
+            booking_record, _ = fetch_cancelled_booking(booking_id, s_date, e_date, cookie_hdr, base_url=portal_url)
+        if not booking_record:
+            booking_record, _ = fetch_roaming_booking(booking_id, cookie_hdr, base_url=portal_url)
+
+    vehicle_make = ""
+    vehicle_model = ""
+    vehicle_number = ""
+    battery_kwh = None
+
+    if booking_record:
+        vehicle_make = booking_record.get("ManufacturerName") or booking_record.get("VehicleMake") or ""
+        vehicle_model = booking_record.get("ModelName") or booking_record.get("VehicleModel") or ""
+        vehicle_number = booking_record.get("VehicleRegistrationNumber") or booking_record.get("VehicleNumber") or ""
+        b_cap = booking_record.get("BatteryCapacity") or booking_record.get("Battery_Capacity")
+        if b_cap:
+            try:
+                battery_kwh = float(b_cap)
+            except (ValueError, TypeError):
+                pass
+
+    vehicle_str = f"{vehicle_make} {vehicle_model}".strip()
+
+    # 3. Perform energy anomaly detection with auto-resolved parameters
+    analysis = analyze_transaction_energy(
+        party_id=party_id,
+        transaction_id=tx_id,
+        charger_code=charger_code,
+        charger_id=charger_id,
+        start_time=start_time,
+        stop_time=stop_time,
+        vehicle_model_hint=vehicle_str,
+        custom_battery_kwh=battery_kwh,
+        tx_meta=tx_record
+    )
+
+    # 4. Attach CMS vehicle and booking metadata to response
+    analysis["booking_id"] = booking_id
+    analysis["vehicle_cms"] = {
+        "vehicle_make": vehicle_make or "EV Manufacturer",
+        "vehicle_model": vehicle_model or "EV Model",
+        "vehicle_name": vehicle_str or analysis["vehicle_specs"]["name"],
+        "vehicle_number": vehicle_number or "-",
+        "vin": vin or "-",
+        "battery_capacity_kwh": analysis["vehicle_specs"]["capacity_kwh"],
+        "source": "CMS Booking Record" if vehicle_str or battery_kwh else "Database Heuristic"
+    }
+
+    return analysis
