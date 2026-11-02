@@ -247,7 +247,22 @@ def cmd_energy_rca(args) -> None:
     for r in rca["recommendations"]:
         print(f"  > {r}")
     if rca.get("financial_impact", {}).get("phantom_kwh", 0) > 0:
-        print(f"FINANCIAL IMPACT : {rca['financial_impact']['phantom_kwh']:.2f} Phantom kWh (Disputed: ₹{rca['financial_impact']['disputed_amount_inr']:.2f})")
+        print(f"FINANCIAL IMPACT : {rca['financial_impact']['phantom_kwh']:.2f} Phantom kWh (Disputed: Rs. {rca['financial_impact']['disputed_amount_inr']:.2f})")
+
+    b_audit = res.get("billing_audit")
+    if b_audit:
+        real_c = b_audit.get("real_should_charge", {})
+        act_c = b_audit.get("actual_user_paid", {})
+        cmp_c = b_audit.get("comparison", {})
+        print("-" * 70)
+        print("COMMERCIAL & TAX BILLING RECONCILIATION:")
+        print(f"  * Real Amount (After All Taxes)  : Rs. {real_c.get('total_amount_after_taxes_inr', 0.0):.2f}  [Base: Rs. {real_c.get('base_amount_inr', 0.0):.2f} + 18% GST: Rs. {real_c.get('tax_amount_inr', 0.0):.2f}]")
+        print(f"  * Actual Amount User Ended Paying: Rs. {act_c.get('total_amount_after_taxes_inr', 0.0):.2f}  [Base: Rs. {act_c.get('base_amount_inr', 0.0):.2f} + Billed GST: Rs. {act_c.get('tax_amount_inr', 0.0):.2f}]")
+        print(f"  * Applied Tariff Rate            : Rs. {b_audit.get('tariff_rate_inr_per_kwh', 0.0):.2f} / kWh")
+        st_label = str(cmp_c.get('status_label', 'ACCURATELY BILLED')).replace('\u20b9', 'Rs. ')
+        act_summary = str(cmp_c.get('action_summary', '')).replace('\u20b9', 'Rs. ')
+        print(f"  * Reconciliation Status          : {st_label}")
+        print(f"  * Finding & Action               : {act_summary}")
     print("=" * 70)
 
 

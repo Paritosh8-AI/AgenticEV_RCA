@@ -193,3 +193,61 @@ def test_investigate_booking_energy_empty():
     res = investigate_booking_energy("IOC", "")
     assert res["success"] is False
     assert "No Booking ID provided" in res["error"]
+
+
+def test_billing_tax_audit_nominal():
+    from src.rca.energy_anomaly_detector import compute_billing_tax_audit
+    analysis = {
+        "summary": {"total_energy_kwh": 12.33, "is_anomaly": False},
+        "rca_report": {"financial_impact": {"phantom_kwh": 0.0}},
+        "vehicle_specs": {"capacity_kwh": 79.0}
+    }
+    booking = {
+        "PerUnitPrice": 14.0,
+        "ActualChargingAmount": 172.55,
+        "ActualTax": 31.06,
+        "ActualTotalAmount": 203.61,
+        "PaymentRecieved": 451.70,
+        "RefundedAmount": 248.09,
+        "EnergyConsumed_indecimal": 12.33
+    }
+    audit = compute_billing_tax_audit(analysis, booking, party_id="IOC")
+    assert audit["has_billing_data"] is True
+    assert audit["tariff_rate_inr_per_kwh"] == 14.0
+    assert audit["tax_rate_pct"] == 18.0
+    assert audit["actual_user_paid"]["total_amount_after_taxes_inr"] == 203.61
+    assert audit["real_should_charge"]["total_amount_after_taxes_inr"] == 203.61
+    assert audit["comparison"]["variance_inr"] == 0.0
+    assert audit["comparison"]["status"] == "ACCURATELY_CHARGED"
+
+
+def test_billing_tax_audit_overcharge():
+    from src.rca.energy_anomaly_detector import compute_billing_tax_audit
+    # User was billed for 50 kWh on a 24 kWh Tata Tiago EV (26 kWh phantom)
+    analysis = {
+        "summary": {"total_energy_kwh": 50.0, "is_anomaly": True},
+        "rca_report": {"financial_impact": {"phantom_kwh": 26.0}},
+        "vehicle_specs": {"capacity_kwh": 24.0}
+    }
+    booking = {
+        "PerUnitPrice": 10.0,
+        "ActualChargingAmount": 500.0,
+        "ActualTax": 90.0,
+        "ActualTotalAmount": 590.0,
+        "PaymentRecieved": 590.0,
+        "RefundedAmount": 0.0,
+        "EnergyConsumed_indecimal": 50.0
+    }
+    audit = compute_billing_tax_audit(analysis, booking, party_id="IOC")
+    assert audit["actual_user_paid"]["total_amount_after_taxes_inr"] == 590.0
+    # Real legitimate energy = 24 kWh @ 10 = 240 base + 43.20 (18% tax) = 283.20 total
+    assert audit["real_should_charge"]["legitimate_energy_kwh"] == 24.0
+    assert audit["real_should_charge"]["base_amount_inr"] == 240.0
+    assert audit["real_should_charge"]["tax_amount_inr"] == 43.20
+    assert audit["real_should_charge"]["total_amount_after_taxes_inr"] == 283.20
+    # Overcharged: 590 - 283.20 = 306.80
+    assert audit["comparison"]["variance_inr"] == 306.80
+    assert audit["comparison"]["base_discrepancy_inr"] == 260.0
+    assert audit["comparison"]["tax_discrepancy_inr"] == 46.80
+    assert audit["comparison"]["status"] == "OVERCHARGED"
+    assert "OVERCHARGED BY" in audit["comparison"]["status_label"]

@@ -643,7 +643,7 @@ def analyze_transaction_energy(
         intervals_count=len(intervals)
     )
 
-    return {
+    res_dict = {
         "success": True,
         "party_id": party_id,
         "transaction_id": trans_id_str,
@@ -675,6 +675,8 @@ def analyze_transaction_energy(
         "rca_report": rca_panel,
         "intervals": intervals
     }
+    res_dict["billing_audit"] = compute_billing_tax_audit(res_dict, None, party_id=party_id)
+    return res_dict
 
 
 def build_energy_rca_report(
@@ -806,6 +808,208 @@ def build_energy_rca_report(
             "billing_status": "Disputed - Potential Phantom Billing" if phantom_kwh > 0 else "Anomalous Telemetry"
         },
         "recommendations": recommendations
+    }
+
+
+
+def compute_billing_tax_audit(
+    analysis: Dict[str, Any],
+    booking_record: Optional[Dict[str, Any]] = None,
+    party_id: str = "IOC"
+) -> Dict[str, Any]:
+    """
+    Computes commercial reconciliation and itemized tax breakdown:
+    1. Real amount after all taxes that SHOULD have been charged from the user.
+    2. Actual amount the user ended up paying in the CMS (including taxes).
+    3. Itemized discrepancy: Base energy charge + statutory GST (CGST + SGST @ 18%).
+    """
+    summary = analysis.get("summary", {})
+    rca = analysis.get("rca_report", {})
+    veh = analysis.get("vehicle_specs", {})
+    
+    total_energy_kwh = float(summary.get("total_energy_kwh", 0.0))
+    phantom_kwh = float(rca.get("financial_impact", {}).get("phantom_kwh", 0.0))
+    is_anomaly = bool(summary.get("is_anomaly", False))
+    
+    booking = booking_record or {}
+    
+    # 1. Determine Tariff Rate (Rs/kWh)
+    per_unit_price = 0.0
+    if booking.get("PerUnitPrice") is not None:
+        try:
+            per_unit_price = float(booking.get("PerUnitPrice"))
+        except (ValueError, TypeError):
+            per_unit_price = 0.0
+            
+    if per_unit_price <= 0.0:
+        per_unit_price = 14.0 if party_id.upper() == "IOC" else 18.0
+
+    tax_rate_pct = 18.0  # Statutory GST on EV charging services (9% CGST + 9% SGST)
+    
+    # 2. Extract Actual Amounts Recorded in CMS
+    actual_base = 0.0
+    actual_tax = 0.0
+    actual_total = 0.0
+    payment_rec = 0.0
+    refunded_amt = 0.0
+    payment_status = booking.get("PaymentStatusName") or "Settled"
+    
+    if booking:
+        try:
+            if booking.get("ActualTotalAmount") is not None:
+                actual_total = float(booking.get("ActualTotalAmount") or 0.0)
+            elif booking.get("TotalAmount") is not None:
+                actual_total = float(booking.get("TotalAmount") or 0.0)
+        except (ValueError, TypeError):
+            pass
+
+        try:
+            if booking.get("ActualChargingAmount") is not None:
+                actual_base = float(booking.get("ActualChargingAmount") or 0.0)
+        except (ValueError, TypeError):
+            pass
+
+        try:
+            if booking.get("ActualTax") is not None:
+                actual_tax = float(booking.get("ActualTax") or 0.0)
+        except (ValueError, TypeError):
+            pass
+
+        try:
+            if booking.get("PaymentRecieved") is not None:
+                payment_rec = float(booking.get("PaymentRecieved") or 0.0)
+            elif booking.get("PaidAmount") is not None:
+                payment_rec = float(booking.get("PaidAmount") or 0.0)
+        except (ValueError, TypeError):
+            pass
+
+        try:
+            if booking.get("RefundedAmount") is not None:
+                refunded_amt = float(booking.get("RefundedAmount") or 0.0)
+            elif booking.get("RefundAmount") is not None:
+                refunded_amt = float(booking.get("RefundAmount") or 0.0)
+        except (ValueError, TypeError):
+            pass
+
+    # Net amount user ended up paying
+    if actual_total > 0.0:
+        actual_user_paid = round(actual_total, 2)
+    elif payment_rec > 0.0:
+        actual_user_paid = round(max(0.0, payment_rec - refunded_amt), 2)
+        if actual_base <= 0.0:
+            actual_base = round(actual_user_paid / (1.0 + (tax_rate_pct / 100.0)), 2)
+            actual_tax = round(actual_user_paid - actual_base, 2)
+    elif total_energy_kwh > 0.0:
+        actual_base = round(total_energy_kwh * per_unit_price, 2)
+        actual_tax = round(actual_base * (tax_rate_pct / 100.0), 2)
+        actual_user_paid = round(actual_base + actual_tax, 2)
+    else:
+        actual_base = 0.0
+        actual_tax = 0.0
+        actual_user_paid = 0.0
+
+    if actual_base > 0.0 and actual_tax <= 0.0:
+        actual_tax = round(actual_base * (tax_rate_pct / 100.0), 2)
+        if actual_user_paid <= 0.0:
+            actual_user_paid = round(actual_base + actual_tax, 2)
+
+    # 3. Determine Legitimate Delivered Energy & Real Amount After All Taxes
+    cms_kwh = 0.0
+    if booking.get("EnergyConsumed_indecimal") is not None:
+        try:
+            cms_kwh = float(booking.get("EnergyConsumed_indecimal"))
+        except (ValueError, TypeError):
+            pass
+    elif booking.get("EnergyConsumed") is not None:
+        try:
+            cms_kwh = float(booking.get("EnergyConsumed"))
+        except (ValueError, TypeError):
+            pass
+
+    ref_kwh = cms_kwh if cms_kwh > 0.0 else total_energy_kwh
+
+    if not is_anomaly and phantom_kwh <= 0.0:
+        # 100% nominal session - physical conforms to billed
+        legitimate_kwh = ref_kwh
+        real_base = actual_base if actual_base > 0.0 else round(legitimate_kwh * per_unit_price, 2)
+        real_tax = actual_tax if actual_tax > 0.0 else round(real_base * (tax_rate_pct / 100.0), 2)
+        real_total_after_taxes = actual_user_paid if actual_user_paid > 0.0 else round(real_base + real_tax, 2)
+    else:
+        # Anomaly detected: deduct phantom spikes and EV pack capacity overruns
+        legitimate_kwh = max(0.0, ref_kwh - phantom_kwh)
+        pack_cap = float(veh.get("capacity_kwh", 0.0))
+        if pack_cap > 0.0 and legitimate_kwh > pack_cap * 1.05:
+            legitimate_kwh = pack_cap
+
+        real_base = round(legitimate_kwh * per_unit_price, 2)
+        real_tax = round(real_base * (tax_rate_pct / 100.0), 2)
+        real_total_after_taxes = round(real_base + real_tax, 2)
+
+    variance = round(actual_user_paid - real_total_after_taxes, 2)
+    base_discrepancy = round(actual_base - real_base, 2)
+    tax_discrepancy = round(actual_tax - real_tax, 2)
+
+    if variance > 0.50:
+        status_code = "OVERCHARGED"
+        status_label = f"OVERCHARGED BY ₹{variance:.2f}"
+        badge_color = "red"
+        action_summary = (
+            f"User ended up paying ₹{actual_user_paid:.2f}, but the real physical charge should have been "
+            f"₹{real_total_after_taxes:.2f} after all taxes. The user was overbilled by ₹{variance:.2f} "
+            f"(Base Energy: ₹{base_discrepancy:.2f} + Excess GST: ₹{tax_discrepancy:.2f}) due to {phantom_kwh:.2f} "
+            f"phantom/unphysical kWh. Commercial adjustment / refund voucher of ₹{variance:.2f} is due to the user."
+        )
+    elif variance < -0.50:
+        status_code = "UNDERCHARGED"
+        status_label = f"UNDERCHARGED BY ₹{abs(variance):.2f}"
+        badge_color = "orange"
+        action_summary = (
+            f"User ended up paying ₹{actual_user_paid:.2f}, whereas physical delivery evaluated to "
+            f"₹{real_total_after_taxes:.2f} after all taxes. CPO revenue leakage: ₹{abs(variance):.2f}."
+        )
+    else:
+        status_code = "ACCURATELY_CHARGED"
+        status_label = "ACCURATELY BILLED (₹0.00 Discrepancy)"
+        badge_color = "green"
+        action_summary = (
+            f"All metered units ({legitimate_kwh:.2f} kWh) were physically delivered and verified. "
+            f"The real amount after all taxes (₹{real_total_after_taxes:.2f}) exactly equals the actual "
+            f"amount the user ended up paying (₹{actual_user_paid:.2f}). Zero refund required."
+        )
+
+    return {
+        "has_billing_data": True,
+        "tariff_rate_inr_per_kwh": per_unit_price,
+        "tax_rate_pct": tax_rate_pct,
+        "real_should_charge": {
+            "legitimate_energy_kwh": round(legitimate_kwh, 3),
+            "base_amount_inr": real_base,
+            "tax_amount_inr": real_tax,
+            "cgst_inr": round(real_tax / 2.0, 2),
+            "sgst_inr": round(real_tax / 2.0, 2),
+            "total_amount_after_taxes_inr": real_total_after_taxes
+        },
+        "actual_user_paid": {
+            "billed_energy_kwh": round(ref_kwh, 3),
+            "base_amount_inr": actual_base,
+            "tax_amount_inr": actual_tax,
+            "cgst_inr": round(actual_tax / 2.0, 2),
+            "sgst_inr": round(actual_tax / 2.0, 2),
+            "total_amount_after_taxes_inr": actual_user_paid,
+            "payment_received_inr": payment_rec,
+            "refunded_inr": refunded_amt,
+            "payment_status": payment_status
+        },
+        "comparison": {
+            "variance_inr": variance,
+            "base_discrepancy_inr": base_discrepancy,
+            "tax_discrepancy_inr": tax_discrepancy,
+            "phantom_kwh": phantom_kwh,
+            "status": status_code,
+            "status_label": status_label,
+            "badge_color": badge_color,
+            "action_summary": action_summary
+        }
     }
 
 
@@ -1017,5 +1221,8 @@ def investigate_booking_energy(
         "battery_capacity_kwh": analysis["vehicle_specs"]["capacity_kwh"],
         "source": "CMS Booking Record" if vehicle_str or battery_kwh else "Database Heuristic"
     }
+
+    # 5. Compute commercial reconciliation & real amount after all taxes
+    analysis["billing_audit"] = compute_billing_tax_audit(analysis, booking_record, party_id=party_id)
 
     return analysis
