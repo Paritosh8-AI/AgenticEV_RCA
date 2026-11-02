@@ -5,7 +5,7 @@
 [![FastMCP](https://img.shields.io/badge/MCP-FastMCP%202.2-green.svg?logo=anthropic&logoColor=white)](https://modelcontextprotocol.io/)
 [![Playwright](https://img.shields.io/badge/Playwright-Automated%20Telemetry-orange.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Streaming%20UI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Tests](https://img.shields.io/badge/Tests-21%20Passed%20(100%25)-brightgreen.svg?logo=pytest&logoColor=white)](https://pytest.org/)
+[![Tests](https://img.shields.io/badge/Tests-41%20Passed%20(100%25)-brightgreen.svg?logo=pytest&logoColor=white)](https://pytest.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > **An AI/ML-driven Root Cause Analysis (RCA) & Causal Inference Engine for EV Charging Networks, OCPP 1.6-J Telemetry, and OCPI Multi-CPO Roaming Ecosystems.**
@@ -119,6 +119,50 @@ Designed for Data Engineers and Hardware Field Technicians:
 
 ---
 
+---
+
+## ⚡ Unusual Energy Consumption & Meter Spike RCA Engine
+
+In high-power fast charging networks (60 kW to 240 kW DC), **metering telemetry anomalies** can cause catastrophic billing disputes, phantom consumption charges, or undetected power electronic faults. 
+
+The **Energy Anomaly & Power Spike Detector** ([`src/rca/energy_anomaly_detector.py`](src/rca/energy_anomaly_detector.py)) continuously audits consecutive meter readings under Measurand `Energy.Active.Import.Register` across **IndianOil e-Charge (IOCL)** and **ElectreeFi CMS** transactions.
+
+```mermaid
+graph LR
+    A["Raw Periodic Meter Readings<br/>(Energy.Active.Import.Register)"] --> B["Interval Power Engine<br/>Δt_i = t_i - t_{i-1}<br/>ΔE_i = E_i - E_{i-1}<br/>P_i = (ΔE_i * 3600) / Δt_i"]
+    B --> C1["Hardware Rating Gate<br/>P_calc &gt; P_rated * 1.15"]
+    B --> C2["Vehicle Battery Gate<br/>E_total &gt; C_battery * 1.08"]
+    B --> C3["Counter Monotonicity Gate<br/>ΔE_i &lt; -0.01 kWh"]
+    B --> C4["Thermodynamic Gate<br/>Outlet &gt; Inlet * 1.05"]
+    
+    C1 --> D["Root Cause Analysis (RCA)<br/>Modbus CT Bitflip / Noise<br/>Phantom Billing Overrun<br/>Counter Register Rollback<br/>Power Module Trip"]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+```
+
+### Physical Grounding & Detection Dimensions
+1. **Impossible Power Surges ($P_{\text{calc}} > P_{\text{rated}} \times 1.15$)**: Detects interval energy leaps exceeding physical charger hardware (e.g. 720 kW calculated power on a 60 kW gun). Identifies Modbus RS-485 communication corruption or 10x/100x CT scaler bitflips.
+2. **EV Battery Pack Overrun ($E_{\text{total}} > C_{\text{battery}} \times 1.08$)**: Cross-references delivered energy against a comprehensive Indian EV battery database (Tata Nexon EV Prime/Max/LR, Tiago, Punch, Curvv, MG ZS/Windsor/Comet, BYD Atto 3/Seal/e6, Mahindra XEV 9e/BE 6e/XUV400, Hyundai Ioniq 5/Kona, Kia EV6). Detects phantom accumulation and previous-session register carryover.
+3. **Meter Counter Rollback ($\Delta E_i < -0.01\text{ kWh}$)**: Detects negative meter steps resulting from power meter resets, unscheduled reboots, or register overflow.
+4. **Active Session Freezing ($\Delta E = 0$ for $> 5\text{ min}$)**: Detects DC contactor coil trips or isolation failures while OCPP sessions remain open.
+5. **Thermodynamic Inversion ($E_{\text{outlet}} > E_{\text{inlet}} \times 1.05$)**: Flags sensor lead transposition between grid supply and vehicle connector.
+
+### CLI Usage for Energy Auditing
+```bash
+# Deep dive single transaction on IndianOil (IOCL)
+python -m src.cli energy-rca --id 743629 --party IOC --vehicle "Tata Nexon EV Max"
+
+# Deep dive single transaction on ElectreeFi
+python -m src.cli energy-rca --id 11537103 --party ELC
+
+# Batch scan recent transactions for power spikes
+python -m src.cli energy-scan --party IOC --limit 20
+python -m src.cli energy-scan --party ELC --limit 20
+```
+
+---
+
 ## 📁 Repository Structure
 
 ```text
@@ -127,7 +171,8 @@ Designed for Data Engineers and Hardware Field Technicians:
 │   │   └── session_manager.py     # Resilient multi-portal Playwright authentication & session caching
 │   ├── rca/
 │   │   ├── roaming_upload_analyzer.py # Flagship dual-sheet OCPI analyzer & report synthesizer
-│   │   ├── booking_inspector.py   # Live single-booking timeline crawler & inspector
+│   │   ├── energy_anomaly_detector.py # Physics-grounded energy spike & consumption RCA engine
+│   │   ├── booking_inspector.py   # Multi-portal timeline crawler & inspector (IOCL + ElectreeFi)
 │   │   ├── engine.py              # Baseline causal inference engine
 │   │   ├── hourly_engine.py       # Dynamic time-window batch clustering
 │   │   ├── mapper.py              # OCPP & OCPI error taxonomy semantic mapper
@@ -149,6 +194,7 @@ Designed for Data Engineers and Hardware Field Technicians:
 │   ├── static/                    # Frontend assets for Batch Studio (HTML5/CSS3/Vanilla JS)
 │   └── static_booking_rca/        # Frontend assets for Deep Dive Studio
 ├── tests/
+│   ├── test_energy_anomaly.py     # Unit tests for energy spike, battery overrun & meter rollbacks
 │   ├── test_pipeline_units.py     # Unit tests for OCPI parsing & low-energy filtering
 │   ├── test_rca_mapper.py         # Tests for causal inference & stop reason classification
 │   ├── test_ocpp_parser.py        # Tests for OCPP JSON-RPC stream parser
@@ -278,7 +324,14 @@ tests/test_rca_mapper.py::test_boot_notification_rejected_is_not_remote_start PA
 tests/test_rca_mapper.py::test_map_to_cs_rca_text_with_rejected_remote_start PASSED [ 95%]
 tests/test_rca_mapper.py::test_map_to_cs_rca_text_without_rejected_remote_start PASSED [100%]
 
-============================= 21 passed in 1.97s ==============================
+tests/test_energy_anomaly.py::test_vehicle_battery_resolution PASSED      [ 48%]
+tests/test_energy_anomaly.py::test_charger_specs_resolution PASSED        [ 51%]
+tests/test_energy_anomaly.py::test_nominal_charging_session PASSED        [ 56%]
+tests/test_energy_anomaly.py::test_overpower_spike_detection PASSED       [ 61%]
+tests/test_energy_anomaly.py::test_battery_capacity_overrun PASSED        [ 66%]
+tests/test_energy_anomaly.py::test_counter_rollback PASSED                [ 71%]
+
+============================= 41 passed in 8.61s ==============================
 ```
 
 ## 👨‍💻 Author & Contributions

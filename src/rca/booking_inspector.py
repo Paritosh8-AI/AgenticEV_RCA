@@ -13,10 +13,58 @@ import urllib.request
 import urllib.parse
 from datetime import datetime, timedelta
 from typing import Any
+from pathlib import Path
 
 from src.models import OCPPLogEntry
 from src.config import SESSION_STORAGE_PATH
 from src.rca.ocpp_parser import parse_ocpp_message, is_remote_start_status_rejected, is_remote_start_status_accepted
+
+
+def get_party_config(party_id: str = "ELC") -> dict:
+    """Returns portal configuration, endpoints, credentials, and session paths for a specific CPO/party."""
+    pid = (party_id or "ELC").strip().upper()
+    if pid in ("IOCL", "INDIANOIL"):
+        pid = "IOC"
+    elif pid in ("VINFAST", "VINF"):
+        pid = "VIN"
+    elif pid in ("CHARGEIN", "CHARGE_IN"):
+        pid = "MPC"
+
+    default_portals = {
+        "ELC": {
+            "name": "ElectreeFi Central CMS",
+            "party_id": "ELC",
+            "portal_url": "https://emonitoring.electreefi.com",
+            "session_file": "data/session_state.json",
+            "cookie_domain": "electreefi.com",
+            "username": "Paritosh1675"
+        },
+        "IOC": {
+            "name": "IndianOil e-Charge (IOCL)",
+            "party_id": "IOC",
+            "portal_url": "https://indianoilecharge.in",
+            "session_file": "data/session_IOC.json",
+            "cookie_domain": "indianoilecharge.in",
+            "username": "Saurabhiocl",
+            "password": os.environ.get("IOCL_PASSWORD", ""),  # Load from env / partner_portals.json
+            "chargers_registry": "data/party_chargers_IOC.json"
+        }
+    }
+
+    cfg = default_portals.get(pid, default_portals["ELC"]).copy()
+
+    # Check data/partner_portals.json for user-configured overrides
+    portals_file = Path("data/partner_portals.json")
+    if portals_file.exists():
+        try:
+            with open(portals_file, "r", encoding="utf-8") as f:
+                portals_data = json.load(f)
+                if pid in portals_data:
+                    cfg.update(portals_data[pid])
+        except Exception:
+            pass
+
+    return cfg
 
 
 def get_cookie_header() -> str:
@@ -30,6 +78,307 @@ def get_cookie_header() -> str:
         return "; ".join([f"{c['name']}={c['value']}" for c in cookies if "electreefi.com" in c.get("domain", "")])
     except Exception:
         return ""
+
+
+def get_party_cookie_header(party_id: str = "ELC") -> str:
+    """Retrieves session cookies formatted as a Cookie header for the target portal/party."""
+    pid = (party_id or "ELC").strip().upper()
+    if pid in ("IOCL", "INDIANOIL"):
+        pid = "IOC"
+
+    if pid == "ELC":
+        return get_cookie_header()
+
+    cfg = get_party_config(pid)
+    session_file = cfg.get("session_file") or f"data/session_{pid}.json"
+
+    p = Path(session_file)
+    if not p.is_absolute():
+        p = Path(__file__).resolve().parent.parent.parent / session_file
+
+    if not p.exists():
+        alt_p = Path(session_file)
+        if alt_p.exists():
+            p = alt_p
+        else:
+            return ""
+
+    try:
+        with open(p, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        cookies = data.get("cookies", [])
+        domain_sub = cfg.get("cookie_domain") or ("indianoilecharge.in" if pid == "IOC" else "")
+        valid_cookies = [c for c in cookies if domain_sub in c.get("domain", "") or not domain_sub]
+        if not valid_cookies and cookies:
+            valid_cookies = cookies
+        return "; ".join([f"{c['name']}={c['value']}" for c in valid_cookies])
+    except Exception:
+        return ""
+
+
+
+DEFAULT_BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+
+
+def login_iocl_direct() -> dict:
+    """
+    Direct programmatic login for IndianOil e-Charge (IOCL) via HTTP POST /Account/UserLogin.
+    Refreshes session cookies instantly (0-200ms) without needing visual CAPTCHA or user interaction.
+    """
+    import http.cookiejar
+    cj = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+
+    req = urllib.request.Request(
+        'https://indianoilecharge.in/Account/Login',
+        headers={'User-Agent': DEFAULT_BROWSER_UA}
+    )
+    try:
+        resp = opener.open(req, timeout=10)
+        html = resp.read().decode('utf-8', errors='replace')
+    except Exception as e:
+        return {'success': False, 'message': f'Failed to reach IOCL login page: {e}'}
+
+    token_match = re.search(r'__RequestVerificationToken.*?value="([^"]+)"', html)
+    antiforgery_token = token_match.group(1) if token_match else ''
+
+    cfg = get_party_config("IOC")
+    username = cfg.get("username", "Saurabhiocl")
+    password = cfg.get("password") or os.environ.get("IOCL_PASSWORD", "")
+
+    login_data = {
+        'LoginId': username,
+        'LoginPassword': password,
+        'password': password,
+        'IsGuestUser': 'false',
+        'SiteUrl': 'https://indianoilecharge.in/Account/Login',
+        'ReturnUrl': '',
+        '__RequestVerificationToken': antiforgery_token
+    }
+
+    headers = {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'User-Agent': DEFAULT_BROWSER_UA,
+        'Referer': 'https://indianoilecharge.in/Account/Login'
+    }
+
+    post_req = urllib.request.Request(
+        'https://indianoilecharge.in/Account/UserLogin',
+        data=urllib.parse.urlencode(login_data).encode('utf-8'),
+        headers=headers
+    )
+
+    try:
+        post_res = opener.open(post_req, timeout=12)
+        body_bytes = post_res.read()
+        data = json.loads(body_bytes.decode('utf-8', errors='replace'))
+    except Exception as e:
+        return {'success': False, 'message': f'IOCL Login POST failed: {e}'}
+
+    if data.get('ErrorCode') != 1:
+        return {'success': False, 'message': data.get('ErrorDetail') or 'IOCL Login was rejected by server.'}
+
+    # Follow redirect to establish full session state on server
+    try:
+        redirect_url = f"{cfg.get('portal_url', 'https://indianoilecharge.in').rstrip('/')}/OCPPManagement/OCPPIOCL/OCPPChargerStatus"
+        opener.open(urllib.request.Request(redirect_url, headers={'User-Agent': DEFAULT_BROWSER_UA}), timeout=10)
+    except Exception:
+        pass
+
+    cookies_list = []
+    for c in cj:
+        cookies_list.append({
+            'name': c.name,
+            'value': c.value,
+            'domain': c.domain.lstrip('.') if c.domain else 'indianoilecharge.in',
+            'path': c.path or '/',
+            'expires': float(c.expires) if c.expires else -1,
+            'httpOnly': True,
+            'secure': True,
+            'sameSite': 'Lax'
+        })
+
+    session_data = {
+        'cookies': cookies_list,
+        'origins': [
+            {
+                'origin': 'https://indianoilecharge.in',
+                'localStorage': [
+                    {'name': 'MenuProductId', 'value': '1'},
+                    {'name': 'MenuIdentification', 'value': 'home'}
+                ]
+            }
+        ]
+    }
+
+    session_file = cfg.get("session_file") or "data/session_IOC.json"
+    p = Path(session_file)
+    if not p.is_absolute():
+        p = Path(__file__).resolve().parent.parent.parent / session_file
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with open(p, 'w', encoding='utf-8') as f:
+        json.dump(session_data, f, indent=2)
+
+    return {
+        'success': True,
+        'message': f'IOCL Login Successful for {data.get("EmployeeDisplayName")} ({data.get("RoleName")})',
+        'cookies_saved': len(cookies_list),
+        'user': data.get('EmployeeDisplayName')
+    }
+
+def check_party_session_status(party_id: str = "IOC", auto_relogin: bool = True) -> dict:
+    """Checks session state and performs fast validation for a partner portal (e.g. IOCL)."""
+    pid = (party_id or "IOC").strip().upper()
+    if pid in ("IOCL", "INDIANOIL"):
+        pid = "IOC"
+
+    cfg = get_party_config(pid)
+    session_file = cfg.get("session_file") or f"data/session_{pid}.json"
+    p = Path(session_file)
+    if not p.is_absolute():
+        p = Path(__file__).resolve().parent.parent.parent / session_file
+    if not p.exists():
+        p = Path(session_file)
+
+    if not p.exists():
+        if pid == "IOC" and auto_relogin:
+            login_res = login_iocl_direct()
+            if login_res.get("success"):
+                return check_party_session_status(pid, auto_relogin=False)
+        return {
+            "party": pid,
+            "name": cfg.get("name", pid),
+            "portal_url": cfg.get("portal_url", ""),
+            "username": cfg.get("username", ""),
+            "has_session": False,
+            "status_text": "No Session File Found",
+            "modified": None,
+            "is_valid": False
+        }
+
+    try:
+        stat = p.stat()
+        mod_time = datetime.fromtimestamp(stat.st_mtime)
+        mod_str = mod_time.strftime("%d-%b-%Y %H:%M")
+
+        cookie_header = get_party_cookie_header(pid)
+        if not cookie_header:
+            return {
+                "party": pid,
+                "name": cfg.get("name", pid),
+                "portal_url": cfg.get("portal_url", ""),
+                "username": cfg.get("username", ""),
+                "has_session": True,
+                "status_text": "No valid cookies in session file",
+                "modified": mod_str,
+                "is_valid": False
+            }
+
+        portal_url = cfg.get("portal_url", "https://indianoilecharge.in").rstrip("/")
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        start_30d = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        test_url = f"{portal_url}/ChargingStationManagement/AdminBookingDetails/CancelledBookingDataThroughAjax?StationId=&StartDate={start_30d}&Enddate={today_str}&stateId=&cityId=&transactionTypeId=-1&Id=0&vin=&chargerCode=&user=&vehicleNumber="
+        headers = {
+            "X-Requested-With": "XMLHttpRequest",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Cookie": cookie_header,
+            "User-Agent": DEFAULT_BROWSER_UA
+        }
+        payload = urllib.parse.urlencode({"sort": "", "page": "1", "pageSize": "1", "group": "", "filter": ""}).encode("utf-8")
+        req = urllib.request.Request(test_url, data=payload, headers=headers)
+        with urllib.request.urlopen(req, timeout=6) as res:
+            text = res.read().decode("utf-8", errors="replace")
+            is_valid = ("Data" in text or "Total" in text) and "/Account/Login" not in text
+            status_text = "Session Active & Verified" if is_valid else "Session Token Expired"
+            if not is_valid and pid == "IOC" and auto_relogin:
+                login_res = login_iocl_direct()
+                if login_res.get("success"):
+                    return check_party_session_status(pid, auto_relogin=False)
+
+            return {
+                "party": pid,
+                "name": cfg.get("name", pid),
+                "portal_url": portal_url,
+                "username": cfg.get("username", ""),
+                "has_session": True,
+                "status_text": status_text,
+                "modified": mod_str,
+                "is_valid": is_valid
+            }
+    except urllib.error.HTTPError as he:
+        is_expired = he.code in (301, 302, 401, 403)
+        if is_expired and pid == "IOC" and auto_relogin:
+            login_res = login_iocl_direct()
+            if login_res.get("success"):
+                return check_party_session_status(pid, auto_relogin=False)
+        return {
+            "party": pid,
+            "name": cfg.get("name", pid),
+            "portal_url": cfg.get("portal_url", ""),
+            "username": cfg.get("username", ""),
+            "has_session": True,
+            "status_text": "Session Token Expired (Please Re-Login)" if is_expired else f"HTTP Error {he.code}",
+            "modified": mod_str if 'mod_str' in locals() else None,
+            "is_valid": False
+        }
+    except Exception as e:
+        err_msg = str(e)
+        if "302" in err_msg or "redirect" in err_msg.lower():
+            status_text = "Session Token Expired (Please Re-Login)"
+        else:
+            status_text = f"Session Check Error: {err_msg}"
+        return {
+            "party": pid,
+            "name": cfg.get("name", pid),
+            "portal_url": cfg.get("portal_url", ""),
+            "username": cfg.get("username", ""),
+            "has_session": True,
+            "status_text": status_text,
+            "modified": mod_str if 'mod_str' in locals() else None,
+            "is_valid": False
+        }
+
+
+_PARTY_CHARGERS_CACHE: dict[str, dict] = {}
+
+def load_party_chargers_cached(party_id: str = "IOC") -> dict:
+    """Loads party physical charger dictionary from registry with in-memory caching."""
+    pid = (party_id or "").strip().upper()
+    if pid in ("IOCL", "INDIANOIL"):
+        pid = "IOC"
+    if pid in _PARTY_CHARGERS_CACHE:
+        return _PARTY_CHARGERS_CACHE[pid]
+
+    cand_paths = [
+        Path(__file__).resolve().parent.parent.parent / f"data/party_chargers_{pid}.json",
+        Path(f"data/party_chargers_{pid}.json")
+    ]
+    for p in cand_paths:
+        if p.exists():
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    _PARTY_CHARGERS_CACHE[pid] = data
+                    return data
+            except Exception:
+                pass
+    return {}
+
+
+def resolve_party_charger_id(charger_identifier: str, party_id: str = "IOC") -> str | None:
+    """Resolves a charger code (e.g. IOCLHRDC7953) to numeric entity ID (e.g. 10391) for log scraping."""
+    if not charger_identifier:
+        return None
+    clean = str(charger_identifier).strip()
+    chargers = load_party_chargers_cached(party_id)
+    if clean in chargers:
+        entry = chargers[clean]
+        return str(entry.get("charger_id") or "")
+    for k, v in chargers.items():
+        if isinstance(v, dict) and (v.get("charger_code") == clean or str(v.get("charger_id")) == clean):
+            return str(v.get("charger_id") or "")
+    return None
 
 
 def parse_flexible_dt(t_str: str | None) -> datetime | None:
@@ -57,12 +406,16 @@ def parse_flexible_dt(t_str: str | None) -> datetime | None:
     return None
 
 
-def fetch_cancelled_booking(booking_id: str, start_date: str, end_date: str, cookie_header: str) -> tuple[dict | None, int]:
+def fetch_cancelled_booking(booking_id: str, start_date: str, end_date: str, cookie_header: str, base_url: str = "https://emonitoring.electreefi.com") -> tuple[dict | None, int]:
     """Queries the Cancelled bookings endpoint for a specific booking ID with exact server filtering."""
-    url = f"https://emonitoring.electreefi.com/ChargingStationManagement/AdminBookingDetails/CancelledBookingDataThroughAjax?StationId=&StartDate={start_date}&Enddate={end_date}&stateId=&cityId=&transactionTypeId=-1&Id=0&vin=&chargerCode=&user=&vehicleNumber="
+    root_url = base_url.rstrip("/")
+    s_d = start_date.strip() if start_date and start_date.strip() else "2024-01-01"
+    e_d = end_date.strip() if end_date and end_date.strip() else datetime.now().strftime("%Y-%m-%d")
+    url = f"{root_url}/ChargingStationManagement/AdminBookingDetails/CancelledBookingDataThroughAjax?StationId=&StartDate={s_d}&Enddate={e_d}&stateId=&cityId=&transactionTypeId=-1&Id=0&vin=&chargerCode=&user=&vehicleNumber="
     headers = {
         "X-Requested-With": "XMLHttpRequest",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "User-Agent": DEFAULT_BROWSER_UA,
         "Cookie": cookie_header
     }
 
@@ -88,12 +441,16 @@ def fetch_cancelled_booking(booking_id: str, start_date: str, end_date: str, coo
     return None, 1
 
 
-def fetch_completed_booking(booking_id: str, start_date: str, end_date: str, cookie_header: str) -> tuple[dict | None, int]:
+def fetch_completed_booking(booking_id: str, start_date: str, end_date: str, cookie_header: str, base_url: str = "https://emonitoring.electreefi.com") -> tuple[dict | None, int]:
     """Queries the Past/Completed bookings endpoint for a specific booking ID with exact server filtering."""
-    url = f"https://emonitoring.electreefi.com/ChargingStationManagement/AdminBookingDetails/PastBookingDataThroughAjax?StartDate={start_date}&Enddate={end_date}&transactionTypeId=-1&Id=0&StationId=&stateId=&cityId=&vin=&chargerCode=&user=&vehicleNumber=&i="
+    root_url = base_url.rstrip("/")
+    s_d = start_date.strip() if start_date and start_date.strip() else "2024-01-01"
+    e_d = end_date.strip() if end_date and end_date.strip() else datetime.now().strftime("%Y-%m-%d")
+    url = f"{root_url}/ChargingStationManagement/AdminBookingDetails/PastBookingDataThroughAjax?StartDate={s_d}&Enddate={e_d}&transactionTypeId=-1&Id=0&StationId=&stateId=&cityId=&vin=&chargerCode=&user=&vehicleNumber=&i="
     headers = {
         "X-Requested-With": "XMLHttpRequest",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "User-Agent": DEFAULT_BROWSER_UA,
         "Cookie": cookie_header
     }
 
@@ -119,11 +476,13 @@ def fetch_completed_booking(booking_id: str, start_date: str, end_date: str, coo
     return None, 1
 
 
-def fetch_roaming_booking(booking_id: str, cookie_header: str) -> tuple[dict | None, int]:
+def fetch_roaming_booking(booking_id: str, cookie_header: str, base_url: str = "https://emonitoring.electreefi.com") -> tuple[dict | None, int]:
     """Queries Roaming OCPI reservation endpoint for bookings that originate via roaming protocols."""
-    url = f"https://emonitoring.electreefi.com/Roaming/OCPIReservation/GetChargingStatusdetail?BookingId={booking_id}"
+    root_url = base_url.rstrip("/")
+    url = f"{root_url}/Roaming/OCPIReservation/GetChargingStatusdetail?BookingId={booking_id}"
     headers = {
         "X-Requested-With": "XMLHttpRequest",
+        "User-Agent": DEFAULT_BROWSER_UA,
         "Cookie": cookie_header
     }
     try:
@@ -205,12 +564,14 @@ def fetch_roaming_booking(booking_id: str, cookie_header: str) -> tuple[dict | N
     return None, 1
 
 
-def fetch_ocpi_cancelled_reservation(booking_id: str, cookie_header: str) -> tuple[dict | None, int]:
+def fetch_ocpi_cancelled_reservation(booking_id: str, cookie_header: str, base_url: str = "https://emonitoring.electreefi.com") -> tuple[dict | None, int]:
     """Queries OCPI Cancelled Reservations grid for a specific booking ID."""
-    url = "https://emonitoring.electreefi.com/Roaming/OCPIReservation/LoadOcpiCancelledReservationGridViewThroughAjax"
+    root_url = base_url.rstrip("/")
+    url = f"{root_url}/Roaming/OCPIReservation/LoadOcpiCancelledReservationGridViewThroughAjax"
     headers = {
         "X-Requested-With": "XMLHttpRequest",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "User-Agent": DEFAULT_BROWSER_UA,
         "Cookie": cookie_header
     }
     try:
@@ -221,7 +582,7 @@ def fetch_ocpi_cancelled_reservation(booking_id: str, cookie_header: str) -> tup
             "group": "",
             "filter": f"BookingId~eq~{booking_id}"
         }).encode("utf-8")
-        req = urllib.request.Request(f"{url}?StartDate=&Enddate=&transactionTypeId=-1", data=payload, headers=headers)
+        req = urllib.request.Request(f"{url}?StartDate=2024-01-01&Enddate={datetime.now().strftime('%Y-%m-%d')}&transactionTypeId=-1", data=payload, headers=headers)
         with urllib.request.urlopen(req, timeout=10) as res:
             data = json.loads(res.read().decode("utf-8"))
             items = data.get("Data", [])
@@ -247,17 +608,19 @@ def fetch_ocpi_cancelled_reservation(booking_id: str, cookie_header: str) -> tup
     return None, 1
 
 
-def fetch_ocpp_transaction(booking_id: str, start_date: str, end_date: str, cookie_header: str) -> tuple[dict | None, int]:
+def fetch_ocpp_transaction(booking_id: str, start_date: str, end_date: str, cookie_header: str, base_url: str = "https://emonitoring.electreefi.com") -> tuple[dict | None, int]:
     """
     Queries the central OCPP Transactions table in a single targeted hit.
     Never downloads large multi-page scans when matching by ReservationId.
     """
+    root_url = base_url.rstrip("/")
+    tx_url = f"{root_url}/OCPPManagement/TransactionDetail/LoadTransactionViewThroughAjaxForData/2?StartDate={start_date}&Enddate={end_date}"
     headers = {
         "X-Requested-With": "XMLHttpRequest",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "User-Agent": DEFAULT_BROWSER_UA,
         "Cookie": cookie_header
     }
-    tx_url = f"https://emonitoring.electreefi.com/OCPPManagement/TransactionDetail/LoadTransactionViewThroughAjaxForData/2?StartDate={start_date}&Enddate={end_date}"
 
     # Single targeted attempt: ReservationId filter (1 hit)
     try:
@@ -286,7 +649,9 @@ def fetch_ocpp_logs_for_booking(
     booking_in_dt: datetime,
     booking_out_dt: datetime | int | None = None,
     cookie_header: str = "",
-    window_minutes: int | None = None
+    window_minutes: int | None = None,
+    base_url: str = "https://emonitoring.electreefi.com",
+    party_id: str = "ELC"
 ) -> list[OCPPLogEntry]:
     """Fetches raw OCPP logs tightly bounded to the booking's active lifecycle."""
     if not ch_id:
@@ -317,7 +682,15 @@ def fetch_ocpp_logs_for_booking(
     from_enc = w_start.replace(" ", "%20")
     to_enc = w_end.replace(" ", "%20")
 
-    url = f"https://emonitoring.electreefi.com/GetOcppLogs?entityId={ch_id}&fromDate={from_enc}&toDate={to_enc}"
+    # If ch_id is not integer and party is IOC, resolve to numeric entity ID
+    resolved_ch_id = ch_id
+    if str(resolved_ch_id).strip() and not str(resolved_ch_id).strip().isdigit():
+        mapped_id = resolve_party_charger_id(str(resolved_ch_id).strip(), party_id)
+        if mapped_id:
+            resolved_ch_id = mapped_id
+
+    root_url = base_url.rstrip("/")
+    url = f"{root_url}/GetOcppLogs?entityId={resolved_ch_id}&fromDate={from_enc}&toDate={to_enc}"
     payload = urllib.parse.urlencode({
         "page": "1",
         "pageSize": "100",
@@ -328,6 +701,7 @@ def fetch_ocpp_logs_for_booking(
     headers = {
         "X-Requested-With": "XMLHttpRequest",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "User-Agent": DEFAULT_BROWSER_UA,
         "Cookie": cookie_header
     }
 
@@ -943,18 +1317,33 @@ def generate_descriptive_rca(
     # RULE 10: No logs at all around timestamp
     # -------------------------------------------------------------
     elif not relevant_logs:
-        attribution = "USER / OPERATOR ACTION"
-        root_cause = "Gun Not Connected / User Did Not Connect in Time"
-        confidence = "High (90%)"
-        detected_field = "No Telemetry Logs Recorded"
-        error_location = "GetOcppLogs (No Records)"
-        error_value = "NoLogs"
-        narrative = (
-            f"There are no OCPP telemetry messages recorded for charger '{charger_code}' around this booking's timestamp. "
-            f"The user created a booking or scanned QR, but never physically plugged the connector into the vehicle, "
-            f"causing the booking reservation to automatically expire and cancel."
-        )
-        action_item = "Advise driver that bookings expire if connector gun is not plugged into the vehicle within 5 minutes."
+        tx_id_val = (tx_data.get("transaction_pk") if tx_data else None) or booking_data.get("TransactionId") or booking_data.get("TranscationId")
+        has_tx = tx_id_val and str(tx_id_val).strip() not in ("", "0", "None", "null")
+        if has_tx or session_type != "Cancelled":
+            attribution = "UNCLASSIFIED / NOISE"
+            root_cause = "Can't be specified by the logs"
+            confidence = "Medium (60%)"
+            detected_field = f"Transaction #{tx_id_val or 'Active'} Started (No Telemetry Logs Recorded)"
+            error_location = "GetOcppLogs (No Records)"
+            error_value = "NoLogs"
+            narrative = (
+                f"Transaction was initiated, but no raw OCPP telemetry messages were recorded for charger "
+                f"'{charger_code}' around this session timestamp."
+            )
+            action_item = "Inspect full charger raw OCPP logs via the CMS logs viewer."
+        else:
+            attribution = "USER / OPERATOR ACTION"
+            root_cause = "Gun Not Connected / User Did Not Connect in Time"
+            confidence = "High (90%)"
+            detected_field = "No Telemetry Logs Recorded"
+            error_location = "GetOcppLogs (No Records)"
+            error_value = "NoLogs"
+            narrative = (
+                f"There are no OCPP telemetry messages recorded for charger '{charger_code}' around this booking's timestamp. "
+                f"The user created a booking or scanned QR, but never physically plugged the connector into the vehicle, "
+                f"causing the booking reservation to automatically expire and cancel."
+            )
+            action_item = "Advise driver that bookings expire if connector gun is not plugged into the vehicle within 5 minutes."
 
     else:
         attribution = "UNCLASSIFIED / NOISE"
@@ -964,7 +1353,12 @@ def generate_descriptive_rca(
         error_location = "OCPP Event Stream"
         error_value = "-"
         narrative = "The logs do not contain conclusive error codes or stop reasons. Further manual inspection of station raw logs is advised."
-        action_item = "Inspect full charger raw OCPP logs via the CMS logs viewer."
+    # Enforce: "Gun Not Connected" can NEVER be the root cause if transaction ID exists or session was not cancelled
+    tx_id_val = (tx_data.get("transaction_pk") if tx_data else None) or booking_data.get("TransactionId") or booking_data.get("TranscationId")
+    has_tx = tx_id_val and str(tx_id_val).strip() not in ("", "0", "None", "null")
+    if (has_tx or session_type != "Cancelled") and "gun not connected" in root_cause.lower():
+        root_cause = "Can't be specified by the logs"
+        attribution = "UNCLASSIFIED / NOISE"
 
     return {
         "attribution": attribution,
@@ -989,10 +1383,10 @@ def clear_investigation_cache() -> None:
     _INVESTIGATION_CACHE.clear()
 
 
-def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "") -> dict:
+def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "", party_id: str = "ELC") -> dict:
     """
-    Main entry point: searches for a booking ID in ElectreeFi CMS with maximum efficiency,
-    reaching the desired result in the least amount of hits possible.
+    Main entry point: searches for a booking ID in the target CMS (ElectreeFi, IOCL, etc.)
+    with maximum efficiency, reaching the desired result in the least amount of hits possible.
     Bypasses transaction lookups for Cancelled bookings and caches results for zero-latency retrieval.
     """
     import time
@@ -1002,10 +1396,16 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
     if not clean_id:
         return {"success": False, "message": "Booking ID is required."}
 
+    pid = (party_id or "ELC").strip().upper()
+    if pid in ("IOCL", "INDIANOIL"):
+        pid = "IOC"
+
+    cache_key = f"{pid}:{clean_id}"
+
     # 1. Check in-memory cache first (0 hits, 0.1ms)
     now_ts = time.time()
-    if clean_id in _INVESTIGATION_CACHE:
-        cached_entry, cached_at = _INVESTIGATION_CACHE[clean_id]
+    if cache_key in _INVESTIGATION_CACHE:
+        cached_entry, cached_at = _INVESTIGATION_CACHE[cache_key]
         if (now_ts - cached_at) < 300:  # 5 min TTL
             cached_copy = json.loads(json.dumps(cached_entry))
             cached_copy["cached"] = True
@@ -1013,9 +1413,22 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
             cached_copy["hits_count"] = 0
             return cached_copy
 
-    cookie_header = get_cookie_header()
+    portal_cfg = get_party_config(pid)
+    portal_url = portal_cfg.get("portal_url") or ("https://indianoilecharge.in" if pid == "IOC" else "https://emonitoring.electreefi.com")
+    cookie_header = get_party_cookie_header(pid)
+
     if not cookie_header:
-        return {"success": False, "message": "No active session found. Please run login first."}
+        party_label = portal_cfg.get("name", pid)
+        username_hint = portal_cfg.get("username", "")
+        return {
+            "success": False,
+            "found": False,
+            "auth_required": True,
+            "party": pid,
+            "portal_url": portal_url,
+            "username": username_hint,
+            "message": f"No active {party_label} session found or session has expired. Please authenticate via the '{party_label} Login' button (Username: {username_hint})."
+        }
 
     today_str = datetime.now().strftime("%Y-%m-%d")
     s_date = start_date.strip() if start_date and start_date.strip() else "2024-01-01"
@@ -1023,15 +1436,15 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
 
     total_hits = 0
 
-    # 2. Search in Cancelled Bookings (Hit 1: Unconstrained index search covers full history in 250ms)
-    booking_record, c_hits = fetch_cancelled_booking(clean_id, "", "", cookie_header)
+    # 2. Search in Cancelled Bookings (Hit 1: search with default/provided dates)
+    booking_record, c_hits = fetch_cancelled_booking(clean_id, s_date, e_date, cookie_header, base_url=portal_url)
     total_hits += c_hits
     session_type = "Cancelled"
     tx_record = None
 
     # 3. If not found in Cancelled, search in Completed (<1kW) Bookings (Hit 2)
     if not booking_record:
-        booking_record, comp_hits = fetch_completed_booking(clean_id, "", "", cookie_header)
+        booking_record, comp_hits = fetch_completed_booking(clean_id, s_date, e_date, cookie_header, base_url=portal_url)
         total_hits += comp_hits
         if booking_record:
             session_type = "Completed (<1kWh)"
@@ -1040,31 +1453,64 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
             b_in_dt_temp = parse_flexible_dt(t_str)
             target_date = b_in_dt_temp.strftime("%Y-%m-%d") if b_in_dt_temp else s_date
             # For Completed bookings only: query transaction record (Hit 3)
-            tx_record, tx_hits = fetch_ocpp_transaction(clean_id, target_date, target_date, cookie_header)
+            tx_record, tx_hits = fetch_ocpp_transaction(clean_id, target_date, target_date, cookie_header, base_url=portal_url)
             total_hits += tx_hits
+            if not tx_record:
+                tx_id_cand = booking_record.get("TransactionId") or booking_record.get("TranscationId") or booking_record.get("TxnId")
+                if tx_id_cand and str(tx_id_cand).strip().isdigit() and int(str(tx_id_cand).strip()) > 0:
+                    tx_record = {
+                        "transaction_pk": int(str(tx_id_cand).strip()),
+                        "connector_pk": booking_record.get("ConnectorId") or 1,
+                        "id_tag": booking_record.get("IdTag") or booking_record.get("Id_Tag") or "-",
+                        "start_timestamp_string": booking_record.get("BookingInTime") or "-",
+                        "stop_timestamp_string": booking_record.get("ChargingCompletionTime") or booking_record.get("BookingOutTime") or "-",
+                        "stop_reason": booking_record.get("StopReason") or "-",
+                        "ResponseMessage": booking_record.get("StopTriggerMessage") or "-",
+                        "EnergyConsumed": booking_record.get("EnergyConsumed_indecimal") or booking_record.get("EnergyConsumed") or "0"
+                    }
 
     # 4. If still not found, search in Roaming OCPI Reservation Endpoint (Hit 3)
     if not booking_record:
-        booking_record, roam_hits = fetch_roaming_booking(clean_id, cookie_header)
+        booking_record, roam_hits = fetch_roaming_booking(clean_id, cookie_header, base_url=portal_url)
         total_hits += roam_hits
         if booking_record:
             session_type = booking_record.get("_SessionType", "Roaming Session")
 
     # 4b. If still not found, search in Roaming OCPI Cancelled Reservations (Hit 4)
     if not booking_record:
-        booking_record, ocpi_c_hits = fetch_ocpi_cancelled_reservation(clean_id, cookie_header)
+        booking_record, ocpi_c_hits = fetch_ocpi_cancelled_reservation(clean_id, cookie_header, base_url=portal_url)
         total_hits += ocpi_c_hits
         if booking_record:
             session_type = booking_record.get("_SessionType", "Cancelled (OCPI Roaming)")
 
     if not booking_record:
+        # Check if the session is actually expired/invalid
+        s_status = check_party_session_status(pid)
+        if not s_status.get("is_valid", False):
+            party_name = portal_cfg.get("name", pid)
+            username_hint = portal_cfg.get("username", "")
+            return {
+                "success": False,
+                "found": False,
+                "auth_required": True,
+                "party": pid,
+                "party_name": party_name,
+                "portal_url": portal_url,
+                "username": username_hint,
+                "message": f"Your {party_name} CMS session token is expired or inactive. Please click 'Authenticate {party_name}' to log into {portal_url} (Username: {username_hint}) and refresh session cookies."
+            }
+
+        party_name = portal_cfg.get("name", pid)
         return {
             "success": False,
             "found": False,
+            "party": pid,
+            "party_name": party_name,
+            "portal_url": portal_url,
             "hits_count": total_hits,
             "latency_ms": round((time.perf_counter() - t0) * 1000, 1),
             "cached": False,
-            "message": f"Booking ID '{clean_id}' was not found in Cancelled, Completed (<1kWh), or Roaming records between {s_date} and {e_date}. Try expanding the date range."
+            "message": f"Booking ID '{clean_id}' was not found in {party_name} Cancelled, Completed (<1kWh), or Roaming records between {s_date} and {e_date}. Try expanding the date range."
         }
 
     # 5. Fetch OCPP logs strictly bounded to the session lifecycle (Hit 2 or 3)
@@ -1072,9 +1518,9 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
     out_str = booking_record.get("BookingOutTime")
     b_in_dt = parse_flexible_dt(t_str) or datetime.now()
     b_out_dt = parse_flexible_dt(out_str)
-    ch_id = booking_record.get("ChargingStationChargerId")
+    ch_id = booking_record.get("ChargingStationChargerId") or booking_record.get("ChargerCode")
 
-    logs = fetch_ocpp_logs_for_booking(ch_id, b_in_dt, b_out_dt, cookie_header=cookie_header)
+    logs = fetch_ocpp_logs_for_booking(ch_id, b_in_dt, b_out_dt, cookie_header=cookie_header, base_url=portal_url, party_id=pid)
     total_hits += 1
 
     # 6. Run descriptive RCA engine (0 hits - purely deterministic in-memory synthesis)
@@ -1109,6 +1555,9 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
 
     formatted_booking = {
         "booking_id": clean_id,
+        "party": pid,
+        "party_name": portal_cfg.get("name", pid),
+        "portal_url": portal_url,
         "session_type": session_type,
         "station_name": booking_record.get("ChargingStationName") or booking_record.get("StationName") or "Unknown Station",
         "station_address": booking_record.get("ChargingStationAddress") or "",
@@ -1176,6 +1625,9 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
     result_payload = {
         "success": True,
         "found": True,
+        "party": pid,
+        "party_name": portal_cfg.get("name", pid),
+        "portal_url": portal_url,
         "booking": formatted_booking,
         "transaction": formatted_tx,
         "rca": rca_analysis,
@@ -1187,6 +1639,11 @@ def investigate_booking(booking_id: str, start_date: str = "", end_date: str = "
     }
 
     # Cache result
-    _INVESTIGATION_CACHE[clean_id] = (result_payload, time.time())
+    _INVESTIGATION_CACHE[cache_key] = (result_payload, time.time())
 
     return result_payload
+
+
+def investigate_iocl_booking(booking_id: str, start_date: str = "", end_date: str = "") -> dict:
+    """Convenience wrapper specifically for IndianOil e-Charge (IOCL) single booking RCA."""
+    return investigate_booking(booking_id, start_date=start_date, end_date=end_date, party_id="IOC")

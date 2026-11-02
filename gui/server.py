@@ -599,6 +599,20 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(files_data).encode("utf-8"))
             return
 
+        elif path == "/api/iocl/session-status":
+            if str(BASE_DIR) not in sys.path:
+                sys.path.insert(0, str(BASE_DIR))
+            from src.rca.booking_inspector import check_party_session_status
+            status_data = check_party_session_status("IOC")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(status_data).encode("utf-8"))
+            return
+
+
+
         elif path == "/api/partner-portals":
             portals_file = BASE_DIR / "data" / "partner_portals.json"
             data = {}
@@ -642,11 +656,41 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
 
 
 
+        elif path == "/api/energy/status":
+            if str(BASE_DIR) not in sys.path:
+                sys.path.insert(0, str(BASE_DIR))
+            from src.rca.booking_inspector import check_party_session_status
+            status_ioc = check_party_session_status("IOC")
+            status_elc = check_party_session_status("ELC")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ioc": status_ioc, "elc": status_elc}).encode("utf-8"))
+            return
+
+        elif path == "/api/energy/vehicle-models":
+            if str(BASE_DIR) not in sys.path:
+                sys.path.insert(0, str(BASE_DIR))
+            from src.rca.energy_anomaly_detector import KNOWN_VEHICLE_BATTERIES
+            models_list = [
+                {"id": k, "name": v["name"], "capacity_kwh": v["capacity_kwh"], "max_dc_kw": v["max_dc_kw"]}
+                for k, v in KNOWN_VEHICLE_BATTERIES.items()
+            ]
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({"vehicles": models_list}).encode("utf-8"))
+            return
+
         # Serve UI static index.html on root
         if path in ["", "/"]:
             self.path = "/index.html"
 
         return super().do_GET()
+
+
 
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -736,26 +780,24 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
         elif path == "/api/search-booking":
             if str(BASE_DIR) not in sys.path:
                 sys.path.insert(0, str(BASE_DIR))
-            from src.rca.booking_inspector import investigate_booking
+            from src.rca.booking_inspector import investigate_booking, clear_investigation_cache
 
             booking_id = str(payload.get("booking_id", "")).strip()
-            start_date = str(payload.get("start_date", "")).strip()
-            end_date = str(payload.get("end_date", "")).strip()
-
             start_date = payload.get("start_date") or None
             end_date = payload.get("end_date") or None
+            party_id = str(payload.get("party_id", "ELC")).strip()
+            bypass_cache = bool(payload.get("bypass_cache", False))
+
+            if bypass_cache:
+                clear_investigation_cache()
 
             try:
-                if start_date and end_date:
-                    result = investigate_booking(booking_id, start_date=start_date, end_date=end_date)
-                elif start_date:
-                    result = investigate_booking(booking_id, start_date=start_date)
-                else:
-                    result = investigate_booking(booking_id)
+                result = investigate_booking(booking_id, start_date=start_date or "", end_date=end_date or "", party_id=party_id)
             except Exception as e:
                 result = {
                     "success": False,
                     "found": False,
+                    "party": party_id,
                     "message": f"Server error during investigation: {str(e)}"
                 }
 
@@ -764,6 +806,67 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(json.dumps(result).encode("utf-8"))
+            return
+
+        elif path == "/api/iocl/search-booking":
+            if str(BASE_DIR) not in sys.path:
+                sys.path.insert(0, str(BASE_DIR))
+            from src.rca.booking_inspector import investigate_booking, clear_investigation_cache
+
+            booking_id = str(payload.get("booking_id", "")).strip()
+            start_date = payload.get("start_date") or None
+            end_date = payload.get("end_date") or None
+            bypass_cache = bool(payload.get("bypass_cache", False))
+
+            if bypass_cache:
+                clear_investigation_cache()
+
+            try:
+                result = investigate_booking(booking_id, start_date=start_date or "", end_date=end_date or "", party_id="IOC")
+            except Exception as e:
+                result = {
+                    "success": False,
+                    "found": False,
+                    "party": "IOC",
+                    "party_name": "IndianOil e-Charge (IOCL)",
+                    "message": f"Server error during IOCL investigation: {str(e)}"
+                }
+
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode("utf-8"))
+            return
+
+        elif path == "/api/iocl/trigger-login":
+            try:
+                if str(BASE_DIR) not in sys.path:
+                    sys.path.insert(0, str(BASE_DIR))
+                from src.rca.booking_inspector import login_iocl_direct
+                direct_res = login_iocl_direct()
+                if direct_res.get("success"):
+                    success = True
+                    msg = direct_res.get("message", "IndianOil e-Charge session authenticated & refreshed successfully!")
+                else:
+                    bat_file = BASE_DIR / "login_IOC.bat"
+                    if bat_file.exists():
+                        os.startfile(str(bat_file))
+                    else:
+                        cmd = [PYTHON_EXE, "-m", "src.auth.session_manager", "--party", "IOC", "--force"]
+                        creation_flags = subprocess.CREATE_NEW_CONSOLE if sys.platform == "win32" else 0
+                        subprocess.Popen(cmd, cwd=str(BASE_DIR), creationflags=creation_flags)
+                    success = True
+                    msg = "Launched IndianOil e-Charge (IOCL) login window."
+            except Exception as e:
+                success = False
+                msg = f"Failed to launch IOCL login: {str(e)}"
+
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": success, "message": msg}).encode("utf-8"))
             return
 
         elif path == "/api/chat-telemetry":
@@ -882,6 +985,8 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": False, "message": f"Upload processing error: {str(e)}"}).encode("utf-8"))
                 return
 
+
+
         elif path == "/api/partner-portals":
             try:
                 portals_data = payload.get("portals", {})
@@ -912,6 +1017,9 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"success": success, "message": message}).encode("utf-8"))
             return
 
+
+
+
         elif path == "/api/login-partner":
             party_id = payload.get("party_id", "IOC").strip().upper()
             bat_file = BASE_DIR / f"login_{party_id}.bat"
@@ -935,6 +1043,89 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"success": False, "message": str(e)}).encode("utf-8"))
                 return
+
+        elif path == "/api/energy/transactions":
+            if str(BASE_DIR) not in sys.path:
+                sys.path.insert(0, str(BASE_DIR))
+            from src.rca.energy_anomaly_detector import fetch_ocpp_transactions
+            party = payload.get("party_id", "IOC")
+            s_date = payload.get("start_date")
+            e_date = payload.get("end_date")
+            tx_type = payload.get("tx_type", "2")
+            page = int(payload.get("page", 1))
+            page_size = int(payload.get("page_size", 30))
+            f_query = payload.get("filter", "")
+            res = fetch_ocpp_transactions(
+                party_id=party,
+                start_date=s_date,
+                end_date=e_date,
+                tx_type=tx_type,
+                page=page,
+                page_size=page_size,
+                filter_query=f_query
+            )
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+            return
+
+        elif path == "/api/energy/analyze":
+            if str(BASE_DIR) not in sys.path:
+                sys.path.insert(0, str(BASE_DIR))
+            from src.rca.energy_anomaly_detector import analyze_transaction_energy
+            party = payload.get("party_id", "IOC")
+            tx_id = str(payload.get("transaction_id", "")).strip()
+            charger_code = payload.get("charger_code")
+            charger_id = payload.get("charger_id")
+            s_time = payload.get("start_time")
+            stop_time = payload.get("stop_time")
+            v_model = payload.get("vehicle_model")
+            custom_kwh = payload.get("custom_battery_kwh")
+            if custom_kwh:
+                try:
+                    custom_kwh = float(custom_kwh)
+                except ValueError:
+                    custom_kwh = None
+
+            res = analyze_transaction_energy(
+                party_id=party,
+                transaction_id=tx_id,
+                charger_code=charger_code,
+                charger_id=charger_id,
+                start_time=s_time,
+                stop_time=stop_time,
+                vehicle_model_hint=v_model,
+                custom_battery_kwh=custom_kwh
+            )
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+            return
+
+        elif path == "/api/energy/scan":
+            if str(BASE_DIR) not in sys.path:
+                sys.path.insert(0, str(BASE_DIR))
+            from src.rca.energy_anomaly_detector import batch_scan_transactions
+            party = payload.get("party_id", "IOC")
+            s_date = payload.get("start_date")
+            e_date = payload.get("end_date")
+            limit = int(payload.get("limit", 20))
+            res = batch_scan_transactions(
+                party_id=party,
+                start_date=s_date,
+                end_date=e_date,
+                limit=limit
+            )
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+            return
 
         self.send_error(HTTPStatus.NOT_FOUND, "API endpoint not found")
 

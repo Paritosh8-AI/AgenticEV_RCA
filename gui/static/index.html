@@ -2333,6 +2333,18 @@
         Booking RCA Deep Dive
       </div>
 
+      <div class="nav-item featured" style="background: rgba(234, 88, 12, 0.12); color: #fb923c; border-left: 3.5px solid #ea580c;" onclick="switchTab('iocl_search')">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.527.82-1.124 1.905-1.55 3.003-.855 2.2-1.073 4.223-.526 5.892.42 1.282 1.183 2.308 2.072 2.955.882.64 1.916.902 2.881.705 1.053-.214 2.01-.88 2.656-1.83.636-.935.89-2.074.757-3.23-.274-2.38-1.745-4.542-2.92-6.195a28.02 28.02 0 00-1.098-1.395zm-6.236 6.78c-.282.89-.374 1.83-.243 2.766.198 1.417.92 2.673 1.942 3.498.995.803 2.196 1.134 3.328.948.336-.056.66-.15.967-.282-.544-.648-.948-1.457-1.157-2.38-.415-1.837-.156-3.834.72-5.617-1.127.327-2.148 1.052-2.825 2.062a5.53 5.53 0 00-.732 1.005z" clip-rule="evenodd"></path></svg>
+        IOCL Single Booking RCA
+        <span style="font-size: 9.5px; font-weight: 800; background: #ea580c; color: #fff; padding: 1px 6px; border-radius: 4px; margin-left: auto;">IOCL</span>
+      </div>
+
+      <div class="nav-item featured" id="nav-energy-spikes" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; border-left: 3.5px solid #0284c7;" onclick="switchTab('energy_spikes')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        Energy Spike &amp; Consumption RCA
+      </div>
+
+
       <div class="nav-section-label">Automations &amp; Pipelines</div>
       <div class="nav-item active" onclick="switchTab('pipelines')">
         <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
@@ -2465,6 +2477,17 @@
             <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
             Booking RCA Deep Dive
           </button>
+          <button class="cms-tab-btn featured-tab" data-tab="iocl_search" onclick="switchTab('iocl_search')" style="color: #ea580c; background: rgba(234, 88, 12, 0.08); border: 1px solid rgba(234, 88, 12, 0.28);">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.527.82-1.124 1.905-1.55 3.003-.855 2.2-1.073 4.223-.526 5.892.42 1.282 1.183 2.308 2.072 2.955.882.64 1.916.902 2.881.705 1.053-.214 2.01-.88 2.656-1.83.636-.935.89-2.074.757-3.23-.274-2.38-1.745-4.542-2.92-6.195a28.02 28.02 0 00-1.098-1.395zm-6.236 6.78c-.282.89-.374 1.83-.243 2.766.198 1.417.92 2.673 1.942 3.498.995.803 2.196 1.134 3.328.948.336-.056.66-.15.967-.282-.544-.648-.948-1.457-1.157-2.38-.415-1.837-.156-3.834.72-5.617-1.127.327-2.148 1.052-2.825 2.062a5.53 5.53 0 00-.732 1.005z" clip-rule="evenodd"></path></svg>
+            IOCL Booking RCA
+            <span class="tab-counter" style="background: #ea580c; color: #ffffff;">IOCL</span>
+          </button>
+
+          <button class="cms-tab-btn featured-tab" data-tab="energy_spikes" onclick="switchTab('energy_spikes')" style="color: #0284c7; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.28);">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            ⚡ Energy Spikes &amp; Consumption
+          </button>
+
           <button class="cms-tab-btn active" data-tab="pipelines" onclick="switchTab('pipelines')">
             <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
             Complete Pipelines
@@ -2601,6 +2624,132 @@
         </div>
       </div>
 
+      <!-- ======================================================== -->
+      <!-- TAB: IOCL SINGLE BOOKING RCA DEEP DIVE                   -->
+      <!-- ======================================================== -->
+      <div class="tab-pane" id="pane-iocl_search">
+        <div class="section-banner" style="border-left: 5px solid #ea580c; background: linear-gradient(135deg, rgba(234, 88, 12, 0.08) 0%, rgba(30, 58, 138, 0.05) 100%); border-color: rgba(234, 88, 12, 0.25);">
+          <div>
+            <div class="banner-title" style="color: #c2410c;">
+              <svg width="22" height="22" fill="#ea580c" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.527.82-1.124 1.905-1.55 3.003-.855 2.2-1.073 4.223-.526 5.892.42 1.282 1.183 2.308 2.072 2.955.882.64 1.916.902 2.881.705 1.053-.214 2.01-.88 2.656-1.83.636-.935.89-2.074.757-3.23-.274-2.38-1.745-4.542-2.92-6.195a28.02 28.02 0 00-1.098-1.395zm-6.236 6.78c-.282.89-.374 1.83-.243 2.766.198 1.417.92 2.673 1.942 3.498.995.803 2.196 1.134 3.328.948.336-.056.66-.15.967-.282-.544-.648-.948-1.457-1.157-2.38-.415-1.837-.156-3.834.72-5.617-1.127.327-2.148 1.052-2.825 2.062a5.53 5.53 0 00-.732 1.005z" clip-rule="evenodd"></path></svg>
+              IndianOil e-Charge (IOCL) &mdash; Single Booking RCA &amp; Telemetry Investigator
+              <span style="font-size: 11px; font-weight: 800; background: #ea580c; color: #ffffff; padding: 3px 8px; border-radius: 4px; vertical-align: middle; margin-left: 8px;">IOCL CPO</span>
+            </div>
+            <div class="banner-desc" style="color: #475569;">
+              Dedicated root cause investigation engine for <strong>IndianOil e-Charge CMS</strong> (<code>https://indianoilecharge.in</code>). Inspects Cancelled bookings or Completed sessions under 1 kW, resolves IOCL charger codes, matches central OCPP transactions, extracts raw charger logs, and generates descriptive fault attribution.
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+            <a href="https://indianoilecharge.in" target="_blank" class="btn-secondary" style="font-size: 12px; display: inline-flex; align-items: center; gap: 6px; border-color: #fdba74; color: #c2410c;">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+              Open indianoilecharge.in
+            </a>
+            <span style="font-size: 11px; color: #64748b;">Account: <strong>Saurabhiocl</strong></span>
+          </div>
+        </div>
+
+        <!-- IOCL SESSION AUTHENTICATION STATUS STRIP -->
+        <div style="display: flex; align-items: center; justify-content: space-between; background: #fff7ed; border: 1px solid #fed7aa; border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #94a3b8;" id="ioclSessionDot"></div>
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: #9a3412;" id="ioclSessionStatusText">Checking IOCL Portal Session...</div>
+              <div style="font-size: 11.5px; color: #7c2d12;" id="ioclSessionMeta">Endpoint: https://indianoilecharge.in &bull; User: Saurabhiocl</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="checkIoclSessionStatus(true)">
+              Verify Auth
+            </button>
+            <button type="button" class="btn-primary" style="background: #ea580c; border: 1px solid #c2410c; padding: 6px 14px; font-size: 12px; color: #fff; font-weight: 700;" onclick="triggerIoclLogin()">
+              <svg width="13" height="13" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              Authenticate IOCL (Open Browser)
+            </button>
+          </div>
+        </div>
+
+        <!-- SEARCH CONTROLS CARD -->
+        <div class="search-control-card" style="border-top: 3px solid #ea580c;">
+          <div class="search-inputs-row">
+            <!-- IOCL Booking ID Input -->
+            <div class="booking-id-group">
+              <label class="input-label" for="ioclBookingIdInput">IOCL Booking ID (Cancelled or &lt; 1 kWh)</label>
+              <div class="booking-input-wrapper">
+                <svg fill="#ea580c" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+                <input 
+                  type="text" 
+                  id="ioclBookingIdInput" 
+                  class="booking-text-input" 
+                  placeholder="Enter IOCL Booking ID (e.g. 159850, 139660, 148831, 155331)..."
+                  onkeydown="if(event.key==='Enter') executeIoclBookingSearch()"
+                />
+              </div>
+            </div>
+
+            <!-- IOCL Date Range Picker Button & Dropdown -->
+            <div class="daterange-picker-group">
+              <label class="input-label">Date Range (IOCL Charging Filter)</label>
+              <button type="button" class="daterange-btn" id="ioclDaterange-btn" onclick="toggleIoclDateRangeDropdown()">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  <span id="ioclDateRangeDisplay">Last 30 Days</span>
+                </div>
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+              </button>
+
+              <div class="daterange-dropdown-menu" id="ioclDaterangeDropdown">
+                <div class="preset-list">
+                  <div class="preset-item" onclick="selectIoclDatePreset('today')">Today</div>
+                  <div class="preset-item" onclick="selectIoclDatePreset('yesterday')">Yesterday</div>
+                  <div class="preset-item" onclick="selectIoclDatePreset('last7')">Last 7 Days</div>
+                  <div class="preset-item" onclick="selectIoclDatePreset('last15')">Last 15 Days</div>
+                  <div class="preset-item active" onclick="selectIoclDatePreset('last30')">Last 30 Days</div>
+                  <div class="preset-item" onclick="selectIoclDatePreset('thisMonth')">This Month</div>
+                  <div class="preset-item" onclick="selectIoclDatePreset('lastMonth')">Last Month</div>
+                  <div class="preset-item" onclick="selectIoclDatePreset('custom')">Custom Range</div>
+                </div>
+
+                <div class="custom-range-inputs" id="ioclCustomDateInputs" style="display: none;">
+                  <div class="date-input-row">
+                    <input type="date" id="ioclCustomStartDate" class="date-input-field" />
+                    <span style="font-size: 11px; color: #94a3b8;">to</span>
+                    <input type="date" id="ioclCustomEndDate" class="date-input-field" />
+                  </div>
+                  <button type="button" class="btn-primary" style="padding: 6px; font-size: 12px; background: #ea580c;" onclick="applyIoclCustomRange()">
+                    Apply Custom Range
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Primary Search Button -->
+            <button class="search-btn-action" id="ioclSearchSubmitBtn" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);" onclick="executeIoclBookingSearch()">
+              <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              Investigate IOCL Booking RCA
+            </button>
+          </div>
+
+          <!-- Quick Test Pills for IOCL -->
+          <div class="sample-ids-row">
+            <span style="color: #ea580c; font-weight: 700;">Sample IOCL Bookings:</span>
+            <span class="sample-pill" onclick="setQuickIoclBooking('159850')">#159850 (SHAHEED BHIM SINGH - IOCLHRDC7953)</span>
+            <span class="sample-pill" onclick="setQuickIoclBooking('139660')">#139660 (A SQUARE WHEELS - IOCLHRDC7859)</span>
+            <span class="sample-pill" onclick="setQuickIoclBooking('148831')">#148831 (A.S.T. AGENCIES - IOCLTNDC1249)</span>
+            <span class="sample-pill" onclick="setQuickIoclBooking('155331')">#155331 (Abhijit Filling - IOCLMHDC7611)</span>
+            <span class="sample-pill" onclick="setQuickIoclBooking('151503')">#151503 (Tata Nexon - IOCL Roaming)</span>
+          </div>
+        </div>
+
+        <!-- SEARCH RESULTS CONTAINER -->
+        <div id="ioclInvestigationOutputArea">
+          <div class="empty-search-state" style="border: 2px dashed #fed7aa; background: #fffaf5;">
+            <svg fill="none" stroke="#ea580c" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <div style="font-size: 15px; font-weight: 700; color: #9a3412;">No IOCL Booking Investigated Yet</div>
+            <div style="font-size: 13px; max-width: 540px; color: #7c2d12;">Enter any Cancelled or Completed (&lt;1 kW) booking ID from IndianOil e-Charge CMS to extract telemetry, match central transactions, and perform deterministic fault attribution.</div>
+          </div>
+        </div>
+      </div>
+
       <!-- TAB 1: COMPLETE PIPELINES -->
       <div class="tab-pane active" id="pane-pipelines">
         <div class="section-banner">
@@ -2716,6 +2865,168 @@
           </div>
         </div>
       </div>
+
+      
+      <!-- TAB: ENERGY CONSUMPTION & SPIKE RCA -->
+      <div class="tab-pane" id="pane-energy_spikes">
+        <div class="section-banner" style="border-left: 5px solid #0284c7; background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(30, 58, 138, 0.05) 100%); border-color: rgba(14, 165, 233, 0.25);">
+          <div>
+            <div class="banner-title" style="color: #0369a1;">
+              <svg width="22" height="22" fill="none" stroke="#0284c7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Unusual Energy Consumption &amp; Meter Spike RCA Studio
+              <span style="font-size: 11px; font-weight: 800; background: #0284c7; color: #ffffff; padding: 3px 8px; border-radius: 4px; vertical-align: middle; margin-left: 8px;">MULTI-CPO TELEMETRY</span>
+            </div>
+            <div class="banner-desc" style="color: #475569;">
+              Intelligent physics-grounded diagnostic engine for detecting <strong>impossible power surges (kW)</strong>, <strong>Modbus CT bitflips</strong>, <strong>EV battery pack overruns</strong>, and <strong>meter counter rollbacks</strong> across <strong>IndianOil e-Charge</strong> and <strong>ElectreeFi CMS</strong> transactions.
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+            <div style="display: flex; gap: 8px;">
+              <a href="https://indianoilecharge.in" target="_blank" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; border-color: #fdba74; color: #c2410c;">Open IOCL Portal</a>
+              <a href="https://emonitoring.electreefi.com" target="_blank" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; border-color: #86efac; color: #15803d;">Open ElectreeFi Portal</a>
+            </div>
+            <span style="font-size: 11px; color: #64748b;">Grounding: <strong>Charger Rating + Connector Limits + EV Battery Size</strong></span>
+          </div>
+        </div>
+
+        <!-- Portal & Session Switcher Card -->
+        <div class="card" style="margin-bottom: 20px; border-color: #e2e8f0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 13px; font-weight: 700; color: #334155;">Active Portal:</span>
+              <button id="btnPortalIocl" onclick="setEnergyPortal('IOC')" style="padding: 6px 14px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1.5px solid #ea580c; background: #fff7ed; color: #c2410c; display: inline-flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ea580c; display: inline-block;"></span>
+                IndianOil (IOCL)
+              </button>
+              <button id="btnPortalElc" onclick="setEnergyPortal('ELC')" style="padding: 6px 14px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1.5px solid #cbd5e1; background: #f8fafc; color: #64748b; display: inline-flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; display: inline-block;"></span>
+                ElectreeFi Depot CMS
+              </button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div id="energySessionBadge" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 6px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+                <span id="energySessionText">Checking Session...</span>
+              </div>
+              <button class="btn-secondary" onclick="checkEnergySession()" style="font-size: 11px; padding: 4px 8px;">Verify Auth</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Investigation Modes & Search Controls -->
+        <div class="card" style="margin-bottom: 24px; border-color: #bae6fd; background: #f0f9ff;">
+          <div style="display: flex; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid #e0f2fe; padding-bottom: 12px;">
+            <button id="tabModeSingle" onclick="setEnergyMode('single')" style="padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer; border: none; background: #0284c7; color: #ffffff;">
+              🔍 Single Transaction Deep Dive
+            </button>
+            <button id="tabModeBatch" onclick="setEnergyMode('batch')" style="padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1px solid #cbd5e1; background: #ffffff; color: #475569;">
+              ⚡ Scan Transactions for Spikes
+            </button>
+          </div>
+
+          <!-- Mode 1: Single Transaction Input -->
+          <div id="sectionModeSingle">
+            <div style="display: grid; grid-template-columns: 1.5fr 2fr 1fr auto; gap: 12px; align-items: flex-end;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 700; color: #0369a1; margin-bottom: 4px;">
+                  OCPP Transaction ID
+                </label>
+                <input type="text" id="energyTxIdInput" placeholder="e.g. 743629" style="width: 100%; padding: 8px 12px; font-size: 14px; font-weight: 600; border: 1.5px solid #0284c7; border-radius: 6px; outline: none; background: #ffffff;" value="743629" onkeydown="if(event.key==='Enter') runEnergyInvestigation()">
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 700; color: #0369a1; margin-bottom: 4px;">
+                  Vehicle Model (Battery Grounding)
+                </label>
+                <select id="energyVehicleSelect" style="width: 100%; padding: 8px 10px; font-size: 13px; font-weight: 500; border: 1.5px solid #93c5fd; border-radius: 6px; outline: none; background: #ffffff;">
+                  <option value="tata nexon ev max">Tata Nexon EV Max (40.5 kWh / 50 kW Max DC)</option>
+                  <option value="tata tiago ev">Tata Tiago EV (24.0 kWh / 25 kW Max DC)</option>
+                  <option value="tata punch ev">Tata Punch EV LR (35.0 kWh / 35 kW Max DC)</option>
+                  <option value="tata curvv ev">Tata Curvv EV (55.0 kWh / 70 kW Max DC)</option>
+                  <option value="mg zs ev">MG ZS EV (50.3 kWh / 80 kW Max DC)</option>
+                  <option value="mg windsor ev">MG Windsor EV (38.0 kWh / 45 kW Max DC)</option>
+                  <option value="byd atto 3">BYD Atto 3 (60.5 kWh / 80 kW Max DC)</option>
+                  <option value="mahindra xev 9e">Mahindra XEV 9e (79.0 kWh / 175 kW Max DC)</option>
+                  <option value="mahindra xuv400">Mahindra XUV400 (39.4 kWh / 50 kW Max DC)</option>
+                  <option value="hyundai ioniq 5">Hyundai Ioniq 5 (72.6 kWh / 220 kW Max DC)</option>
+                  <option value="electric bus 300">Commercial Bus (300 kWh / 180 kW DC)</option>
+                  <option value="custom">Custom Pack Size...</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 700; color: #0369a1; margin-bottom: 4px;">
+                  Custom Pack (kWh)
+                </label>
+                <input type="number" id="energyCustomKwhInput" placeholder="Auto" style="width: 100%; padding: 8px 10px; font-size: 13px; border: 1.5px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
+              </div>
+
+              <div>
+                <button class="btn-primary" id="btnRunEnergyAnalysis" onclick="runEnergyInvestigation()" style="background: #0284c7; border-color: #0284c7; padding: 9px 20px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  Investigate Consumption
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick sample buttons -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+              <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Sample Transactions:</span>
+              <button onclick="setSampleTx('743629', 'IOC', 'Tata Nexon EV Max')" class="btn-secondary" style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #ffffff;">#743629 (IOCLPBDC7784 - 120kW)</button>
+              <button onclick="setSampleTx('743743', 'IOC', 'Tata Punch EV')" class="btn-secondary" style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #ffffff;">#743743 (IOCLUPDC8410)</button>
+              <button onclick="setSampleTx('743729', 'IOC', 'Tata Tiago EV')" class="btn-secondary" style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #ffffff;">#743729 (IOCLRJDC7877)</button>
+              <button onclick="setSampleTx('11536783', 'ELC', 'Tata Nexon EV Max')" class="btn-secondary" style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #ffffff;">#11536783 (ElectreeFi ELC)</button>
+            </div>
+          </div>
+
+          <!-- Mode 2: Batch Transaction Scanner -->
+          <div id="sectionModeBatch" style="display: none;">
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 12px; align-items: flex-end;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 700; color: #0369a1; margin-bottom: 4px;">Date Range</label>
+                <select id="energyBatchRangeSelect" style="width: 100%; padding: 8px 10px; font-size: 13px; border: 1.5px solid #93c5fd; border-radius: 6px; background: #ffffff;">
+                  <option value="1">Last 24 Hours</option>
+                  <option value="3" selected>Last 3 Days</option>
+                  <option value="7">Last 7 Days</option>
+                  <option value="30">Last 30 Days</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 700; color: #0369a1; margin-bottom: 4px;">Max Scan Count</label>
+                <select id="energyBatchLimitSelect" style="width: 100%; padding: 8px 10px; font-size: 13px; border: 1.5px solid #93c5fd; border-radius: 6px; background: #ffffff;">
+                  <option value="10">10 Transactions</option>
+                  <option value="25" selected>25 Transactions</option>
+                  <option value="50">50 Transactions</option>
+                </select>
+              </div>
+              <div></div>
+              <div>
+                <button class="btn-primary" id="btnRunBatchScan" onclick="runBatchEnergyScan()" style="background: #0284c7; border-color: #0284c7; padding: 9px 20px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  Scan for Anomalies
+                </button>
+              </div>
+            </div>
+            <div id="batchScanProgressArea" style="margin-top: 12px; display: none;">
+              <div style="font-size: 12px; color: #0369a1; font-weight: 600;">Scanning OCPP transactions &amp; inspecting interval meter logs...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Container -->
+        <div id="energyAnalysisOutputArea">
+          <!-- Default Empty Prompt State -->
+          <div style="background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 10px; padding: 40px; text-align: center; color: #64748b;">
+            <svg width="44" height="44" fill="none" stroke="#94a3b8" viewBox="0 0 24 24" style="margin: 0 auto 12px auto; display: block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <div style="font-size: 16px; font-weight: 700; color: #334155; margin-bottom: 6px;">Ready to Analyze Unusual Energy Consumption</div>
+            <div style="font-size: 13px; max-width: 580px; margin: 0 auto;">
+              Enter any OCPP Transaction ID or click <strong>"Scan Transactions for Spikes"</strong> to calculate consecutive meter reading differences under <code>Energy.Active.Import.Register</code>, compute interval kW vs rated charger capacity, check EV battery limits, and view root cause attributions.
+            </div>
+          </div>
+        </div>
+      </div>
+
 
       <!-- TAB 2: REGULAR RCA TASKS -->
       <div class="tab-pane" id="pane-regular">
@@ -4014,6 +4325,658 @@ ${rca.action_item}
     
     /* ======================================================== */
     /* AI TELEMETRY COPILOT CLIENT LOGIC                        */
+    
+    /* ======================================================== */
+    /* IOCL SINGLE BOOKING RCA & TELEMETRY INVESTIGATOR LOGIC   */
+    /* ======================================================== */
+    let latestIoclInvestigationData = null;
+    let ioclDateRangeState = {
+      startDate: (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        return formatIsoDate(d);
+      })(),
+      endDate: formatIsoDate(new Date())
+    };
+
+    function selectIoclDatePreset(preset) {
+      const today = new Date();
+      let start, end;
+
+      if (preset === 'today') {
+        start = new Date(today);
+        end = new Date(today);
+      } else if (preset === 'yesterday') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 1);
+        end = new Date(start);
+      } else if (preset === 'last7') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 7);
+        end = new Date(today);
+      } else if (preset === 'last15') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 15);
+        end = new Date(today);
+      } else if (preset === 'last30') {
+        start = new Date(today);
+        start.setDate(today.getDate() - 30);
+        end = new Date(today);
+      } else if (preset === 'thisMonth') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today);
+      } else if (preset === 'lastMonth') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+      } else if (preset === 'custom') {
+        const inp = document.getElementById('ioclCustomDateInputs');
+        if (inp) inp.style.display = 'flex';
+        return;
+      }
+
+      const inp = document.getElementById('ioclCustomDateInputs');
+      if (inp) inp.style.display = 'none';
+
+      ioclDateRangeState.startDate = formatIsoDate(start);
+      ioclDateRangeState.endDate = formatIsoDate(end);
+
+      const disp = document.getElementById('ioclDateRangeDisplay');
+      if (disp) disp.textContent = `${formatDateDisplay(start)} - ${formatDateDisplay(end)}`;
+
+      document.querySelectorAll('#ioclDaterangeDropdown .preset-item').forEach(el => {
+        el.classList.toggle('active', el.textContent.toLowerCase().replace(/\s+/g, '') === preset.toLowerCase());
+      });
+
+      closeIoclDateRangeDropdown();
+    }
+
+    function toggleIoclDateRangeDropdown() {
+      const menu = document.getElementById('ioclDaterangeDropdown');
+      if (menu) menu.classList.toggle('show');
+    }
+
+    function closeIoclDateRangeDropdown() {
+      const menu = document.getElementById('ioclDaterangeDropdown');
+      if (menu) menu.classList.remove('show');
+    }
+
+    function applyIoclCustomRange() {
+      const s = document.getElementById('ioclCustomStartDate').value;
+      const e = document.getElementById('ioclCustomEndDate').value;
+      if (!s || !e) {
+        showToast('Please select both start and end dates', 'error');
+        return;
+      }
+      ioclDateRangeState.startDate = s;
+      ioclDateRangeState.endDate = e;
+      const dStart = new Date(s);
+      const dEnd = new Date(e);
+      const disp = document.getElementById('ioclDateRangeDisplay');
+      if (disp) disp.textContent = `${formatDateDisplay(dStart)} - ${formatDateDisplay(dEnd)}`;
+      closeIoclDateRangeDropdown();
+    }
+
+    // Close IOCL dropdown on click outside
+    window.addEventListener('click', (e) => {
+      const btn = document.getElementById('ioclDaterange-btn');
+      const menu = document.getElementById('ioclDaterangeDropdown');
+      if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+        closeIoclDateRangeDropdown();
+      }
+    });
+
+    function setQuickIoclBooking(id) {
+      const input = document.getElementById('ioclBookingIdInput');
+      if (input) {
+        input.value = id;
+        executeIoclBookingSearch();
+      }
+    }
+
+    async function checkIoclSessionStatus(showToastMsg = false) {
+      try {
+        const res = await fetch('/api/iocl/session-status');
+        const data = await res.json();
+        const dot = document.getElementById('ioclSessionDot');
+        const text = document.getElementById('ioclSessionStatusText');
+        const meta = document.getElementById('ioclSessionMeta');
+
+        if (dot && text && meta) {
+          if (data.is_valid) {
+            dot.style.background = '#10b981';
+            text.innerHTML = '<span style="color: #047857;">IOCL Portal Session Active & Verified</span>';
+            meta.textContent = `Portal: ${data.portal_url} • User: ${data.username} • Verified: ${data.modified || 'Just now'}`;
+            if (showToastMsg) showToast('IOCL Session is active and authenticated', 'success');
+          } else {
+            dot.style.background = '#ef4444';
+            text.innerHTML = '<span style="color: #b91c1c;">IOCL Session Inactive / Expired</span>';
+            meta.textContent = `Portal: ${data.portal_url} • Status: ${data.status_text} • Account: ${data.username}`;
+            if (showToastMsg) showToast('IOCL Session expired. Click Authenticate to log in.', 'error');
+          }
+        }
+      } catch (err) {
+        // quiet error
+      }
+    }
+
+    async function triggerIoclLogin() {
+      try {
+        showToast('Launching IndianOil e-Charge login window in Chrome/Edge...', 'info');
+        const res = await fetch('/api/iocl/trigger-login', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || 'Browser opened. Please solve the visual CAPTCHA to login.', 'success');
+          let attempts = 0;
+          const pollInterval = setInterval(async () => {
+            attempts++;
+            const sRes = await fetch('/api/iocl/session-status');
+            const sData = await sRes.json();
+            if (sData.is_valid) {
+              clearInterval(pollInterval);
+              checkIoclSessionStatus(true);
+              showToast('IOCL CMS Authentication successful! Ready to investigate.', 'success');
+            } else if (attempts > 30) {
+              clearInterval(pollInterval);
+            }
+          }, 3000);
+        } else {
+          showToast(`Could not launch login: ${data.message}`, 'error');
+        }
+      } catch (e) {
+        showToast(`Login request failed: ${e.message}`, 'error');
+      }
+    }
+
+    async function executeIoclBookingSearch() {
+      const input = document.getElementById('ioclBookingIdInput');
+      const bookingId = input ? input.value.trim() : '';
+      if (!bookingId) {
+        showToast('Please enter an IOCL Booking ID to investigate', 'error');
+        return;
+      }
+
+      const outputArea = document.getElementById('ioclInvestigationOutputArea');
+      const searchBtn = document.getElementById('ioclSearchSubmitBtn');
+
+      if (searchBtn) searchBtn.disabled = true;
+      if (outputArea) {
+        outputArea.innerHTML = `
+          <div class="loading-pulse-box" style="border: 1px solid #fed7aa; background: #fffaf5;">
+            <div class="spinner-circle" style="border-top-color: #ea580c;"></div>
+            <div style="font-size: 15px; font-weight: 700; color: #9a3412;">Investigating IndianOil Booking #${bookingId}</div>
+            <div style="font-size: 12.5px; color: #7c2d12;">
+              Connecting to IndianOil e-Charge CMS (indianoilecharge.in), resolving charger entity hardware ID, querying Cancelled/Completed records, matching central OCPP transactions, and extracting telemetry logs...
+            </div>
+          </div>
+        `;
+      }
+
+      try {
+        const res = await fetch('/api/iocl/search-booking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            booking_id: bookingId,
+            start_date: ioclDateRangeState.startDate,
+            end_date: ioclDateRangeState.endDate,
+            bypass_cache: document.getElementById('ioclBypassCacheCheckbox')?.checked || false
+          })
+        });
+
+        const data = await res.json();
+        if (searchBtn) searchBtn.disabled = false;
+
+        if (data.auth_required) {
+          if (outputArea) {
+            outputArea.innerHTML = `
+              <div class="attribution-hero charger" style="border-left-color: #ea580c; background: #fff7ed;">
+                <div class="attribution-badge-bar">
+                  <span class="attribution-pill-tag" style="background: #ea580c; color: #fff;">Authentication Required</span>
+                  <span style="font-size: 12px; color: #9a3412;">IndianOil e-Charge Portal (${data.portal_url})</span>
+                </div>
+                <div class="rca-title-main" style="color: #9a3412;">IOCL CMS Session Expired or Not Logged In</div>
+                <div class="rca-narrative-box" style="background: #fff; border-color: #fed7aa; color: #7c2d12;">
+                  ${data.message || 'Your saved IOCL session cookie has expired. Please launch the visible browser to log in with pre-filled credentials.'}
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: 14px;">
+                  <button type="button" class="btn-primary" style="background: #ea580c; border: 1px solid #c2410c; padding: 8px 18px; font-size: 13px; color: #fff; font-weight: 700;" onclick="triggerIoclLogin()">
+                    Authenticate IOCL Now
+                  </button>
+                  <span style="font-size: 12px; color: #64748b;">Pre-filled Account: <strong>${data.username || 'Saurabhiocl'}</strong></span>
+                </div>
+              </div>
+            `;
+          }
+          showToast(data.message, 'error');
+          return;
+        }
+
+        if (!data.success || !data.found) {
+          if (outputArea) {
+            outputArea.innerHTML = `
+              <div class="attribution-hero charger" style="border-left-color: #ea580c;">
+                <div class="attribution-badge-bar">
+                  <span class="attribution-pill-tag charger">IOCL Booking Not Found</span>
+                  <span style="font-size: 12px; color: var(--text-muted);">Date Range: ${ioclDateRangeState.startDate} to ${ioclDateRangeState.endDate}</span>
+                </div>
+                <div class="rca-title-main" style="color: #b91c1c;">No Record Matching IOCL Booking ID #${bookingId}</div>
+                <div class="rca-narrative-box">
+                  ${data.message || 'The specified Booking ID was not found in IndianOil e-Charge Cancelled or Completed (<1kWh) records within the current date range.'}
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                  Tip: Try expanding the Date Range to <strong>Last 30 Days</strong> or verify that the booking was executed on an IOCL charger.
+                </div>
+              </div>
+            `;
+          }
+          showToast(data.message || 'Booking not found in date range', 'error');
+          return;
+        }
+
+        latestIoclInvestigationData = data;
+        renderIoclInvestigationResult(data);
+        showToast(`IOCL Investigation complete for Booking #${bookingId}`, 'success');
+
+      } catch (err) {
+        if (searchBtn) searchBtn.disabled = false;
+        if (outputArea) {
+          outputArea.innerHTML = `
+            <div class="attribution-hero charger">
+              <div class="rca-title-main" style="color: #b91c1c;">Investigation Request Failed</div>
+              <div class="rca-narrative-box">${err.message}</div>
+            </div>
+          `;
+        }
+        showToast(`Error: ${err.message}`, 'error');
+      }
+    }
+
+    function renderIoclInvestigationResult(data) {
+      const b = data.booking;
+      const tx = data.transaction;
+      const rca = data.rca;
+      const logs = data.logs || [];
+
+      let heroClass = 'vehicle';
+      let pillClass = 'vehicle';
+      let iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H11a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H20a1 1 0 001-1V9.5a1.5 1.5 0 00-.44-1.06l-3-3A1.5 1.5 0 0016.5 5H13V4a1 1 0 00-1-1H3z"></path></svg>';
+
+      const attrUpper = (rca.attribution || '').toUpperCase();
+      if (attrUpper.includes('CHARGER') || attrUpper.includes('HARDWARE') || attrUpper.includes('ISOLATION')) {
+        heroClass = 'charger';
+        pillClass = 'charger';
+        iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>';
+      } else if (attrUpper.includes('USER') || attrUpper.includes('OPERATOR')) {
+        heroClass = 'user';
+        pillClass = 'user';
+        iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
+      } else if (attrUpper.includes('NETWORK') || attrUpper.includes('CMS') || attrUpper.includes('GATEWAY')) {
+        heroClass = 'network';
+        pillClass = 'network';
+        iconSvg = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A1 1 0 01.808 6.808c5.076-5.077 13.308-5.077 18.384 0a1 1 0 01-1.414 1.414zM14.95 11.05a7 7 0 00-9.9 0 1 1 0 01-1.414-1.414 9 9 0 0112.728 0 1 1 0 01-1.414 1.414zM12.12 13.88a3 3 0 00-4.242 0 1 1 0 01-1.415-1.415 5 5 0 017.072 0 1 1 0 01-1.415 1.415zM9 16a1 1 0 112 0 1 1 0 01-2 0z" clip-rule="evenodd"></path></svg>';
+      }
+
+      let timelineRowsHtml = '';
+      if (logs.length > 0) {
+        logs.forEach(log => {
+          let tagClass = 'other';
+          const ev = (log.event || '').toLowerCase();
+          if (ev.includes('start')) tagClass = 'start';
+          else if (ev.includes('stop')) tagClass = 'stop';
+          else if (ev.includes('status')) tagClass = 'status';
+
+          let statusHtml = '<span style="color: #94a3b8;">-</span>';
+          if (log.status) {
+            const s = log.status.toLowerCase();
+            if (s === 'suspendedev') statusHtml = '<span class="status-pill suspended-ev">SuspendedEV</span>';
+            else if (s === 'suspendedevse') statusHtml = '<span class="status-pill suspended-evse">SuspendedEVSE</span>';
+            else if (s === 'faulted') statusHtml = '<span class="status-pill faulted">Faulted</span>';
+            else if (s === 'preparing') statusHtml = '<span class="status-pill preparing">Preparing</span>';
+            else if (s === 'charging') statusHtml = '<span class="status-pill charging">Charging</span>';
+            else if (s === 'finishing') statusHtml = '<span class="status-pill finishing">Finishing</span>';
+            else statusHtml = `<span class="status-pill other">${escapeHtml(log.status)}</span>`;
+          }
+
+          let errHtml = '<span style="color: #64748b; font-size: 11.5px;">NoError</span>';
+          if (log.error_code && log.error_code.toLowerCase() !== 'noerror') {
+            errHtml = `<span class="error-pill">${escapeHtml(log.error_code)}</span>`;
+          }
+
+          let infoHtml = '<span style="color: #94a3b8;">-</span>';
+          if (log.info) {
+            const isBenign = log.info.toLowerCase().includes('gsm') || !isNaN(log.info);
+            if (isBenign) {
+              infoHtml = `<span style="color: #94a3b8; font-size: 11px;">${escapeHtml(log.info)}</span>`;
+            } else {
+              infoHtml = `<span class="info-pill-highlight">${escapeHtml(log.info)}</span>`;
+            }
+          }
+
+          timelineRowsHtml += `
+            <tr>
+              <td style="font-family: monospace; font-size: 11.5px; color: var(--text-muted); white-space: nowrap;">${log.timestamp || '-'}</td>
+              <td><span class="ocpp-tag ${tagClass}">${escapeHtml(log.event || 'Unknown')}</span></td>
+              <td><span class="dir-badge">${escapeHtml(log.type || '-')}</span></td>
+              <td style="font-weight: 600;">Gun ${log.connector_id !== null && log.connector_id !== undefined ? log.connector_id : '-'}</td>
+              <td>${statusHtml}</td>
+              <td>${errHtml}</td>
+              <td>${infoHtml}</td>
+              <td><div class="raw-payload-cell" ondblclick="copyCellPayload(this)" title="Double click to copy raw message payload">${escapeHtml(log.raw || '')}</div></td>
+            </tr>
+          `;
+        });
+      } else {
+        timelineRowsHtml = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 18px;">No raw OCPP logs recorded around this booking timestamp on IndianOil CMS.</td></tr>';
+      }
+
+      const outputArea = document.getElementById('ioclInvestigationOutputArea');
+      outputArea.innerHTML = `
+        <div class="investigation-container">
+          
+          <!-- HERO FAULT ATTRIBUTION CARD -->
+          <div class="attribution-hero ${heroClass}">
+            <div class="attribution-badge-bar">
+              <span class="attribution-pill-tag ${pillClass}">
+                ${iconSvg}
+                FAULT ATTRIBUTION: ${rca.attribution}
+              </span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge-category slate">Confidence: ${rca.confidence}</span>
+                <span class="badge-category amber" style="background: #ea580c; color: #fff;">IOCL CPO</span>
+                <span class="badge-category ${b.session_type === 'Cancelled' ? 'amber' : 'blue'}">${b.session_type}</span>
+                <span class="badge-category emerald" style="font-family: monospace; font-size: 11.5px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; font-weight: 700; padding: 3px 8px; border-radius: 4px;" title="IOCL Telemetry Engine">
+                  ⚡ ${data.cached ? 'Instant Cache (0 Hits • 0.2ms)' : `${data.hits_count || 1} API Hits • ${data.latency_ms || 350}ms`}
+                </span>
+                <button class="btn-secondary" style="padding: 5px 10px; font-size: 11.5px;" onclick="copyIoclRcaReport()">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                  Copy IOCL RCA Dossier
+                </button>
+              </div>
+            </div>
+
+            <div class="rca-title-main">${rca.root_cause}</div>
+
+            <div class="detected-field-banner">
+              <span class="detected-field-title">
+                <svg width="15" height="15" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                Primary Root Cause Field:
+              </span>
+              <span class="detected-field-pill">${escapeHtml(rca.detected_field || '-')}</span>
+              <span class="detected-field-loc">Location in Logs: <code>${escapeHtml(rca.error_location || '-')}</code></span>
+            </div>
+
+            <div class="rca-narrative-box">
+              <strong>What Most Appropriately Went Wrong</strong>
+              ${rca.narrative}
+            </div>
+
+            <div class="rca-action-box">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+              <div><strong>Recommended Action:</strong> ${rca.action_item}</div>
+            </div>
+          </div>
+
+          <!-- 2-COLUMN DETAILS GRID -->
+          <div class="dossier-two-col">
+            <!-- COLUMN 1: BOOKING & VEHICLE INFO -->
+            <div class="info-panel">
+              <div class="panel-heading" style="color: #c2410c;">
+                <svg fill="#ea580c" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
+                IOCL Booking &amp; Vehicle Telemetry
+              </div>
+              <div class="kv-grid">
+                <div class="kv-item">
+                  <span class="kv-k">IOCL Booking ID</span>
+                  <span class="kv-v highlight-blue" style="color: #ea580c;">#${b.booking_id}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Session Status</span>
+                  <span class="kv-v">${b.status}</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Station Name</span>
+                  <span class="kv-v">${b.station_name}</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Station Address</span>
+                  <span class="kv-v" style="font-weight: 500; font-size: 12px; color: var(--text-muted);">${b.station_address || `${b.city}, ${b.state}`}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">IOCL Charger Code</span>
+                  <span class="kv-v" style="font-family: monospace; font-weight: 700; color: #ea580c;">${b.charger_code}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Connector Gun</span>
+                  <span class="kv-v">Gun #${b.connector_id} (${b.connector_type})</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Vehicle Model</span>
+                  <span class="kv-v">${b.vehicle_make} ${b.vehicle_model}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Vehicle Reg</span>
+                  <span class="kv-v" style="font-family: monospace;">${b.vehicle_number}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">User Name</span>
+                  <span class="kv-v">${b.user_name}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Mobile Number</span>
+                  <span class="kv-v">${b.mobile}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Energy Consumed</span>
+                  <span class="kv-v highlight-danger">${b.energy_consumed_kwh.toFixed(3)} kWh</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Payment / Refund</span>
+                  <span class="kv-v">Rs. ${b.payment_received} / Rs. ${b.refunded_amount}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Booking In Time</span>
+                  <span class="kv-v">${b.booking_in_time}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Booking Out Time</span>
+                  <span class="kv-v">${b.booking_out_time}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMN 2: TRANSACTION & OCPP DETAILS -->
+            <div class="info-panel">
+              <div class="panel-heading" style="color: #0369a1;">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>
+                IOCL Central Transaction &amp; Meter Readings
+              </div>
+              <div class="kv-grid">
+                <div class="kv-item">
+                  <span class="kv-k">Transaction ID</span>
+                  <span class="kv-v highlight-blue" style="font-family: monospace;">
+                    ${tx ? '#' + tx.transaction_pk : 'None Assigned (Cancelled)'}
+                    <span style="font-size: 11.5px; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 2px 7px; border-radius: 4px; margin-left: 6px; display: inline-block;">ID Tag: ${b.id_tag && b.id_tag !== '-' ? b.id_tag : (tx && tx.id_tag ? tx.id_tag : '-')}</span>
+                  </span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">ID Tag (Auth / RFID Tag)</span>
+                  <span class="kv-v highlight-blue" style="font-family: monospace; font-size: 13.5px; font-weight: 700;">${b.id_tag && b.id_tag !== '-' ? b.id_tag : (tx && tx.id_tag ? tx.id_tag : '-')}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Booking Mode</span>
+                  <span class="kv-v">${b.booking_mode}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Charger Stop Reason</span>
+                  <span class="kv-v highlight-danger">${(tx && tx.stop_reason) ? tx.stop_reason : (b.stop_reason_booking || 'None')}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Server Stop Trigger</span>
+                  <span class="kv-v">${(tx && tx.response_message) ? tx.response_message : (b.stop_trigger_booking || 'None')}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Start Meter Reading</span>
+                  <span class="kv-v" style="font-family: monospace;">${tx ? tx.start_value : '0'}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Stop Meter Reading</span>
+                  <span class="kv-v" style="font-family: monospace;">${tx ? tx.stop_value : '0'}</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Initial SOC / Final SOC</span>
+                  <span class="kv-v">${b.initial_soc}% / ${b.final_soc}%</span>
+                </div>
+                <div class="kv-item">
+                  <span class="kv-k">Battery Capacity</span>
+                  <span class="kv-v">${b.battery_capacity} kWh</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Transaction Start Timestamp</span>
+                  <span class="kv-v">${tx ? tx.start_timestamp : '-'}</span>
+                </div>
+                <div class="kv-item full-width">
+                  <span class="kv-k">Transaction Stop Timestamp</span>
+                  <span class="kv-v">${tx ? tx.stop_timestamp : '-'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TIMELINE OF OCPP MESSAGES -->
+          <div class="timeline-card">
+            <div class="timeline-header-bar" style="background: #fffaf5; border-bottom-color: #fed7aa;">
+              <div class="timeline-title" style="color: #9a3412;">
+                <svg width="16" height="16" fill="#ea580c" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
+                Chronological IOCL OCPP Event Timeline (${logs.length} messages captured)
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <span style="font-size: 12px; font-weight: 600; color: #ea580c; background: #fff7ed; border: 1px solid #fed7aa; padding: 3px 9px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                  Slide bottom bar to navigate &rarr;
+                </span>
+                <span style="font-size: 11.5px; color: var(--text-muted);">Connector #${b.connector_id} • Charger: ${b.charger_code} (ID: ${b.charger_id})</span>
+              </div>
+            </div>
+            <div class="timeline-table-wrapper" id="ioclTimelineTableWrapper">
+              <table class="timeline-table">
+                <thead>
+                  <tr>
+                    <th style="min-width: 175px;">Timestamp</th>
+                    <th style="min-width: 155px;">Event Name</th>
+                    <th style="min-width: 95px;">Direction</th>
+                    <th style="min-width: 80px;">Gun</th>
+                    <th style="min-width: 130px;">Status (status)</th>
+                    <th style="min-width: 140px;">Error (errorCode)</th>
+                    <th style="min-width: 160px;">Info (info)</th>
+                    <th style="min-width: 440px; max-width: 620px;">Raw Message Payload</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${timelineRowsHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- DEDICATED SLIDING BAR AT THE BOTTOM -->
+            <div class="timeline-slider-bar">
+              <button type="button" class="slider-nav-btn" onclick="scrollIoclTimelineRelative(-220)" title="Scroll Left (←)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Scroll Left
+              </button>
+
+              <div class="slider-track-container">
+                <span class="slider-label">Metadata</span>
+                <input type="range" class="timeline-range-slider" id="ioclTimelineRangeSlider" min="0" max="100" value="0" step="1" oninput="onIoclTimelineSliderInput(this.value)" title="Slide to pan horizontally across timeline columns">
+                <span class="slider-label">Payload &rarr;</span>
+              </div>
+
+              <button type="button" class="slider-nav-btn" onclick="scrollIoclTimelineRelative(220)" title="Scroll Right (→)">
+                Scroll Right
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      initIoclTimelineSliderSync();
+    }
+
+    function scrollIoclTimelineRelative(delta) {
+      const wrapper = document.getElementById('ioclTimelineTableWrapper');
+      if (!wrapper) return;
+      wrapper.scrollBy({ left: delta, behavior: 'smooth' });
+    }
+
+    function onIoclTimelineSliderInput(val) {
+      const wrapper = document.getElementById('ioclTimelineTableWrapper');
+      if (!wrapper) return;
+      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+      if (maxScroll > 0) {
+        wrapper.scrollLeft = (val / 100) * maxScroll;
+      }
+    }
+
+    function initIoclTimelineSliderSync() {
+      const wrapper = document.getElementById('ioclTimelineTableWrapper');
+      const slider = document.getElementById('ioclTimelineRangeSlider');
+      if (!wrapper || !slider) return;
+
+      wrapper.addEventListener('scroll', () => {
+        const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+        if (maxScroll > 0) {
+          const pct = (wrapper.scrollLeft / maxScroll) * 100;
+          slider.value = Math.round(pct);
+        } else {
+          slider.value = 0;
+        }
+      });
+    }
+
+    function copyIoclRcaReport() {
+      if (!latestIoclInvestigationData) return;
+      const b = latestIoclInvestigationData.booking;
+      const tx = latestIoclInvestigationData.transaction;
+      const rca = latestIoclInvestigationData.rca;
+
+      const reportText = `===============================================================
+INDIANOIL E-CHARGE (IOCL) - SINGLE BOOKING ROOT CAUSE ANALYSIS (RCA) DOSSIER
+===============================================================
+CPO Authority     : IndianOil e-Charge (indianoilecharge.in)
+Booking ID        : #${b.booking_id}
+Session Type      : ${b.session_type}
+Station Name      : ${b.station_name} (${b.city}, ${b.state})
+Charger Code      : ${b.charger_code} (Gun #${b.connector_id} - ${b.connector_type})
+Vehicle           : ${b.vehicle_make} ${b.vehicle_model} (${b.vehicle_number})
+Driver / User     : ${b.user_name} (${b.mobile})
+Energy Consumed   : ${b.energy_consumed_kwh.toFixed(3)} kWh
+Paid / Refunded   : Rs. ${b.payment_received} / Rs. ${b.refunded_amount}
+Booking Window    : ${b.booking_in_time} -> ${b.booking_out_time}
+Transaction ID    : ${tx ? tx.transaction_pk : 'None Assigned (Cancelled)'}
+ID Tag (Auth/RFID): ${b.id_tag || (tx ? tx.id_tag : '-') || '-'}
+Charger StopReason: ${(tx && tx.stop_reason) ? tx.stop_reason : b.stop_reason_booking}
+
+---------------------------------------------------------------
+FAULT ATTRIBUTION : ${rca.attribution}
+PRIMARY ROOT CAUSE: ${rca.root_cause}
+CONFIDENCE LEVEL  : ${rca.confidence}
+DETECTED FIELD    : ${rca.detected_field || '-'} (in ${rca.error_location || '-'})
+---------------------------------------------------------------
+WHAT WENT WRONG:
+${rca.narrative}
+
+RECOMMENDED ACTION:
+${rca.action_item}
+===============================================================`;
+
+      navigator.clipboard.writeText(reportText).then(() => {
+        showToast('IOCL RCA Dossier copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Could not copy report to clipboard', 'error');
+      });
+    }
+
     /* ======================================================== */
     function handleChatKeyDown(event) {
       if (event.key === 'Enter' && !event.shiftKey) {
@@ -4289,7 +5252,9 @@ ${rca.action_item}
       document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
         const text = item.textContent.toLowerCase();
         let match = false;
-        if (tabId === 'search' && text.includes('booking rca deep dive')) match = true;
+        if (tabId === 'energy_spikes' && (text.includes('energy spike') || text.includes('consumption'))) match = true;
+        if (tabId === 'iocl_search' && text.includes('iocl single booking')) match = true;
+        if (tabId === 'search' && text.includes('booking rca deep dive') && !text.includes('iocl')) match = true;
         if (tabId === 'pipelines' && text.includes('full pipeline')) match = true;
         if (tabId === 'regular' && text.includes('regular bookings')) match = true;
         if (tabId === 'roaming' && text.includes('roaming rca')) match = true;
@@ -4303,6 +5268,7 @@ ${rca.action_item}
       document.querySelectorAll('.tab-pane').forEach(pane => {
         pane.classList.toggle('active', pane.id === `pane-${tabId}`);
       });
+      if (tabId === 'energy_spikes') { checkEnergySession(); }
       if (tabId === 'upload_rca') {
         loadPartnerPortals();
       }
@@ -4896,9 +5862,620 @@ ${rca.action_item}
       initDateRange();
       switchTab('search');
       fetchStatus();
+      checkIoclSessionStatus();
       setLogPollingSpeed(false);
       statusPollTimer = setInterval(fetchStatus, 3500);
     });
-  </script>
+  
+
+
+    /* ======================================================== */
+    /* ENERGY CONSUMPTION & SPIKE RCA JAVASCRIPT HANDLERS       */
+    /* ======================================================== */
+    let currentEnergyPortal = 'IOC';
+    let currentEnergyMode = 'single';
+    let currentEnergyAnalysisData = null;
+
+    function setEnergyPortal(party) {
+      currentEnergyPortal = party.toUpperCase();
+      const btnIoc = document.getElementById('btnPortalIocl');
+      const btnElc = document.getElementById('btnPortalElc');
+      if (btnIoc && btnElc) {
+        if (currentEnergyPortal === 'IOC') {
+          btnIoc.style.border = '1.5px solid #ea580c';
+          btnIoc.style.background = '#fff7ed';
+          btnIoc.style.color = '#c2410c';
+          btnElc.style.border = '1.5px solid #cbd5e1';
+          btnElc.style.background = '#f8fafc';
+          btnElc.style.color = '#64748b';
+        } else {
+          btnElc.style.border = '1.5px solid #16a34a';
+          btnElc.style.background = '#f0fdf4';
+          btnElc.style.color = '#15803d';
+          btnIoc.style.border = '1.5px solid #cbd5e1';
+          btnIoc.style.background = '#f8fafc';
+          btnIoc.style.color = '#64748b';
+        }
+      }
+      checkEnergySession();
+    }
+
+    async function checkEnergySession() {
+      const badgeText = document.getElementById('energySessionText');
+      const badge = document.getElementById('energySessionBadge');
+      if (badgeText) badgeText.textContent = 'Verifying Session...';
+
+      try {
+        const res = await fetch('/api/energy/status');
+        const data = await res.json();
+        const active = currentEnergyPortal === 'IOC' ? data.ioc : data.elc;
+        const isValid = active && (active.is_valid || (active.status_text && active.status_text.includes('Active')));
+
+        if (badgeText && badge) {
+          if (isValid) {
+            badge.style.background = '#ecfdf5';
+            badge.style.color = '#047857';
+            badge.style.borderColor = '#a7f3d0';
+            badge.querySelector('span').style.background = '#10b981';
+            badgeText.textContent = `${currentEnergyPortal} Session Active & Verified`;
+          } else {
+            badge.style.background = '#fff7ed';
+            badge.style.color = '#c2410c';
+            badge.style.borderColor = '#fdba74';
+            badge.querySelector('span').style.background = '#ea580c';
+            badgeText.textContent = `${currentEnergyPortal} Session Inactive / Expired`;
+          }
+        }
+      } catch (e) {
+        if (badgeText) badgeText.textContent = `${currentEnergyPortal} Auth Status Available`;
+      }
+    }
+
+    function setEnergyMode(mode) {
+      currentEnergyMode = mode;
+      const tabSingle = document.getElementById('tabModeSingle');
+      const tabBatch = document.getElementById('tabModeBatch');
+      const secSingle = document.getElementById('sectionModeSingle');
+      const secBatch = document.getElementById('sectionModeBatch');
+
+      if (mode === 'single') {
+        tabSingle.style.background = '#0284c7';
+        tabSingle.style.color = '#ffffff';
+        tabSingle.style.border = 'none';
+        tabBatch.style.background = '#ffffff';
+        tabBatch.style.color = '#475569';
+        tabBatch.style.border = '1.5px solid #cbd5e1';
+        secSingle.style.display = 'block';
+        secBatch.style.display = 'none';
+      } else {
+        tabBatch.style.background = '#0284c7';
+        tabBatch.style.color = '#ffffff';
+        tabBatch.style.border = 'none';
+        tabSingle.style.background = '#ffffff';
+        tabSingle.style.color = '#475569';
+        tabSingle.style.border = '1.5px solid #cbd5e1';
+        secSingle.style.display = 'none';
+        secBatch.style.display = 'block';
+      }
+    }
+
+    function setSampleTx(txId, portal, vehicle) {
+      setEnergyPortal(portal);
+      setEnergyMode('single');
+      const input = document.getElementById('energyTxIdInput');
+      const vSelect = document.getElementById('energyVehicleSelect');
+      if (input) input.value = txId;
+      if (vSelect && vehicle) {
+        for (let opt of vSelect.options) {
+          if (opt.text.toLowerCase().includes(vehicle.toLowerCase())) {
+            vSelect.value = opt.value;
+            break;
+          }
+        }
+      }
+      runEnergyInvestigation();
+    }
+
+    async function runEnergyInvestigation(txIdOverride) {
+      const txInput = document.getElementById('energyTxIdInput');
+      const txId = txIdOverride || (txInput ? txInput.value.trim() : '');
+      if (!txId) {
+        alert('Please enter a valid OCPP Transaction ID.');
+        return;
+      }
+
+      const vSelect = document.getElementById('energyVehicleSelect');
+      const customKwhInput = document.getElementById('energyCustomKwhInput');
+      const vehicleModel = vSelect ? vSelect.value : 'tata nexon ev max';
+      const customKwh = customKwhInput && customKwhInput.value ? parseFloat(customKwhInput.value) : null;
+
+      const btn = document.getElementById('btnRunEnergyAnalysis');
+      if (btn) btn.disabled = true;
+
+      const outputArea = document.getElementById('energyAnalysisOutputArea');
+      if (outputArea) {
+        outputArea.innerHTML = `
+          <div style="background: #ffffff; border: 1.5px solid #bae6fd; border-radius: 10px; padding: 36px; text-align: center;">
+            <div class="loading-spinner" style="margin: 0 auto 16px auto; width: 36px; height: 36px; border: 4px solid #e0f2fe; border-top: 4px solid #0284c7; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <div style="font-size: 15px; font-weight: 700; color: #0369a1; margin-bottom: 6px;">
+              Investigating Transaction #${txId} on ${currentEnergyPortal}...
+            </div>
+            <div style="font-size: 13px; color: #64748b; max-width: 500px; margin: 0 auto;">
+              Connecting to ${currentEnergyPortal === 'IOC' ? 'indianoilecharge.in' : 'emonitoring.electreefi.com'}, retrieving consecutive meter readings for Measurand <code>Energy.Active.Import.Register</code>, calculating interval power (kW) vs rated nameplate ceiling, and checking EV battery limits...
+            </div>
+          </div>
+        `;
+      }
+
+      try {
+        const res = await fetch('/api/energy/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            party_id: currentEnergyPortal,
+            transaction_id: txId,
+            vehicle_model: vehicleModel,
+            custom_battery_kwh: customKwh
+          })
+        });
+
+        const data = await res.json();
+        if (btn) btn.disabled = false;
+        currentEnergyAnalysisData = data;
+
+        if (!data.success) {
+          if (outputArea) {
+            outputArea.innerHTML = `
+              <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 20px; color: #991b1b;">
+                <div style="font-weight: 700; margin-bottom: 6px;">Investigation Failed</div>
+                <div>${data.error || 'Unable to retrieve transaction details or meter logs.'}</div>
+              </div>
+            `;
+          }
+          return;
+        }
+
+        renderEnergyAnalysisResult(data);
+      } catch (err) {
+        if (btn) btn.disabled = false;
+        if (outputArea) {
+          outputArea.innerHTML = `
+            <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 20px; color: #991b1b;">
+              <div style="font-weight: 700; margin-bottom: 6px;">Network / Server Error</div>
+              <div>${err.message}</div>
+            </div>
+          `;
+        }
+      }
+    }
+
+    function renderEnergyAnalysisResult(data) {
+      const outputArea = document.getElementById('energyAnalysisOutputArea');
+      if (!outputArea) return;
+
+      const summary = data.summary;
+      const rca = data.rca_report;
+      const charger = data.charger_specs;
+      const vehicle = data.vehicle_specs;
+      const intervals = data.intervals || [];
+
+      const isAnomaly = summary.is_anomaly;
+      const isCritical = summary.highest_severity === 'CRITICAL';
+      const statusColor = isAnomaly ? (isCritical ? '#dc2626' : '#ea580c') : '#16a34a';
+      const statusBg = isAnomaly ? (isCritical ? '#fef2f2' : '#fff7ed') : '#f0fdf4';
+      const statusBorder = isAnomaly ? (isCritical ? '#fecaca' : '#fed7aa') : '#bbf7d0';
+
+      const battPct = summary.battery_utilization_pct || 0;
+      const battFillColor = battPct > 105 ? '#dc2626' : (battPct > 90 ? '#ea580c' : '#0284c7');
+
+      // SVG Power Chart generation
+      const chartSvg = generatePowerChartSvg(intervals, summary.rated_power_kw, summary.gun_capacity_kw);
+
+      let html = `
+        <!-- KPI METRICS STRIP -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+          <!-- Card 1: Energy Delivered -->
+          <div class="card" style="padding: 16px; border-left: 4.5px solid #0284c7;">
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Energy Delivered</div>
+            <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">
+              ${summary.total_energy_kwh.toFixed(3)} <span style="font-size: 14px; font-weight: 600; color: #64748b;">kWh</span>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+              Duration: <strong>${summary.duration_minutes} min</strong> (${summary.readings_count} intervals)
+            </div>
+          </div>
+
+          <!-- Card 2: Peak Power vs Hardware -->
+          <div class="card" style="padding: 16px; border-left: 4.5px solid ${summary.peak_power_kw > summary.rated_power_kw * 1.15 ? '#dc2626' : '#16a34a'};">
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Peak Calculated Power</div>
+            <div style="font-size: 26px; font-weight: 800; color: ${summary.peak_power_kw > summary.rated_power_kw * 1.15 ? '#dc2626' : '#0f172a'}; margin-top: 4px;">
+              ${summary.peak_power_kw.toFixed(1)} <span style="font-size: 14px; font-weight: 600; color: #64748b;">kW</span>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+              Rated Limit: <strong>${summary.rated_power_kw} kW</strong> (Gun: ${summary.gun_capacity_kw} kW)
+            </div>
+          </div>
+
+          <!-- Card 3: EV Battery Capacity -->
+          <div class="card" style="padding: 16px; border-left: 4.5px solid ${battPct > 105 ? '#dc2626' : '#8b5cf6'};">
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Battery Pack Utilization</div>
+            <div style="font-size: 26px; font-weight: 800; color: ${battPct > 105 ? '#dc2626' : '#0f172a'}; margin-top: 4px;">
+              ${battPct.toFixed(1)}% <span style="font-size: 13px; font-weight: 600; color: #64748b;">(${summary.battery_capacity_kwh} kWh pack)</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 8px; overflow: hidden;">
+              <div style="width: ${Math.min(100, battPct)}%; height: 100%; background: ${battFillColor}; border-radius: 3px;"></div>
+            </div>
+          </div>
+
+          <!-- Card 4: Anomaly Severity -->
+          <div class="card" style="padding: 16px; border-left: 4.5px solid ${statusColor}; background: ${statusBg};">
+            <div style="font-size: 11px; font-weight: 700; color: ${statusColor}; text-transform: uppercase;">Telemetry Health Status</div>
+            <div style="font-size: 20px; font-weight: 800; color: ${statusColor}; margin-top: 6px;">
+              ${isAnomaly ? summary.highest_severity + ' ANOMALY' : 'NOMINAL PHYSICALS'}
+            </div>
+            <div style="font-size: 11px; color: ${statusColor}; margin-top: 4px; font-weight: 600;">
+              ${isAnomaly ? `${summary.spike_count} Spikes | ${summary.rollback_count} Rollbacks` : 'All intervals compliant'}
+            </div>
+          </div>
+        </div>
+
+        <!-- HARDWARE & VEHICLE SPECIFICATION BAR -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 12px;">
+          <div><span style="color: #64748b;">Charger Code:</span> <strong style="color: #0f172a;">${charger.charger_code}</strong> (${charger.station_name || 'Station'})</div>
+          <div><span style="color: #64748b;">Hardware Model:</span> <strong>${charger.manufacturer} ${charger.model}</strong> (${charger.connector_type})</div>
+          <div><span style="color: #64748b;">Guns / Capacity:</span> <strong>${charger.no_of_guns} Guns (${charger.gun_capacity_kw} kW / gun)</strong></div>
+          <div><span style="color: #64748b;">Target EV:</span> <strong style="color: #0284c7;">${vehicle.name}</strong> (${vehicle.capacity_kwh} kWh Pack)</div>
+        </div>
+
+        <!-- RCA DIAGNOSTIC PANEL -->
+        <div style="background: ${statusBg}; border: 1.5px solid ${statusBorder}; border-left: 6px solid ${statusColor}; border-radius: 10px; padding: 22px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <div>
+              <div style="font-size: 11px; font-weight: 800; color: ${statusColor}; text-transform: uppercase; letter-spacing: 0.5px;">Root Cause Analysis &amp; Fault Attribution</div>
+              <div style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 3px;">
+                ${rca.verdict}
+              </div>
+            </div>
+            <div style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; background: #ffffff; color: ${statusColor}; border: 1px solid ${statusBorder};">
+              Confidence: ${rca.confidence_score}%
+            </div>
+          </div>
+
+          <div style="font-size: 13.5px; line-height: 1.5; color: #334155; margin-bottom: 16px;">
+            ${rca.summary_narrative}
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 16px; margin-top: 14px;">
+            <!-- Left: Evidence & Recommendations -->
+            <div style="background: #ffffff; border: 1px solid ${statusBorder}; border-radius: 8px; padding: 14px 16px;">
+              <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Physical Evidence &amp; Telemetry Violations:</div>
+              <ul style="margin: 0 0 14px 0; padding-left: 18px; font-size: 12.5px; color: #475569;">
+                ${rca.evidence.map(e => `<li style="margin-bottom: 4px;">${e}</li>`).join('')}
+              </ul>
+
+              <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Actionable Corrective Recommendations:</div>
+              <ol style="margin: 0; padding-left: 18px; font-size: 12.5px; color: #475569;">
+                ${rca.recommendations.map(r => `<li style="margin-bottom: 4px;">${r}</li>`).join('')}
+              </ol>
+            </div>
+
+            <!-- Right: Financial / Billing Impact -->
+            <div style="background: #ffffff; border: 1px solid ${statusBorder}; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 10px;">Commercial &amp; Billing Impact Assessment</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12.5px;">
+                  <span style="color: #64748b;">Billing Status:</span>
+                  <strong style="color: ${rca.financial_impact.phantom_kwh > 0 ? '#dc2626' : '#16a34a'};">${rca.financial_impact.billing_status}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12.5px;">
+                  <span style="color: #64748b;">Phantom Units Overbilled:</span>
+                  <strong>${rca.financial_impact.phantom_kwh.toFixed(2)} kWh</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12.5px;">
+                  <span style="color: #64748b;">Estimated Disputed Amount:</span>
+                  <strong style="font-size: 15px; color: ${rca.financial_impact.disputed_amount_inr > 0 ? '#dc2626' : '#0f172a'};">
+                    ₹${rca.financial_impact.disputed_amount_inr.toFixed(2)}
+                  </strong>
+                </div>
+              </div>
+              <div style="font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 8px;">
+                Tariff evaluated at standard CPO benchmark rate ₹21.00/kWh.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- POWER DELIVERY VS RATED CEILING TIMELINE CHART -->
+        <div class="card" style="margin-bottom: 24px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">
+              Calculated Power Curve (kW) vs Hardware Rated Ceiling Line
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; font-size: 11px; color: #64748b;">
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 3px; background: #0284c7; display: inline-block;"></span> Delivered kW</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 2px; background: #dc2626; border-top: 2px dashed #dc2626; display: inline-block;"></span> Rated Ceiling (${summary.rated_power_kw} kW)</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #dc2626; display: inline-block;"></span> Spike Event</span>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            ${chartSvg}
+          </div>
+        </div>
+
+        <!-- INTERVAL METER READINGS BREAKDOWN TABLE -->
+        <div class="card" style="padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">
+              Consecutive Meter Readings (Measurand: <code>Energy.Active.Import.Register</code>)
+            </div>
+            <div style="font-size: 11px; color: #64748b;">
+              Showing all ${intervals.length} periodic telemetry intervals
+            </div>
+          </div>
+
+          <div style="overflow-x: auto; max-height: 400px;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; text-align: left; color: #475569;">
+                  <th style="padding: 8px 10px;">#</th>
+                  <th style="padding: 8px 10px;">Timestamp</th>
+                  <th style="padding: 8px 10px;">Raw Register (Wh)</th>
+                  <th style="padding: 8px 10px;">Reading (kWh)</th>
+                  <th style="padding: 8px 10px;">&Delta;E (kWh)</th>
+                  <th style="padding: 8px 10px;">&Delta;t (s)</th>
+                  <th style="padding: 8px 10px;">Calculated Power</th>
+                  <th style="padding: 8px 10px;">CMS Diff</th>
+                  <th style="padding: 8px 10px;">Telemetry Flag</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${intervals.map(it => {
+                  const hasFlag = it.flags && it.flags.length > 0;
+                  const isSpike = it.flags.some(f => f.type === 'SPIKE_POWER_EXCEEDED');
+                  const isRollback = it.flags.some(f => f.type === 'METER_ROLLBACK');
+                  const rowBg = isSpike ? '#fef2f2' : (isRollback ? '#fff1f2' : (it.index % 2 === 0 ? '#f8fafc' : '#ffffff'));
+
+                  return `
+                    <tr style="background: ${rowBg}; border-bottom: 1px solid #f1f5f9;">
+                      <td style="padding: 6px 10px; font-weight: 600; color: #64748b;">${it.index}</td>
+                      <td style="padding: 6px 10px; font-family: monospace;">${it.time_short}</td>
+                      <td style="padding: 6px 10px; font-family: monospace; color: #64748b;">${it.raw_value}</td>
+                      <td style="padding: 6px 10px; font-weight: 600;">${it.reading_kwh.toFixed(3)}</td>
+                      <td style="padding: 6px 10px; font-weight: 700; color: ${it.delta_kwh < 0 ? '#dc2626' : (it.delta_kwh > 1.0 ? '#ea580c' : '#0f172a')};">
+                        ${it.delta_kwh >= 0 ? '+' : ''}${it.delta_kwh.toFixed(3)}
+                      </td>
+                      <td style="padding: 6px 10px; color: #64748b;">${it.delta_time_sec}s</td>
+                      <td style="padding: 6px 10px; font-weight: 800; color: ${it.calculated_power_kw > summary.rated_power_kw * 1.15 ? '#dc2626' : '#0284c7'};">
+                        ${it.calculated_power_kw.toFixed(1)} kW
+                      </td>
+                      <td style="padding: 6px 10px; color: #64748b;">${it.cms_energy_difference != null ? it.cms_energy_difference : '-'}</td>
+                      <td style="padding: 6px 10px;">
+                        ${hasFlag ? it.flags.map(f => `
+                          <span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: ${f.severity === 'CRITICAL' ? '#dc2626' : '#ea580c'}; color: #ffffff;">
+                            ${f.type}
+                          </span>
+                        `).join(' ') : `<span style="font-size: 10px; color: #16a34a; font-weight: 600;">Nominal</span>`}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      outputArea.innerHTML = html;
+    }
+
+    function generatePowerChartSvg(intervals, ratedKw, gunKw) {
+      if (!intervals || intervals.length === 0) {
+        return '<div style="padding: 20px; text-align: center; color: #94a3b8;">No interval records available to render curve.</div>';
+      }
+
+      const w = 840;
+      const h = 200;
+      const padLeft = 45;
+      const padRight = 20;
+      const padTop = 20;
+      const padBottom = 30;
+
+      const chartW = w - padLeft - padRight;
+      const chartH = h - padTop - padBottom;
+
+      const maxPower = Math.max(ratedKw * 1.3, ...intervals.map(i => i.calculated_power_kw || 0));
+      const n = intervals.length;
+
+      const getX = (idx) => padLeft + (idx / Math.max(1, n - 1)) * chartW;
+      const getY = (kw) => padTop + chartH - (kw / Math.max(1, maxPower)) * chartH;
+
+      const ratedY = getY(ratedKw);
+
+      // Path data
+      let pathD = '';
+      intervals.forEach((it, idx) => {
+        const x = getX(idx);
+        const y = getY(it.calculated_power_kw || 0);
+        pathD += (idx === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+      });
+
+      // Dots for spikes
+      let dotsHtml = '';
+      intervals.forEach((it, idx) => {
+        const x = getX(idx);
+        const kw = it.calculated_power_kw || 0;
+        const y = getY(kw);
+        const isSpike = kw > ratedKw * 1.15;
+        if (isSpike) {
+          dotsHtml += `<circle cx="${x}" cy="${y}" r="5" fill="#dc2626" stroke="#ffffff" stroke-width="2"><title>${it.time_short}: ${kw.toFixed(1)} kW (Spike)</title></circle>`;
+        }
+      });
+
+      return `
+        <svg viewBox="0 0 ${w} ${h}" style="width: 100%; height: auto; min-width: 600px; font-family: sans-serif; font-size: 10px;">
+          <!-- Grid lines -->
+          <line x1="${padLeft}" y1="${padTop + chartH}" x2="${w - padRight}" y2="${padTop + chartH}" stroke="#e2e8f0" stroke-width="1" />
+          <line x1="${padLeft}" y1="${getY(maxPower * 0.5)}" x2="${w - padRight}" y2="${getY(maxPower * 0.5)}" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3" />
+          <line x1="${padLeft}" y1="${ratedY}" x2="${w - padRight}" y2="${ratedY}" stroke="#f87171" stroke-width="1.5" stroke-dasharray="4,3" />
+
+          <!-- Axis Labels -->
+          <text x="${padLeft - 6}" y="${padTop + chartH}" fill="#94a3b8" text-anchor="end">0 kW</text>
+          <text x="${padLeft - 6}" y="${ratedY + 3}" fill="#dc2626" font-weight="700" text-anchor="end">${ratedKw} kW</text>
+          <text x="${padLeft - 6}" y="${padTop + 10}" fill="#94a3b8" text-anchor="end">${Math.round(maxPower)} kW</text>
+
+          <text x="${padLeft}" y="${h - 8}" fill="#94a3b8">${intervals[0].time_short}</text>
+          <text x="${w - padRight}" y="${h - 8}" fill="#94a3b8" text-anchor="end">${intervals[intervals.length - 1].time_short}</text>
+
+          <!-- Delivered Power Curve -->
+          <path d="${pathD}" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+          <!-- Spike Dots -->
+          ${dotsHtml}
+        </svg>
+      `;
+    }
+
+    async function runBatchEnergyScan() {
+      const rangeSelect = document.getElementById('energyBatchRangeSelect');
+      const limitSelect = document.getElementById('energyBatchLimitSelect');
+      const days = parseInt(rangeSelect ? rangeSelect.value : '3');
+      const limit = parseInt(limitSelect ? limitSelect.value : '25');
+
+      const progressArea = document.getElementById('batchScanProgressArea');
+      const outputArea = document.getElementById('energyAnalysisOutputArea');
+      if (progressArea) progressArea.style.display = 'block';
+
+      if (outputArea) {
+        outputArea.innerHTML = `
+          <div style="background: #ffffff; border: 1.5px solid #bae6fd; border-radius: 10px; padding: 36px; text-align: center;">
+            <div class="loading-spinner" style="margin: 0 auto 16px auto; width: 36px; height: 36px; border: 4px solid #e0f2fe; border-top: 4px solid #0284c7; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <div style="font-size: 15px; font-weight: 700; color: #0369a1; margin-bottom: 6px;">
+              Scanning last ${days} days of ${currentEnergyPortal} transactions...
+            </div>
+            <div style="font-size: 13px; color: #64748b;">
+              Querying transactions, downloading consecutive meter reading intervals, and auditing power spikes...
+            </div>
+          </div>
+        `;
+      }
+
+      try {
+        const res = await fetch('/api/energy/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            party_id: currentEnergyPortal,
+            limit: limit
+          })
+        });
+
+        const data = await res.json();
+        if (progressArea) progressArea.style.display = 'none';
+
+        if (!data.success) {
+          if (outputArea) {
+            outputArea.innerHTML = `
+              <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 20px; color: #991b1b;">
+                <div style="font-weight: 700; margin-bottom: 6px;">Batch Scan Failed</div>
+                <div>${data.error}</div>
+              </div>
+            `;
+          }
+          return;
+        }
+
+        renderBatchScanResult(data);
+      } catch (err) {
+        if (progressArea) progressArea.style.display = 'none';
+        if (outputArea) {
+          outputArea.innerHTML = `
+            <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; padding: 20px; color: #991b1b;">
+              <div style="font-weight: 700; margin-bottom: 6px;">Scan Error</div>
+              <div>${err.message}</div>
+            </div>
+          `;
+        }
+      }
+    }
+
+    function renderBatchScanResult(data) {
+      const outputArea = document.getElementById('energyAnalysisOutputArea');
+      if (!outputArea) return;
+
+      const totalScanned = data.total_scanned || 0;
+      const totalAnomalies = data.total_anomalies || 0;
+      const results = data.results || [];
+
+      let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+          <div class="card" style="padding: 16px; border-left: 4.5px solid #0284c7;">
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Transactions Scanned</div>
+            <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">${totalScanned}</div>
+          </div>
+          <div class="card" style="padding: 16px; border-left: 4.5px solid ${totalAnomalies > 0 ? '#dc2626' : '#16a34a'};">
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Unusual Spikes / Anomalies</div>
+            <div style="font-size: 26px; font-weight: 800; color: ${totalAnomalies > 0 ? '#dc2626' : '#16a34a'}; margin-top: 4px;">${totalAnomalies}</div>
+          </div>
+          <div class="card" style="padding: 16px; border-left: 4.5px solid #10b981;">
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Nominal Sessions</div>
+            <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">${totalScanned - totalAnomalies}</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 18px;">
+          <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">
+            Transaction Energy Consumption Audit (${currentEnergyPortal})
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; text-align: left; color: #475569;">
+                  <th style="padding: 8px 10px;">Transaction ID</th>
+                  <th style="padding: 8px 10px;">Charger Code</th>
+                  <th style="padding: 8px 10px;">Station Name</th>
+                  <th style="padding: 8px 10px;">Start Time</th>
+                  <th style="padding: 8px 10px;">Energy (kWh)</th>
+                  <th style="padding: 8px 10px;">Peak Power (kW)</th>
+                  <th style="padding: 8px 10px;">Status</th>
+                  <th style="padding: 8px 10px;">Diagnosis</th>
+                  <th style="padding: 8px 10px; text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${results.map(r => `
+                  <tr style="border-bottom: 1px solid #f1f5f9; background: ${r.is_anomaly ? '#fef2f2' : '#ffffff'};">
+                    <td style="padding: 8px 10px; font-weight: 700; color: #0284c7;">#${r.transaction_id}</td>
+                    <td style="padding: 8px 10px; font-weight: 600;">${r.charger_code}</td>
+                    <td style="padding: 8px 10px; color: #64748b;">${r.station_name || '-'}</td>
+                    <td style="padding: 8px 10px; font-family: monospace;">${r.start_time || '-'}</td>
+                    <td style="padding: 8px 10px; font-weight: 700;">${r.energy_kwh.toFixed(2)}</td>
+                    <td style="padding: 8px 10px; font-weight: 800; color: ${r.peak_power_kw > r.rated_power_kw * 1.15 ? '#dc2626' : '#0f172a'};">
+                      ${r.peak_power_kw.toFixed(1)} kW
+                    </td>
+                    <td style="padding: 8px 10px;">
+                      <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: ${r.is_anomaly ? '#dc2626' : '#16a34a'}; color: #ffffff;">
+                        ${r.is_anomaly ? r.highest_severity : 'NOMINAL'}
+                      </span>
+                    </td>
+                    <td style="padding: 8px 10px; font-size: 11px; color: ${r.is_anomaly ? '#991b1b' : '#64748b'};">${r.primary_cause}</td>
+                    <td style="padding: 8px 10px; text-align: right;">
+                      <button class="btn-secondary" onclick="setEnergyMode('single'); document.getElementById('energyTxIdInput').value='${r.transaction_id}'; runEnergyInvestigation('${r.transaction_id}');" style="font-size: 11px; padding: 4px 10px;">
+                        Inspect Spikes
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      outputArea.innerHTML = html;
+    }
+
+</script>
 </body>
 </html>
