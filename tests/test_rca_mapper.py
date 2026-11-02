@@ -244,3 +244,96 @@ def test_map_to_cs_rca_text_without_rejected_remote_start():
     assert result_text != "remote start transaction was rejected"
     assert result_text != "Remote start was rejected"
 
+
+
+def test_benign_info_string_and_evconnected_rca():
+    from src.rca.booking_inspector import is_benign_info_string, generate_descriptive_rca
+
+    # Test benign strings
+    assert is_benign_info_string("EVConnected") is True
+    assert is_benign_info_string("ev_connected") is True
+    assert is_benign_info_string("EV Connected") is True
+    assert is_benign_info_string("NoError") is True
+    assert is_benign_info_string("Preparing") is True
+    assert is_benign_info_string("31 dBm") is True
+    assert is_benign_info_string("Accepted") is True
+
+    # Test real faults
+    assert is_benign_info_string("LowInsulation") is False
+    assert is_benign_info_string("DCContactorFault") is False
+    assert is_benign_info_string("EmergencyStop") is False
+
+    # Simulate Booking 961548
+    booking_record = {
+        "ChargingStationBookingId": "961548",
+        "ChargerCode": "IOCLTNDC7912",
+        "ConnectorId": 1,
+        "EnergyConsumed": "0.000",
+        "EnergyConsumed_indecimal": 0.0,
+        "InitialSOC": 84,
+        "FinalSOC": 84,
+        "StartReading": 138993,
+        "StopReading": 138993,
+        "IdTag": "6842",
+        "StopReason": "EVDisconnected"
+    }
+    tx_record = {
+        "transaction_pk": 740555,
+        "connector_pk": 1,
+        "id_tag": "6842",
+        "start_value": "138993",
+        "stop_value": "138993",
+        "stop_reason": "EVDisconnected",
+        "initial_soc": "84",
+        "soc": "84"
+    }
+    logs = [
+        OCPPLogEntry(
+            message_id="m1",
+            event_name="StatusNotification",
+            event_type="Request",
+            message_type="CALL",
+            raw_message='{"connectorId": 1, "status": "Preparing", "errorCode": "NoError", "info": "EVConnected"}',
+            timestamp="2026-11-01 14:35:26",
+            connector_id=1,
+            status="Preparing",
+            error_code="NoError",
+            info="EVConnected"
+        ),
+        OCPPLogEntry(
+            message_id="m2",
+            event_name="StartTransaction",
+            event_type="Request",
+            message_type="CALL",
+            raw_message='{"connectorId": 1, "idTag": "6842", "meterStart": 138993}',
+            timestamp="2026-11-01 14:35:42",
+            connector_id=1
+        ),
+        OCPPLogEntry(
+            message_id="m3",
+            event_name="StopTransaction",
+            event_type="Request",
+            message_type="CALL",
+            raw_message='{"transactionId": 740555, "reason": "EVDisconnected", "meterStop": 138993}',
+            timestamp="2026-11-01 14:37:25",
+            connector_id=1,
+            reason="EVDisconnected"
+        )
+    ]
+
+    rca = generate_descriptive_rca(
+        session_type="Completed (<1kWh)",
+        booking_data=booking_record,
+        tx_data=tx_record,
+        logs=logs,
+        target_connector=1
+    )
+
+    # Attribution MUST be USER / OPERATOR ACTION, never CHARGER HARDWARE
+    assert rca["attribution"] == "USER / OPERATOR ACTION"
+    assert "Premature Vehicle Disconnection" in rca["root_cause"]
+    assert "EVDisconnected" in rca["root_cause"]
+    assert "EVConnected" not in rca["root_cause"]  # Benign plug-in status not blamed as fault
+    assert rca["error_location"] == "StopTransaction [reason]"
+    assert "84%" in rca["narrative"]
+    assert "0.000 kWh" in rca["narrative"]

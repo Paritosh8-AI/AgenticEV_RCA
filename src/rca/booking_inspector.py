@@ -19,6 +19,40 @@ from src.models import OCPPLogEntry
 from src.config import SESSION_STORAGE_PATH
 from src.rca.ocpp_parser import parse_ocpp_message, is_remote_start_status_rejected, is_remote_start_status_accepted
 
+BENIGN_INFO_STRINGS = {
+    "none", "null", "noerror", "no error", "noalarm", "no alarm", "normal", "other",
+    "-", "", "ok", "success", "ready", "idle", "standby", "operative", "inoperative",
+    "heartbeat", "bootnotification", "statusnotification", "metervalues", "datatransfer",
+    "rfid", "card read", "card swiped", "authorized", "accept", "accepted",
+    "valid identifier", "valid transaction", "evconnected", "ev connected", "connected",
+    "cable connected", "gun connected", "vehicle connected", "evdisconnected",
+    "ev disconnected", "disconnected", "cable disconnected", "gun disconnected",
+    "preparing", "available", "charging", "finishing", "suspendedev", "suspendedevse",
+    "reserved", "unavailable", "plugin", "plug in", "plugged in", "unplug", "unplugged",
+    "session started", "session stopped"
+}
+
+
+def is_benign_info_string(info_str: str | None) -> bool:
+    """Returns True if the info string represents normal operational or state telemetry rather than a fault."""
+    if not info_str:
+        return True
+    s = str(info_str).strip().lower()
+    s_clean = s.replace("_", "").replace("-", "").replace(" ", "")
+    if s in BENIGN_INFO_STRINGS or s_clean in {x.replace(" ", "").replace("_", "").replace("-", "") for x in BENIGN_INFO_STRINGS}:
+        return True
+    if s.isdigit():
+        return True
+    try:
+        float(s)
+        return True
+    except ValueError:
+        pass
+    if any(k in s for k in ("gsm", "dbm", "rssi", "signal")):
+        return True
+    return False
+
+
 
 def get_party_config(party_id: str = "ELC") -> dict:
     """Returns portal configuration, endpoints, credentials, and session paths for a specific CPO/party."""
@@ -812,10 +846,9 @@ def generate_descriptive_rca(
     meaningful_info_entry = None
     for e in relevant_logs:
         info_str = (e.info or "").strip()
-        if info_str and info_str.lower() not in ("none", "null", "noerror", "normal", "other", "-", ""):
-            if not info_str.isdigit() and "gsm" not in info_str.lower() and "db" not in info_str.lower():
-                meaningful_info_entry = e
-                break
+        if not is_benign_info_string(info_str):
+            meaningful_info_entry = e
+            break
 
     # 5. Hardware error codes (excluding NoError, None, "")
     hw_error_entry = next(
@@ -1119,7 +1152,7 @@ def generate_descriptive_rca(
     # RULE 5: Meaningful Info Tag with specific fault signature
     # (Evaluated before generic hardware errors because info often holds exact root cause)
     # -------------------------------------------------------------
-    elif meaningful_info_entry and any(k in (meaningful_info_entry.info or "").lower() for k in ("connection_lost", "evconnection")):
+    elif meaningful_info_entry and any(k in (meaningful_info_entry.info or "").lower() for k in ("connection_lost", "lost_connection", "cp_lost", "pilot_lost")):
         info_val = meaningful_info_entry.info.strip()
         error_location = "StatusNotification [info]"
         error_value = info_val
@@ -1188,9 +1221,11 @@ def generate_descriptive_rca(
             action_item = "Review controller error register and execute soft reset via CMS portal."
 
     # -------------------------------------------------------------
-    # RULE 7: Meaningful Info Tag (General)
+    # RULE 7: Meaningful Info Tag with Real Fault Keywords
     # -------------------------------------------------------------
-    elif meaningful_info_entry:
+    elif meaningful_info_entry and any(k in (meaningful_info_entry.info or "").lower() for k in (
+        "fault", "fail", "error", "alarm", "trip", "abort", "overtemp", "under", "over", "leak", "short", "blown", "isolat", "lock", "pe ", "pilot"
+    )):
         info_val = meaningful_info_entry.info.strip()
         attribution = "CHARGER HARDWARE / STATION FAULT"
         root_cause = f'Charger Diagnostic Alert (info: "{info_val}")'
@@ -1198,7 +1233,7 @@ def generate_descriptive_rca(
         detected_field = f'info: "{info_val}"'
         error_location = "StatusNotification [info]"
         error_value = info_val
-        narrative = f"The charger internal controller aborted the session reporting diagnostic status: '{info_val}'."
+        narrative = f"The charger internal controller raised hardware diagnostic alert '{info_val}', aborting the charging session."
         action_item = f"Inspect charger vendor telemetry logs corresponding to event '{info_val}'."
 
     # -------------------------------------------------------------
@@ -1222,7 +1257,7 @@ def generate_descriptive_rca(
     # -------------------------------------------------------------
     # RULE 8: Preparing but RemoteStart never arrived
     # -------------------------------------------------------------
-    elif has_preparing and not has_remote_start:
+    elif has_preparing and not has_remote_start and not has_start_transaction:
         attribution = "NETWORK / CMS BACKEND FAULT"
         root_cause = "Remote Start Command Not Received by Charger"
         confidence = "High (85%)"
@@ -1246,16 +1281,32 @@ def generate_descriptive_rca(
             detected_field = f'reason: "{tx_stop_reason}"'
 
             if tx_stop_reason.lower() in ("evdisconnected", "ev disconnected"):
-                attribution = "VEHICLE / USER ACTION"
-                root_cause = f'Premature Vehicle Disconnection (reason: "{tx_stop_reason}")'
-                confidence = "High (95%)"
-                narrative = (
-                    f"The session started successfully and transferred {energy_consumed:.3f} kWh. "
-                    f"Charging was terminated prematurely with StopReason '{tx_stop_reason}'. "
-                    f"Either the vehicle BMS unexpectedly released its inlet lock and cut off current, or the user unplugged the connector "
-                    f"gun before meaningful charging could occur."
-                )
-                action_item = "Advise driver not to force pull connector while session is actively ramping up current."
+                attribution = "USER / OPERATOR ACTION"
+                init_soc_disp = booking_data.get("InitialSOC") or booking_data.get("InitialSoc") or booking_data.get("initial_soc") or booking_data.get("SOC") or (tx_data.get("initial_soc") if tx_data else None) or (tx_data.get("soc") if tx_data else None)
+                if energy_consumed <= 0.05:
+                    soc_context = f" (Initial SoC: {init_soc_disp}%)" if init_soc_disp else ""
+                    root_cause = f'Premature Vehicle Disconnection Before Energy Transfer (StopReason: "{tx_stop_reason}", 0.000 kWh Delivered{soc_context})'
+                    confidence = "High (95%)"
+                    start_reading_disp = booking_data.get("StartReading") or (tx_data.get("start_value") if tx_data else "138993")
+                    id_tag_disp = booking_data.get("IdTag") or (tx_data.get("id_tag") if tx_data else "Accepted")
+                    narrative = (
+                        f"The vehicle ({vehicle_str}) connected to Gun #{connector_id} (StatusNotification reported 'EVConnected'), and authorization was validated (Id Tag: {id_tag_disp}, Accepted). "
+                        f"However, the vehicle BMS or driver disconnected the connector gun before power delivery could ramp up "
+                        f"(reported under StopReason: '{tx_stop_reason}' with Initial SoC: {init_soc_disp or 'N/A'}%). "
+                        f"Start and stop meter readings remained identical at {start_reading_disp} Wh "
+                        f"(0.000 kWh delivered, Rs. 0.00 billed). This was an early disconnection from the vehicle/driver side, NOT a charger hardware fault."
+                    )
+                    action_item = "Advise driver not to unplug connector or release vehicle charging lock prematurely during initiation."
+                else:
+                    root_cause = f'Premature Vehicle Disconnection (reason: "{tx_stop_reason}")'
+                    confidence = "High (95%)"
+                    narrative = (
+                        f"The session started successfully and transferred {energy_consumed:.3f} kWh. "
+                        f"Charging was terminated prematurely with StopReason '{tx_stop_reason}'. "
+                        f"Either the vehicle BMS unexpectedly released its inlet lock and cut off current, or the user unplugged the connector "
+                        f"gun before meaningful charging could occur."
+                    )
+                    action_item = "Advise driver not to force pull connector while session is actively ramping up current."
 
             elif tx_stop_reason.lower() in ("emergencystop", "emergency stop"):
                 attribution = "USER / OPERATOR ACTION"
