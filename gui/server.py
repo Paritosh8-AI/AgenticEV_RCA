@@ -780,6 +780,9 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
         elif path == "/api/search-booking":
             if str(BASE_DIR) not in sys.path:
                 sys.path.insert(0, str(BASE_DIR))
+            import importlib
+            import src.rca.booking_inspector
+            importlib.reload(src.rca.booking_inspector)
             from src.rca.booking_inspector import investigate_booking, clear_investigation_cache
 
             booking_id = str(payload.get("booking_id", "")).strip()
@@ -811,6 +814,9 @@ class ElectreeFiHandler(SimpleHTTPRequestHandler):
         elif path == "/api/iocl/search-booking":
             if str(BASE_DIR) not in sys.path:
                 sys.path.insert(0, str(BASE_DIR))
+            import importlib
+            import src.rca.booking_inspector
+            importlib.reload(src.rca.booking_inspector)
             from src.rca.booking_inspector import investigate_booking, clear_investigation_cache
 
             booking_id = str(payload.get("booking_id", "")).strip()

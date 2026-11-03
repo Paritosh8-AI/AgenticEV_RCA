@@ -6087,7 +6087,7 @@ ${rca.action_item}
 
       let html = `
         <!-- KPI METRICS STRIP -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px;">
           <!-- Card 1: Energy Delivered -->
           <div class="card" style="padding: 16px; border-left: 4.5px solid #0284c7;">
             <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Energy Delivered</div>
@@ -6099,16 +6099,6 @@ ${rca.action_item}
             </div>
           </div>
 
-          <!-- Card 2: Peak Power vs Hardware -->
-          <div class="card" style="padding: 16px; border-left: 4.5px solid ${summary.peak_power_kw > summary.rated_power_kw * 1.15 ? '#dc2626' : '#16a34a'};">
-            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Peak Calculated Power</div>
-            <div style="font-size: 26px; font-weight: 800; color: ${summary.peak_power_kw > summary.rated_power_kw * 1.15 ? '#dc2626' : '#0f172a'}; margin-top: 4px;">
-              ${summary.peak_power_kw.toFixed(1)} <span style="font-size: 14px; font-weight: 600; color: #64748b;">kW</span>
-            </div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
-              Rated Limit: <strong>${summary.rated_power_kw} kW</strong> (Gun: ${summary.gun_capacity_kw} kW)
-            </div>
-          </div>
 
           <!-- Card 3: EV Battery Capacity -->
           <div class="card" style="padding: 16px; border-left: 4.5px solid ${battPct > 105 ? '#dc2626' : '#8b5cf6'};">
@@ -6657,7 +6647,7 @@ ${rca.action_item}
       const results = data.results || [];
 
       let html = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px;">
           <div class="card" style="padding: 16px; border-left: 4.5px solid #0284c7;">
             <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Transactions Scanned</div>
             <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">${totalScanned}</div>
