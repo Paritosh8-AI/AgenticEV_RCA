@@ -6082,8 +6082,10 @@ ${rca.action_item}
       const battPct = summary.battery_utilization_pct || 0;
       const battFillColor = battPct > 105 ? '#dc2626' : (battPct > 90 ? '#ea580c' : '#0284c7');
 
-      // SVG Power Chart generation
-      const chartSvg = generatePowerChartSvg(intervals, summary.rated_power_kw, summary.gun_capacity_kw);
+      const connKw = summary.connector_capacity_kw || summary.gun_capacity_kw || (charger && charger.gun_capacity_kw) || summary.rated_power_kw || 30;
+
+      // SVG Energy Delivery Chart generation (cumulative delivered vs physical connector ceiling)
+      const chartSvg = generateEnergyChartSvg(intervals, connKw);
 
       let html = `
         <!-- KPI METRICS STRIP -->
@@ -6099,17 +6101,25 @@ ${rca.action_item}
             </div>
           </div>
 
+          <!-- Card 2: Connector Physical Limits -->
+          <div class="card" style="padding: 16px; border-left: 4.5px solid #10b981;">
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Connector Physical Limits</div>
+            <div style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">
+              ${connKw} <span style="font-size: 14px; font-weight: 600; color: #64748b;">kW Connector</span>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+              Unitary: <strong>${(summary.rate_per_min_kwh || (connKw/60)).toFixed(2)} kWh/min</strong> &bull; <strong>${(summary.rate_per_sec_kwh || (connKw/3600)).toFixed(4)} kWh/s</strong>
+            </div>
+          </div>
 
-
-
-          <!-- Card 2: Anomaly Severity -->
+          <!-- Card 3: Anomaly Severity -->
           <div class="card" style="padding: 16px; border-left: 4.5px solid ${statusColor}; background: ${statusBg};">
             <div style="font-size: 11px; font-weight: 700; color: ${statusColor}; text-transform: uppercase;">Telemetry Health Status</div>
             <div style="font-size: 20px; font-weight: 800; color: ${statusColor}; margin-top: 6px;">
               ${isAnomaly ? summary.highest_severity + ' ANOMALY' : (summary.total_energy_kwh < 0.05 ? 'ZERO ENERGY ABORT' : 'NOMINAL PHYSICALS')}
             </div>
             <div style="font-size: 11px; color: ${statusColor}; margin-top: 4px; font-weight: 600;">
-              ${isAnomaly ? `${summary.spike_count} Spikes | ${summary.rollback_count} Rollbacks | ${summary.highest_severity}` : (summary.total_energy_kwh < 0.05 ? 'Zero energy delivered to vehicle' : 'All intervals compliant')}
+              ${isAnomaly ? `${summary.spike_count || summary.abnormal_jump_count || 0} Abnormal Jump(s) | ${summary.rollback_count} Rollbacks | ${summary.highest_severity}` : (summary.total_energy_kwh < 0.05 ? 'Zero energy delivered to vehicle' : 'All intervals compliant')}
             </div>
           </div>
         </div>
@@ -6415,16 +6425,21 @@ ${rca.action_item}
           </div>
         </div>
 
-        <!-- POWER DELIVERY VS RATED CEILING TIMELINE CHART -->
+        <!-- CUMULATIVE ENERGY DELIVERED VS PHYSICAL CEILING TIMELINE CHART -->
         <div class="card" style="margin-bottom: 24px; padding: 18px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">
-              Calculated Power Curve (kW) vs Hardware Rated Ceiling Line
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: #0f172a;">
+                Delivered Energy Progression (kWh) vs Physical Connector Transfer Ceiling
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                Connector Unitary Limit: <strong>${connKw} kW</strong> &rarr; <strong>${(connKw).toFixed(0)} kWh/hr</strong> | <strong>${(connKw/60).toFixed(2)} kWh/min</strong> | <strong>${(connKw/3600).toFixed(5)} kWh/s</strong>
+              </div>
             </div>
             <div style="display: flex; align-items: center; gap: 14px; font-size: 11px; color: #64748b;">
-              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 3px; background: #0284c7; display: inline-block;"></span> Delivered kW</span>
-              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 2px; background: #dc2626; border-top: 2px dashed #dc2626; display: inline-block;"></span> Rated Ceiling (${summary.rated_power_kw} kW)</span>
-              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #dc2626; display: inline-block;"></span> Spike Event</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 3px; background: #0284c7; display: inline-block;"></span> Delivered Energy (kWh)</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 2px; background: #16a34a; border-top: 2px dashed #16a34a; display: inline-block;"></span> Physical Transfer Ceiling</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #dc2626; display: inline-block;"></span> Abnormal Jump</span>
             </div>
           </div>
 
@@ -6454,7 +6469,7 @@ ${rca.action_item}
                   <th style="padding: 8px 10px;">Reading (kWh)</th>
                   <th style="padding: 8px 10px;">&Delta;E (kWh)</th>
                   <th style="padding: 8px 10px;">&Delta;t (s)</th>
-                  <th style="padding: 8px 10px;">Calculated Power</th>
+                  <th style="padding: 8px 10px;">Max Expected &Delta;E</th>
                   <th style="padding: 8px 10px;">CMS Diff</th>
                   <th style="padding: 8px 10px;">Telemetry Flag</th>
                 </tr>
@@ -6462,9 +6477,10 @@ ${rca.action_item}
               <tbody>
                 ${intervals.map(it => {
                   const hasFlag = it.flags && it.flags.length > 0;
-                  const isSpike = it.flags.some(f => f.type === 'SPIKE_POWER_EXCEEDED');
+                  const isSpike = it.flags.some(f => f.type === 'ABNORMAL_ENERGY_JUMP' || f.type === 'EXCESS_ENERGY_SPIKE' || f.type === 'SPIKE_POWER_EXCEEDED');
                   const isRollback = it.flags.some(f => f.type === 'METER_ROLLBACK');
                   const rowBg = isSpike ? '#fef2f2' : (isRollback ? '#fff1f2' : (it.index % 2 === 0 ? '#f8fafc' : '#ffffff'));
+                  const expMax = it.expected_max_kwh !== undefined ? it.expected_max_kwh : (connKw * it.delta_time_sec / 3600);
 
                   return `
                     <tr style="background: ${rowBg}; border-bottom: 1px solid #f1f5f9;">
@@ -6472,20 +6488,27 @@ ${rca.action_item}
                       <td style="padding: 6px 10px; font-family: monospace;">${it.time_short}</td>
                       <td style="padding: 6px 10px; font-family: monospace; color: #64748b;">${it.raw_value}</td>
                       <td style="padding: 6px 10px; font-weight: 600;">${it.reading_kwh.toFixed(3)}</td>
-                      <td style="padding: 6px 10px; font-weight: 700; color: ${it.delta_kwh < 0 ? '#dc2626' : (it.delta_kwh > 1.0 ? '#ea580c' : '#0f172a')};">
+                      <td style="padding: 6px 10px; font-weight: 700; color: ${it.delta_kwh < 0 ? '#dc2626' : (isSpike ? '#dc2626' : '#0f172a')};">
                         ${it.delta_kwh >= 0 ? '+' : ''}${it.delta_kwh.toFixed(3)}
                       </td>
                       <td style="padding: 6px 10px; color: #64748b;">${it.delta_time_sec}s</td>
-                      <td style="padding: 6px 10px; font-weight: 800; color: ${it.calculated_power_kw > summary.rated_power_kw * 1.15 ? '#dc2626' : '#0284c7'};">
-                        ${it.calculated_power_kw.toFixed(1)} kW
+                      <td style="padding: 6px 10px; font-weight: 700; color: ${isSpike ? '#dc2626' : '#0284c7'};">
+                        ${it.delta_time_sec > 0 ? expMax.toFixed(3) + ' kWh' : '-'}
+                        <div style="font-size: 10px; color: #64748b; font-weight: 500;">
+                          ${it.delta_time_sec > 0 ? (connKw / 3600).toFixed(4) + ' kWh/s' : '-'}
+                        </div>
                       </td>
                       <td style="padding: 6px 10px; color: #64748b;">${it.cms_energy_difference != null ? it.cms_energy_difference : '-'}</td>
                       <td style="padding: 6px 10px;">
-                        ${hasFlag ? it.flags.map(f => `
-                          <span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: ${f.severity === 'CRITICAL' ? '#dc2626' : '#ea580c'}; color: #ffffff;">
-                            ${f.type}
-                          </span>
-                        `).join(' ') : `<span style="font-size: 10px; color: #16a34a; font-weight: 600;">Nominal</span>`}
+                        ${hasFlag ? it.flags.map(f => {
+                          const isBad = f.severity === 'CRITICAL' || f.type === 'ABNORMAL_ENERGY_JUMP' || f.type === 'METER_ROLLBACK';
+                          const label = f.type === 'SPIKE_POWER_EXCEEDED' ? 'ABNORMAL_ENERGY_JUMP' : f.type;
+                          return `
+                            <span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: ${isBad ? '#dc2626' : '#ea580c'}; color: #ffffff;">
+                              ${label}
+                            </span>
+                          `;
+                        }).join(' ') : `<span style="font-size: 10px; color: #16a34a; font-weight: 600;">Nominal Energy</span>`}
                       </td>
                     </tr>
                   `;
@@ -6499,46 +6522,67 @@ ${rca.action_item}
       outputArea.innerHTML = html;
     }
 
-    function generatePowerChartSvg(intervals, ratedKw, gunKw) {
+    function generateEnergyChartSvg(intervals, connKw) {
       if (!intervals || intervals.length === 0) {
         return '<div style="padding: 20px; text-align: center; color: #94a3b8;">No interval records available to render curve.</div>';
       }
 
       const w = 840;
       const h = 200;
-      const padLeft = 45;
-      const padRight = 20;
+      const padLeft = 55;
+      const padRight = 25;
       const padTop = 20;
       const padBottom = 30;
 
       const chartW = w - padLeft - padRight;
       const chartH = h - padTop - padBottom;
-
-      const maxPower = Math.max(ratedKw * 1.3, ...intervals.map(i => i.calculated_power_kw || 0));
       const n = intervals.length;
 
-      const getX = (idx) => padLeft + (idx / Math.max(1, n - 1)) * chartW;
-      const getY = (kw) => padTop + chartH - (kw / Math.max(1, maxPower)) * chartH;
+      // Cumulative delivered energy and physical ceiling progression
+      const initialReading = intervals[0].reading_kwh || 0;
+      let cumDelivered = [];
+      let cumCeiling = [];
+      let elapsedSec = 0;
 
-      const ratedY = getY(ratedKw);
-
-      // Path data
-      let pathD = '';
-      intervals.forEach((it, idx) => {
-        const x = getX(idx);
-        const y = getY(it.calculated_power_kw || 0);
-        pathD += (idx === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+      intervals.forEach((it) => {
+        elapsedSec += (it.delta_time_sec || 0);
+        const delivered = Math.max(0, (it.reading_kwh || 0) - initialReading);
+        const ceiling = elapsedSec * (connKw / 3600.0);
+        cumDelivered.push(delivered);
+        cumCeiling.push(ceiling);
       });
 
-      // Dots for spikes
-      let dotsHtml = '';
+      const maxDelivered = Math.max(...cumDelivered, 0.05);
+      const maxCeiling = Math.max(...cumCeiling, 0.05);
+      const maxEnergyY = Math.max(maxDelivered, maxCeiling) * 1.15;
+
+      const getX = (idx) => padLeft + (idx / Math.max(1, n - 1)) * chartW;
+      const getY = (val) => padTop + chartH - (val / Math.max(0.01, maxEnergyY)) * chartH;
+
+      // Delivered energy path (solid blue)
+      let deliveredPathD = '';
       intervals.forEach((it, idx) => {
         const x = getX(idx);
-        const kw = it.calculated_power_kw || 0;
-        const y = getY(kw);
-        const isSpike = kw > ratedKw * 1.15;
-        if (isSpike) {
-          dotsHtml += `<circle cx="${x}" cy="${y}" r="5" fill="#dc2626" stroke="#ffffff" stroke-width="2"><title>${it.time_short}: ${kw.toFixed(1)} kW (Spike)</title></circle>`;
+        const y = getY(cumDelivered[idx]);
+        deliveredPathD += (idx === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+      });
+
+      // Theoretical physical transfer ceiling path (dashed green)
+      let ceilingPathD = '';
+      intervals.forEach((it, idx) => {
+        const x = getX(idx);
+        const y = getY(cumCeiling[idx]);
+        ceilingPathD += (idx === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+      });
+
+      // Dots for abnormal energy jumps
+      let dotsHtml = '';
+      intervals.forEach((it, idx) => {
+        const hasSpike = it.flags && it.flags.some(f => f.type === 'ABNORMAL_ENERGY_JUMP' || f.type === 'EXCESS_ENERGY_SPIKE' || f.type === 'SPIKE_POWER_EXCEEDED');
+        if (hasSpike) {
+          const x = getX(idx);
+          const y = getY(cumDelivered[idx]);
+          dotsHtml += `<circle cx="${x}" cy="${y}" r="5" fill="#dc2626" stroke="#ffffff" stroke-width="2"><title>${it.time_short}: +${it.delta_kwh.toFixed(3)} kWh in ${it.delta_time_sec}s (Max physical: ${((connKw * it.delta_time_sec)/3600).toFixed(3)} kWh)</title></circle>`;
         }
       });
 
@@ -6546,24 +6590,30 @@ ${rca.action_item}
         <svg viewBox="0 0 ${w} ${h}" style="width: 100%; height: auto; min-width: 600px; font-family: sans-serif; font-size: 10px;">
           <!-- Grid lines -->
           <line x1="${padLeft}" y1="${padTop + chartH}" x2="${w - padRight}" y2="${padTop + chartH}" stroke="#e2e8f0" stroke-width="1" />
-          <line x1="${padLeft}" y1="${getY(maxPower * 0.5)}" x2="${w - padRight}" y2="${getY(maxPower * 0.5)}" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3" />
-          <line x1="${padLeft}" y1="${ratedY}" x2="${w - padRight}" y2="${ratedY}" stroke="#f87171" stroke-width="1.5" stroke-dasharray="4,3" />
+          <line x1="${padLeft}" y1="${getY(maxEnergyY * 0.5)}" x2="${w - padRight}" y2="${getY(maxEnergyY * 0.5)}" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3" />
 
           <!-- Axis Labels -->
-          <text x="${padLeft - 6}" y="${padTop + chartH}" fill="#94a3b8" text-anchor="end">0 kW</text>
-          <text x="${padLeft - 6}" y="${ratedY + 3}" fill="#dc2626" font-weight="700" text-anchor="end">${ratedKw} kW</text>
-          <text x="${padLeft - 6}" y="${padTop + 10}" fill="#94a3b8" text-anchor="end">${Math.round(maxPower)} kW</text>
+          <text x="${padLeft - 6}" y="${padTop + chartH}" fill="#94a3b8" text-anchor="end">0.00 kWh</text>
+          <text x="${padLeft - 6}" y="${getY(maxEnergyY * 0.5) + 3}" fill="#94a3b8" text-anchor="end">${(maxEnergyY * 0.5).toFixed(2)} kWh</text>
+          <text x="${padLeft - 6}" y="${padTop + 10}" fill="#94a3b8" text-anchor="end">${maxEnergyY.toFixed(2)} kWh</text>
 
           <text x="${padLeft}" y="${h - 8}" fill="#94a3b8">${intervals[0].time_short}</text>
           <text x="${w - padRight}" y="${h - 8}" fill="#94a3b8" text-anchor="end">${intervals[intervals.length - 1].time_short}</text>
 
-          <!-- Delivered Power Curve -->
-          <path d="${pathD}" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- Physical Transfer Ceiling (Green dashed) -->
+          <path d="${ceilingPathD}" fill="none" stroke="#16a34a" stroke-width="2" stroke-dasharray="4,3" />
 
-          <!-- Spike Dots -->
+          <!-- Delivered Cumulative Energy Curve (Blue solid) -->
+          <path d="${deliveredPathD}" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+          <!-- Abnormal Jump Dots -->
           ${dotsHtml}
         </svg>
       `;
+    }
+
+    function generatePowerChartSvg(intervals, ratedKw, gunKw) {
+      return generateEnergyChartSvg(intervals, gunKw || ratedKw || 30);
     }
 
     async function runBatchEnergyScan() {

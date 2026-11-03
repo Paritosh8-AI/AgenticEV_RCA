@@ -657,8 +657,14 @@ def analyze_transaction_energy(
     battery_kwh = float(vehicle_specs["capacity_kwh"])
     max_dc_kw = float(vehicle_specs.get("max_dc_kw", gun_cap_kw))
 
-    # Allow a sensible 15% physical safety margin above rated capacity before hard spike flag
-    power_ceiling_kw = round(max(gun_cap_kw, rated_kw) * 1.15, 1)
+    # Connector unitary capacity: Gun capacity takes precedence as each connector is physically bounded
+    connector_kw = gun_cap_kw if gun_cap_kw > 0 else (rated_kw if rated_kw > 0 else 30.0)
+    # Unitary transfer rates:
+    # 1 hour = connector_kw kWh
+    # 1 minute = connector_kw / 60.0 kWh
+    # 1 second = connector_kw / 3600.0 kWh
+    rate_per_sec = connector_kw / 3600.0
+    rate_per_min = connector_kw / 60.0
 
     # 3. Fetch meter records if not provided
     if meter_records is None:
@@ -721,6 +727,8 @@ def analyze_transaction_energy(
         delta_t = 0.0
         delta_e = 0.0
         calc_power = 0.0
+        expected_energy_kwh = 0.0
+        max_allowed_energy_kwh = 0.0
         interval_flags = []
 
         if prev_dt is not None:
@@ -728,9 +736,18 @@ def analyze_transaction_energy(
             total_duration_sec += delta_t
             delta_e = curr_kwh - prev_kwh
 
+            # Unitary energy transfer comparison grounded in connector physical limit
+            # A connector rated at P kW transfers:
+            # - P kWh in 1 hour (3600 seconds)
+            # - P / 60 kWh in 1 minute (60 seconds)
+            # - P / 3600 kWh in 1 second
             if delta_t > 0:
-                calc_power = (delta_e * 3600.0) / delta_t
+                expected_energy_kwh = rate_per_sec * delta_t
+                max_allowed_energy_kwh = expected_energy_kwh * 1.15  # 15% physical tolerance for sampling jitter
+                calc_power = (delta_e * 3600.0) / delta_t  # Informational only, never used for anomaly gating
             else:
+                expected_energy_kwh = 0.0
+                max_allowed_energy_kwh = 0.005
                 calc_power = 0.0
 
             # --- Anomaly Check 1: Negative Step / Meter Counter Rollback ---
@@ -749,27 +766,34 @@ def analyze_transaction_energy(
                     "explanation": f"Counter decreased from {prev_kwh:.3f} to {curr_kwh:.3f} kWh. Indicates meter reset, register overflow, or communication glitch."
                 })
 
-            # --- Anomaly Check 2: Power Spike Exceeding Hardware Capacity ---
-            elif calc_power > power_ceiling_kw:
+            # --- Anomaly Check 2: Unitary Energy Transfer Limit Exceeded (Energy Difference vs Duration) ---
+            elif delta_e > max_allowed_energy_kwh and delta_e > 0.005:
                 spike_count += 1
-                ratio_pct = (calc_power / rated_kw) * 100.0 if rated_kw > 0 else 0
-                flag_desc = f"Power Spike: {calc_power:.1f} kW exceeds rated {rated_kw:.1f} kW ({ratio_pct:.0f}%)"
-                interval_flags.append({"type": "SPIKE_POWER_EXCEEDED", "severity": "CRITICAL", "detail": flag_desc})
+                ratio_pct = (delta_e / expected_energy_kwh) * 100.0 if expected_energy_kwh > 0 else 9999.0
+                flag_desc = (
+                    f"Abnormal Energy Jump: +{delta_e:.3f} kWh in {delta_t:.0f}s exceeds "
+                    f"{connector_kw:.0f} kW connector limit (max {max_allowed_energy_kwh:.3f} kWh)"
+                )
+                interval_flags.append({"type": "ABNORMAL_ENERGY_JUMP", "severity": "CRITICAL", "detail": flag_desc})
                 anomalies.append({
-                    "type": "SPIKE_POWER_EXCEEDED",
+                    "type": "ABNORMAL_ENERGY_JUMP",
                     "severity": "CRITICAL",
                     "timestamp": dt.strftime("%Y-%m-%d %H:%M:%S"),
                     "reading_kwh": curr_kwh,
                     "delta_kwh": delta_e,
                     "interval_sec": delta_t,
-                    "calc_power_kw": calc_power,
-                    "rated_kw": rated_kw,
-                    "power_ceiling_kw": power_ceiling_kw,
-                    "ratio_pct": ratio_pct,
+                    "connector_kw": connector_kw,
+                    "rate_per_sec": round(rate_per_sec, 5),
+                    "rate_per_min": round(rate_per_min, 3),
+                    "expected_kwh": round(expected_energy_kwh, 4),
+                    "max_allowed_kwh": round(max_allowed_energy_kwh, 4),
+                    "ratio_pct": round(ratio_pct, 1),
+                    "calc_power_kw": round(calc_power, 2),
                     "explanation": (
-                        f"Calculated power delivery of {calc_power:.1f} kW is physically impossible on a "
-                        f"{rated_kw:.0f} kW charger hardware ({ratio_pct:.0f}% of nameplate). "
-                        f"Energy surged by {delta_e:.3f} kWh in only {delta_t:.0f} seconds."
+                        f"Energy increment of +{delta_e:.3f} kWh in {delta_t:.0f}s is physically impossible for a "
+                        f"{connector_kw:.0f} kW connector. A {connector_kw:.0f} kW connector delivers {connector_kw:.0f} kWh in an hour "
+                        f"({rate_per_min:.2f} kWh/min, {rate_per_sec:.5f} kWh/s). Maximum physical transfer in {delta_t:.0f}s is {expected_energy_kwh:.3f} kWh. "
+                        f"Reported energy difference exceeds physical capacity by {ratio_pct:.0f}%."
                     )
                 })
 
@@ -779,7 +803,7 @@ def analyze_transaction_energy(
                 flag_desc = f"Meter Stalled: 0.0 kWh over {delta_t:.0f}s"
                 interval_flags.append({"type": "METER_FREEZE", "severity": "MEDIUM", "detail": flag_desc})
 
-            # Update peak power if not an impossible rollback
+            # Informational peak power tracking only
             if calc_power > peak_power_kw and delta_e > 0:
                 peak_power_kw = calc_power
 
@@ -791,6 +815,9 @@ def analyze_transaction_energy(
             "reading_kwh": round(curr_kwh, 3),
             "delta_kwh": round(delta_e, 3),
             "delta_time_sec": round(delta_t, 1),
+            "expected_max_kwh": round(expected_energy_kwh, 4) if prev_dt is not None else 0.0,
+            "max_allowed_kwh": round(max_allowed_energy_kwh, 4) if prev_dt is not None else 0.0,
+            "rate_per_sec_kwh": round(rate_per_sec, 5) if prev_dt is not None else 0.0,
             "calculated_power_kw": round(calc_power, 2),
             "cms_energy_difference": cms_diff,
             "location": record.get("Location", location_used),
@@ -995,15 +1022,19 @@ def analyze_transaction_energy(
         "vehicle_specs": vehicle_specs,
         "summary": {
             "total_energy_kwh": round(total_energy_kwh, 3),
-            "peak_power_kw": round(peak_power_kw, 2),
-            "rated_power_kw": rated_kw,
+            "connector_capacity_kw": connector_kw,
             "gun_capacity_kw": gun_cap_kw,
-            "power_ceiling_kw": power_ceiling_kw,
+            "rated_power_kw": rated_kw,
+            "rate_per_hour_kwh": connector_kw,
+            "rate_per_min_kwh": round(rate_per_min, 3),
+            "rate_per_sec_kwh": round(rate_per_sec, 5),
+            "peak_power_kw": round(peak_power_kw, 2),
             "battery_capacity_kwh": battery_kwh,
             "battery_utilization_pct": round((total_energy_kwh / battery_kwh) * 100.0, 1) if battery_kwh > 0 else 0,
             "duration_minutes": round(total_duration_sec / 60.0, 1),
             "readings_count": len(intervals),
             "spike_count": spike_count,
+            "abnormal_jump_count": spike_count,
             "rollback_count": rollback_count,
             "freeze_count": freeze_count,
             "is_anomaly": len(anomalies) > 0,
@@ -1040,9 +1071,11 @@ def build_energy_rca_report(
     """
     tariff_inr_per_kwh = float(tariff_inr_per_kwh or 0.0)
     b_kwh = float(cms_billed_kwh or total_energy_kwh)
+    connector_kw = float(charger_specs.get("gun_capacity_kw") or charger_specs.get("rated_capacity_kw") or 30.0)
+    rate_per_sec = connector_kw / 3600.0
     
     # Identify primary anomalies
-    has_spike = any(a["type"] == "SPIKE_POWER_EXCEEDED" for a in anomalies)
+    has_spike = any(a["type"] in ("ABNORMAL_ENERGY_JUMP", "EXCESS_ENERGY_SPIKE", "SPIKE_POWER_EXCEEDED") for a in anomalies)
     has_overrun = any(a["type"] == "BATTERY_CAPACITY_OVERRUN" for a in anomalies)
     has_rollback = any(a["type"] == "METER_ROLLBACK" for a in anomalies)
     has_inversion = any(a["type"] == "THERMODYNAMIC_INVERSION" for a in anomalies)
@@ -1057,13 +1090,13 @@ def build_energy_rca_report(
             "badge_color": "green",
             "primary_cause": "Normal Operation",
             "summary_narrative": (
-                f"Transaction #{transaction_id} demonstrated stable power delivery. Total consumption of "
-                f"{total_energy_kwh:.2f} kWh was within the vehicle battery capacity ({vehicle_specs['capacity_kwh']:.1f} kWh), "
-                f"and peak power ({peak_power_kw:.1f} kW) remained strictly compliant with the {charger_specs['rated_capacity_kw']:.0f} kW "
-                f"charger hardware ceiling."
+                f"Transaction #{transaction_id} demonstrated stable energy delivery conforming to physical connector transfer limits. "
+                f"Total consumption of {total_energy_kwh:.2f} kWh was within the vehicle battery capacity ({vehicle_specs['capacity_kwh']:.1f} kWh), "
+                f"and interval energy increments remained strictly compliant with the {connector_kw:.0f} kW connector rate "
+                f"({rate_per_sec:.4f} kWh/s)."
             ),
             "evidence": [
-                f"Peak observed power of {peak_power_kw:.1f} kW <= Rated {charger_specs['rated_capacity_kw']:.0f} kW",
+                f"All interval energy increments <= physical {connector_kw:.0f} kW connector limit ({rate_per_sec:.4f} kWh/s)",
                 f"Total delivered energy {total_energy_kwh:.2f} kWh <= Battery pack limit {vehicle_specs['capacity_kwh']:.1f} kWh",
                 f"Continuous monotonic meter readings across {intervals_count} sample intervals with zero rollbacks"
             ],
@@ -1082,15 +1115,21 @@ def build_energy_rca_report(
     phantom_kwh = 0.0
     
     if has_spike:
-        primary_cause = "Hardware / Modbus CT Ratio Surge or Communication Corrupt Frame"
-        spike_items = [a for a in anomalies if a["type"] == "SPIKE_POWER_EXCEEDED"]
-        top_spike = max(spike_items, key=lambda x: x.get("calc_power_kw", 0))
-        calc_kw = top_spike.get("calc_power_kw", 0)
-        rated_kw = charger_specs["rated_capacity_kw"]
+        primary_cause = "Hardware / Modbus CT Ratio Surge or Erratic Meter Increment"
+        spike_items = [a for a in anomalies if a["type"] in ("ABNORMAL_ENERGY_JUMP", "EXCESS_ENERGY_SPIKE", "SPIKE_POWER_EXCEEDED")]
+        top_spike = max(spike_items, key=lambda x: x.get("delta_kwh", 0))
+        delta_kwh = top_spike.get("delta_kwh", 0)
+        dt_sec = top_spike.get("interval_sec", 0)
+        expected_kwh = top_spike.get("expected_kwh", 0)
+        ratio_pct = top_spike.get("ratio_pct", 0)
         
         evidence.append(
-            f"Impossible power surge of {calc_kw:.1f} kW recorded at {top_spike.get('timestamp')}, "
-            f"surpassing hardware nameplate {rated_kw:.0f} kW by {((calc_kw/rated_kw)-1)*100:.0f}%."
+            f"Impossible energy jump of +{delta_kwh:.3f} kWh in {dt_sec:.0f}s recorded at {top_spike.get('timestamp')}, "
+            f"exceeding physical {connector_kw:.0f} kW connector delivery ceiling ({expected_kwh:.3f} kWh) by {max(0, ratio_pct - 100):.0f}%."
+        )
+        evidence.append(
+            f"Unitary connector limit: a {connector_kw:.0f} kW connector delivers at most {connector_kw:.0f} kWh in 1 hour "
+            f"({(connector_kw/60):.2f} kWh/min, {rate_per_sec:.5f} kWh/s)."
         )
         recommendations.append(
             f"Inspect RS-485 Modbus serial line and shield grounding on charger {charger_specs['charger_code']} "
