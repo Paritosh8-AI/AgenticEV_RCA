@@ -561,27 +561,70 @@ def fetch_and_correlate_ocpp_telemetry(
     
     first_mv = None
     last_mv = None
+    energy_readings = []
     if meter_values_list:
+        for mv in meter_values_list:
+            for s in mv.get("samples", []):
+                meas = s.get("measurand", "")
+                unit = s.get("unit", "")
+                # Only extract active energy register values, ignoring Voltage, Current, Power, and SoC
+                if meas in ("Energy.Active.Import.Register", "Energy.Active.Import", "") or unit in ("Wh", "kWh"):
+                    try:
+                        val = float(s.get("value"))
+                        wh_val = val if (unit != "kWh" and val > 1000) else val * 1000.0
+                        energy_readings.append(wh_val)
+                        break
+                    except (ValueError, TypeError):
+                        continue
+
+    if energy_readings:
+        first_mv = energy_readings[0]
+        last_mv = energy_readings[-1]
+        actual_mv_delivered = max(0.0, (last_mv - first_mv) / 1000.0)
+    else:
+        actual_mv_delivered = 0.0
+
+    # Cross-reference against verified total metered energy in CMS records
+    reported_consumed_kwh = None
+    if tx_record and tx_record.get("EnergyConsumedDouble") is not None:
         try:
-            first_mv = float(meter_values_list[0]["samples"][0]["value"])
-            last_mv = float(meter_values_list[-1]["samples"][0]["value"])
-        except Exception:
+            reported_consumed_kwh = float(tx_record["EnergyConsumedDouble"])
+        except (ValueError, TypeError):
             pass
-    actual_mv_delivered = ((last_mv - first_mv) / 1000.0) if (first_mv is not None and last_mv is not None) else 0.0
+    elif booking_record and booking_record.get("EnergyConsumed_indecimal") is not None:
+        try:
+            reported_consumed_kwh = float(booking_record["EnergyConsumed_indecimal"])
+        except (ValueError, TypeError):
+            pass
+
+    if reported_consumed_kwh is not None and reported_consumed_kwh > actual_mv_delivered:
+        actual_mv_delivered = reported_consumed_kwh
 
     if s_val is not None and e_val is not None:
         try:
             raw_delta_kwh = (float(e_val) - float(s_val)) / 1000.0
-            if raw_delta_kwh > actual_mv_delivered + 0.1:
+            gap_kwh = raw_delta_kwh - actual_mv_delivered
+            
+            # Material discrepancy check: must exceed 0.50 kWh and 2% variance to avoid flagging minor buffer flushes
+            if gap_kwh > 0.50 and (actual_mv_delivered < 0.05 or (gap_kwh / max(0.1, raw_delta_kwh)) > 0.02):
+                if actual_mv_delivered < 0.05:
+                    detail_text = (
+                        f"StopTransaction recorded meterStop: {e_val} Wh vs meterStart: {s_val} Wh (Delta: {raw_delta_kwh:.2f} kWh). "
+                        f"However, zero physical energy was delivered to the vehicle during this session. "
+                        f"The entire billed amount ({raw_delta_kwh:.2f} kWh) is phantom energy from an aborted session."
+                    )
+                else:
+                    detail_text = (
+                        f"StopTransaction recorded meterStop: {e_val} Wh vs meterStart: {s_val} Wh (Delta: {raw_delta_kwh:.2f} kWh). "
+                        f"However, live metered delivery during the active charging session accounted for {actual_mv_delivered:.3f} kWh. "
+                        f"The unmetered difference (+{gap_kwh:.2f} kWh) was billed in excess of physical delivery."
+                    )
                 discrepancies.append({
                     "severity": "CRITICAL",
                     "category": "STOP_METER_LEAK_DISCREPANCY",
                     "title": f"CMS Billed {raw_delta_kwh:.2f} kWh vs {actual_mv_delivered:.3f} kWh Actually Metered",
-                    "detail": (
-                        f"StopTransaction recorded meterStop: {e_val} Wh vs meterStart: {s_val} Wh (Delta: {raw_delta_kwh:.2f} kWh). "
-                        f"However, actual MeterValues payloads transmitted during this session only delivered {actual_mv_delivered:.3f} kWh. "
-                        f"The difference ({raw_delta_kwh - actual_mv_delivered:.2f} kWh) represents phantom accumulation from other vehicles."
-                    )
+                    "detail": detail_text,
+                    "phantom_kwh": round(gap_kwh, 3)
                 })
         except Exception:
             pass
@@ -874,8 +917,10 @@ def analyze_transaction_energy(
 
     # 6. Session-level Checks
     # --- Check 4: Discrepancy between CMS Billed Energy vs Physical Meter Readings ---
-    if cms_tx_kwh > total_energy_kwh + 0.1:
-        phantom_diff = round(cms_tx_kwh - total_energy_kwh, 3)
+    # Only flag if discrepancy is material (> 0.5 kWh and > 2% of billed, or total_energy_kwh == 0)
+    gap_diff = cms_tx_kwh - total_energy_kwh
+    if (gap_diff > 0.50 and (gap_diff / max(0.1, cms_tx_kwh)) > 0.02) or (total_energy_kwh < 0.05 and cms_tx_kwh > 0.5):
+        phantom_diff = round(gap_diff, 3)
         anomalies.append({
             "type": "DISCREPANCY_BILLED_VS_METERED",
             "severity": "CRITICAL",
@@ -885,8 +930,7 @@ def analyze_transaction_energy(
             "phantom_kwh": phantom_diff,
             "explanation": (
                 f"Physical meter logs show {total_energy_kwh:.3f} kWh delivered to the vehicle, "
-                f"yet CMS recorded and billed {cms_tx_kwh:.2f} kWh (Difference: +{phantom_diff:.2f} kWh phantom energy). "
-                f"Indicates unclosed orphaned session accumulating meter advancement from subsequent sessions."
+                f"yet CMS recorded and billed {cms_tx_kwh:.2f} kWh (Difference: +{phantom_diff:.2f} kWh unmetered phantom energy)."
             )
         })
 
@@ -1079,7 +1123,8 @@ def build_energy_rca_report(
     has_overrun = any(a["type"] == "BATTERY_CAPACITY_OVERRUN" for a in anomalies)
     has_rollback = any(a["type"] == "METER_ROLLBACK" for a in anomalies)
     has_inversion = any(a["type"] == "THERMODYNAMIC_INVERSION" for a in anomalies)
-    has_zombie = any(a["type"] in ("ORPHANED_ZOMBIE_TRANSACTION", "ZOMBIE_SESSION_PHANTOM_OVERRUN", "DISCREPANCY_BILLED_VS_METERED", "STOP_METER_LEAK_DISCREPANCY") for a in anomalies)
+    has_zombie = any(a["type"] in ("ORPHANED_ZOMBIE_TRANSACTION", "ZOMBIE_SESSION_PHANTOM_OVERRUN") for a in anomalies) or (total_duration_sec > 14400 and total_energy_kwh < 0.05)
+    has_meter_discrepancy = any(a["type"] in ("DISCREPANCY_BILLED_VS_METERED", "STOP_METER_LEAK_DISCREPANCY") for a in anomalies)
     has_zero = any(a["type"] in ("ZERO_ENERGY_DELIVERY", "ZERO_ENERGY_SESSION", "CONNECTOR_STATE_ABORT") for a in anomalies) or (total_energy_kwh < 0.05)
 
     if not anomalies and total_energy_kwh >= 0.05 and b_kwh >= 0.05:
@@ -1200,6 +1245,26 @@ def build_energy_rca_report(
         )
         recommendations.append(
             "Verify charger firmware to ensure StopTransaction is transmitted upon connector release."
+        )
+
+    elif has_meter_discrepancy:
+        primary_cause = "Billed vs. Metered Energy Discrepancy (Unmetered Stop Delta)"
+        gap = max(0.0, b_kwh - total_energy_kwh)
+        phantom_kwh = max(phantom_kwh, gap)
+        evidence.append(
+            f"Physical telemetry verified {total_energy_kwh:.3f} kWh delivered to the vehicle, "
+            f"yet CMS billed {b_kwh:.2f} kWh (Difference: +{gap:.2f} kWh unmetered gap)."
+        )
+        if tariff_inr_per_kwh > 0:
+            recommendations.append(
+                f"Credit customer account for {gap:.2f} unmetered phantom kWh (approx ₹{gap * tariff_inr_per_kwh:.2f} at Per Unit Price ₹{tariff_inr_per_kwh:.2f}/kWh)."
+            )
+        else:
+            recommendations.append(
+                f"Credit customer account for {gap:.2f} unmetered phantom kWh based on the Per Unit Price from Charging Details endpoint."
+            )
+        recommendations.append(
+            "Inspect charger controller firmware to ensure StopTransaction meterStop accurately reflects the final charging sample."
         )
 
     elif has_zero:
@@ -1378,10 +1443,14 @@ def compute_billing_tax_audit(
             pass
 
     ref_kwh = cms_kwh if cms_kwh > 0.0 else total_energy_kwh
-    has_zero_delivery = (total_energy_kwh < 0.05)
-    has_phantom_discrepancy = any(a.get("type") in ("DISCREPANCY_BILLED_VS_METERED", "ORPHANED_ZOMBIE_TRANSACTION", "ZERO_ENERGY_DELIVERY", "STOP_METER_LEAK_DISCREPANCY") for a in analysis.get("anomalies", []))
+    
+    # Zero delivery applies strictly when physical meter confirms 0 kWh delivered to the vehicle
+    has_zero_delivery = (total_energy_kwh < 0.05) and (
+        any(a.get("type") in ("ZERO_ENERGY_DELIVERY", "ZERO_ENERGY_SESSION", "CONNECTOR_STATE_ABORT") for a in analysis.get("anomalies", []))
+        or total_energy_kwh == 0.0
+    )
 
-    if has_zero_delivery or has_phantom_discrepancy:
+    if has_zero_delivery:
         # Zero physical energy delivered - real legitimate charge is strictly ₹0.00
         legitimate_kwh = 0.0
         real_base = 0.0
@@ -1394,11 +1463,20 @@ def compute_billing_tax_audit(
         real_tax = actual_tax if actual_tax > 0.0 else round(real_base * (tax_rate_pct / 100.0), 2)
         real_total_after_taxes = actual_user_paid if actual_user_paid > 0.0 else round(real_base + real_tax, 2)
     else:
-        # Anomaly detected: deduct phantom spikes and EV pack capacity overruns
-        legitimate_kwh = max(0.0, ref_kwh - phantom_kwh)
+        # Physical energy WAS delivered to the vehicle:
+        # Ground legitimate energy in physical metered delivery, capped by battery capacity
         pack_cap = float(veh.get("capacity_kwh", 0.0))
-        if pack_cap > 0.0 and legitimate_kwh > pack_cap * 1.05:
+        
+        if total_energy_kwh >= 0.05:
+            cand_kwh = min(total_energy_kwh, ref_kwh) if ref_kwh > 0 else total_energy_kwh
+        else:
+            cand_kwh = max(0.0, ref_kwh - phantom_kwh)
+
+        # Cap by physical battery capacity if pack size is known
+        if pack_cap > 0.0 and cand_kwh > pack_cap * 1.05:
             legitimate_kwh = pack_cap
+        else:
+            legitimate_kwh = cand_kwh
 
         real_base = round(legitimate_kwh * per_unit_price, 2)
         real_tax = round(real_base * (tax_rate_pct / 100.0), 2)
@@ -1414,18 +1492,19 @@ def compute_billing_tax_audit(
         if legitimate_kwh <= 0.0:
             status_label = f"CRITICAL OVERCHARGE (₹{variance:.2f} Discrepancy - 0.00 kWh Legitimate Energy)"
             action_summary = (
-                f"Transaction delivered 0.000 kWh to the vehicle (Aborted / Zombie session). "
+                f"Transaction delivered 0.000 kWh to the vehicle (Aborted / Zero-Energy session). "
                 f"Real legitimate cost is ₹0.00 after all taxes. The user was billed ₹{actual_user_paid:.2f} "
                 f"(Pending: ₹{pending_amt:.2f}, Paid: ₹{payment_rec:.2f}) due to an unclosed orphaned session accumulating "
                 f"unmetered consumption. Immediate action: cancel/waive pending charge of ₹{pending_amt:.2f} and refund ₹{payment_rec:.2f} to user wallet."
             )
         else:
-            status_label = f"OVERCHARGED BY ₹{variance:.2f}"
+            phantom_units = round(max(0.0, ref_kwh - legitimate_kwh), 3)
+            status_label = f"OVERCHARGED BY ₹{variance:.2f} (+{phantom_units:.2f} Phantom kWh)"
             action_summary = (
-                f"User ended up paying ₹{actual_user_paid:.2f}, but the real physical charge should have been "
-                f"₹{real_total_after_taxes:.2f} after all taxes. The user was overbilled by ₹{variance:.2f} "
-                f"(Base Energy: ₹{base_discrepancy:.2f} + Excess GST: ₹{tax_discrepancy:.2f}) due to {phantom_kwh:.2f} "
-                f"phantom/unphysical kWh. Commercial adjustment / refund voucher of ₹{variance:.2f} is due to the user."
+                f"User was billed for {ref_kwh:.2f} kWh (₹{actual_user_paid:.2f}), but physical telemetry verifies that only "
+                f"{legitimate_kwh:.2f} kWh was legitimately delivered into the vehicle. "
+                f"The customer was overcharged by ₹{variance:.2f} (Base: ₹{base_discrepancy:.2f} + Tax: ₹{tax_discrepancy:.2f}) "
+                f"for {phantom_units:.2f} phantom/unmetered kWh. A commercial credit/refund of ₹{variance:.2f} is due to the user."
             )
     elif variance < -0.50:
         status_code = "UNDERCHARGED"

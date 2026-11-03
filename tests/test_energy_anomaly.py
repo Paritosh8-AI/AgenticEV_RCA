@@ -320,3 +320,45 @@ def test_discrepancy_billed_vs_metered_zombie():
     assert audit["comparison"]["status"] == "OVERCHARGED"
     assert audit["comparison"]["variance_inr"] == 3596.78
     assert "CRITICAL OVERCHARGE" in audit["comparison"]["status_label"]
+
+
+def test_stop_meter_leak_partial_legitimate_energy():
+    from src.rca.energy_anomaly_detector import compute_billing_tax_audit
+    # Physical meter delivered 28.36 kWh, CMS billed 35.53 kWh (Stop meter gap = 7.17 kWh)
+    analysis = {
+        "summary": {
+            "total_energy_kwh": 28.36,
+            "is_anomaly": True
+        },
+        "anomalies": [
+            {
+                "type": "STOP_METER_LEAK_DISCREPANCY",
+                "severity": "CRITICAL",
+                "metered_kwh": 28.36,
+                "billed_kwh": 35.53,
+                "phantom_kwh": 7.17
+            }
+        ],
+        "rca_report": {"financial_impact": {"phantom_kwh": 7.17}},
+        "vehicle_specs": {"capacity_kwh": 50.0}
+    }
+    booking = {
+        "PerUnitPrice": 14.0,
+        "ActualChargingAmount": 497.42,
+        "ActualTax": 89.54,
+        "ActualTotalAmount": 586.96,
+        "PaymentRecieved": 586.96,
+        "PendingAmount": 0.0,
+        "EnergyConsumed_indecimal": 35.53
+    }
+    audit = compute_billing_tax_audit(analysis, booking, party_id="IOC")
+    
+    # CRITICAL: Physical delivery (28.36 kWh) must remain legitimate credit; only the 7.17 kWh delta is disputed
+    assert audit["real_should_charge"]["legitimate_energy_kwh"] == 28.36
+    assert audit["real_should_charge"]["base_amount_inr"] == round(28.36 * 14.0, 2)
+    assert audit["comparison"]["status"] == "OVERCHARGED"
+    assert audit["comparison"]["phantom_kwh"] == 7.17
+    assert "0.00 kWh Legitimate Energy" not in audit["comparison"]["status_label"]
+    assert "OVERCHARGED BY" in audit["comparison"]["status_label"]
+    assert "+7.17 Phantom kWh" in audit["comparison"]["status_label"]
+
